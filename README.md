@@ -23,7 +23,7 @@ Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4296802461"
 
 
-❯ ./target/release/vial_cli -i 611 device # single device
+❯ vitaly -i 611 device # single device
 Product name: "Keychron K6 Pro" id: 611,
 Manufacturer name: "Keychron", id: 13364,
 Release: 256, Serial: "", Path: "DevSrvsID:4294971185"
