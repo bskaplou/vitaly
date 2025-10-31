@@ -155,7 +155,7 @@ Mouse keys:
 It also allows to dump single setting if called with option --qsid/-q as follows 
 
 ```
-❯ ./target/release/vial_cli -i 4626 setting --qsid 6
+❯ vitaly -i 4626 setting --qsid 6
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4296802461"
