@@ -23,7 +23,7 @@ Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4296802461"
 
 
-❯ vitaly -i 611 device # single device
+❯ vitaly -i 611 devices # single device
 Product name: "Keychron K6 Pro" id: 611,
 Manufacturer name: "Keychron", id: 13364,
 Release: 256, Serial: "", Path: "DevSrvsID:4294971185"
@@ -88,7 +88,7 @@ Settings in list are addressed by qsid - QMK setting identifier and with bit for
 It allows to dump full list of settings together with current values as follows
 
 ```
-❯ vitaly -i 4626 setting
+❯ vitaly -i 4626 settings
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4296802461"
@@ -155,7 +155,7 @@ Mouse keys:
 It also allows to dump single setting if called with option --qsid/-q as follows 
 
 ```
-❯ vitaly -i 4626 setting --qsid 6
+❯ vitaly -i 4626 settings --qsid 6
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4296802461"
