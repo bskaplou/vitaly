@@ -1,0 +1,11 @@
+[package]
+name = "vial_cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+argh = "0.1.13"
+hidapi = "2.6.3"
+rust-lzma = "0.6.0"
+serde_json = "1.0.145"
+thiserror = "2.0.17"
