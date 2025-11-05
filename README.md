@@ -165,7 +165,420 @@ Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4296802461"
 It allows to alter setting if called with options -q and -v while -q addresses setting to be altered and -v passess desired value as follows
 
 ```
-
+❯ vitaly -i 4626 settings --qsid 6 -v 4000
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Option "Time (in ms) before the one shot key is released" = 4000 now
 ```
 
-*WIP*
+Boolean option example
+
+```
+❯ vitaly -i 4626 settings -q 26
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+26) Chordal Hold = false
+```
+
+Boolean option encoded into bit
+
+```
+❯ vitaly -i 4626 settings -q 3.2 -v true
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Option "Do not Auto Shift special keys" = true now
+
+❯ vitaly -i 4626 settings -q 3.2
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+3.2) Do not Auto Shift special keys = true
+```
+
+### Layers subcommand
+
+Layers subcommand is designed to help with visual layers dumping
+
+It can dump button wiring positings if called with option positions
+
+
+```
+❯ vitaly -i 4626 layers -p
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+        ╔══╗╔══╗                     ╔══╗╔══╗
+╔══╗╔══╗║0 ║║0 ║╔══╗             ╔══╗║5 ║║5 ║╔══╗╔══╗
+║0 ║║0 ║║2 ║║3 ║║0 ║╔══╗     ╔══╗║5 ║║3 ║║2 ║║5 ║║5 ║
+║0 ║║1 ║╚══╝╚══╝║4 ║║0 ║     ║5 ║║4 ║╚══╝╚══╝║1 ║║0 ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║5 ║     ║5 ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║1 ║║1 ║╔══╗╚══╝     ╚══╝╔══╗║6 ║║6 ║╔══╗╔══╗
+║1 ║║1 ║║2 ║║3 ║║1 ║╔══╗     ╔══╗║6 ║║3 ║║2 ║║6 ║║6 ║
+║0 ║║1 ║╚══╝╚══╝║4 ║║1 ║     ║6 ║║4 ║╚══╝╚══╝║1 ║║0 ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║5 ║     ║5 ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║2 ║║2 ║╔══╗╚══╝     ╚══╝╔══╗║7 ║║7 ║╔══╗╔══╗
+║2 ║║2 ║║2 ║║3 ║║2 ║╔══╗     ╔══╗║7 ║║3 ║║2 ║║7 ║║7 ║
+║0 ║║1 ║╚══╝╚══╝║4 ║║2 ║     ║7 ║║4 ║╚══╝╚══╝║1 ║║0 ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║5 ║     ║5 ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║3 ║║3 ║╔══╗╚══╝     ╚══╝╔══╗║8 ║║8 ║╔══╗╔══╗
+║3 ║║3 ║║2 ║║3 ║║3 ║╔══╗     ╔══╗║8 ║║3 ║║2 ║║8 ║║8 ║
+║0 ║║1 ║╚══╝╚══╝║4 ║║3 ║     ║8 ║║4 ║╚══╝╚══╝║1 ║║0 ║
+╚══╝╚══╝        ╚══╝║5 ║     ║5 ║╚══╝        ╚══╝╚══╝
+                    ╚══╝     ╚══╝
+
+           ╔══╗╔══╗ ╔══╗     ╔══╗ ╔══╗╔══╗
+           ║4 ║║4 ║ ║4 ║     ║9 ║ ║9 ║║9 ║
+           ║3 ║║4 ║ ║5 ║     ║5 ║ ║4 ║║3 ║
+           ╚══╝╚══╝ ╚══╝     ╚══╝ ╚══╝╚══╝
+```
+
+It also can dump current layer keymap
+
+
+```
+❯ vitaly -i 4626 layers
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Layer: 0
+        ╔══╗╔══╗                     ╔══╗╔══╗
+╔══╗╔══╗║2 ║║3 ║╔══╗             ╔══╗║8 ║║9 ║╔══╗╔══╗
+║⎋ ║║1 ║║  ║║  ║║4 ║╔══╗     ╔══╗║7 ║║  ║║  ║║0 ║║- ║
+║  ║║  ║╚══╝╚══╝║  ║║5 ║     ║6 ║║  ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║  ║     ║  ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║W ║║E ║╔══╗╚══╝     ╚══╝╔══╗║I ║║O ║╔══╗╔══╗
+║⇥ ║║Q ║║  ║║  ║║R ║╔══╗     ╔══╗║U ║║  ║║  ║║P ║║= ║
+║  ║║  ║╚══╝╚══╝║  ║║T ║     ║Y ║║  ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║  ║     ║  ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║S ║║D ║╔══╗╚══╝     ╚══╝╔══╗║K ║║L ║╔══╗╔══╗
+║MO║║A ║║  ║║  ║║F ║╔══╗     ╔══╗║J ║║  ║║  ║║; ║║' ║
+║1 ║║  ║╚══╝╚══╝║  ║║G ║     ║H ║║  ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║  ║     ║  ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║X ║║C ║╔══╗╚══╝     ╚══╝╔══╗║, ║║. ║╔══╗╔══╗
+║L⇧║║Z ║║  ║║  ║║V ║╔══╗     ╔══╗║M ║║  ║║  ║║/ ║║R⇧║
+║  ║║  ║╚══╝╚══╝║  ║║B ║     ║N ║║  ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝        ╚══╝║  ║     ║  ║╚══╝        ╚══╝╚══╝
+                    ╚══╝     ╚══╝
+
+           ╔══╗╔══╗ ╔══╗     ╔══╗ ╔══╗╔══╗
+           ║L⎈║║L⌥║ ║L⌘║     ║␣ ║ ║⏎ ║║R⌘║
+           ║  ║║  ║ ║  ║     ║  ║ ║  ║║  ║
+           ╚══╝╚══╝ ╚══╝     ╚══╝ ╚══╝╚══╝
+```
+
+Layer command accepts --number option which specifies layer number to dump
+
+```
+❯ cargo run -- -i 4626 layers -n 2
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running `target/debug/vial_cli -i 4626 layers -n 2`
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Layer: 2
+        ╔══╗╔══╗                     ╔══╗╔══╗
+╔══╗╔══╗║▽ ║║▽ ║╔══╗             ╔══╗║▽ ║║▽ ║╔══╗╔══╗
+║▽ ║║▽ ║║  ║║  ║║▽ ║╔══╗     ╔══╗║▽ ║║  ║║  ║║▽ ║║▽ ║
+║  ║║  ║╚══╝╚══╝║  ║║▽ ║     ║▽ ║║  ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║  ║     ║  ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║▽ ║║▽ ║╔══╗╚══╝     ╚══╝╔══╗║Mo║║⚙↓║╔══╗╔══╗
+║▽ ║║▽ ║║  ║║  ║║▽ ║╔══╗     ╔══╗║⚙↑║║↑ ║║  ║║▽ ║║▽ ║
+║  ║║  ║╚══╝╚══╝║  ║║▽ ║     ║▽ ║║  ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║  ║     ║  ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║▽ ║║▽ ║╔══╗╚══╝     ╚══╝╔══╗║Mo║║Mo║╔══╗╔══╗
+║▽ ║║▽ ║║  ║║  ║║▽ ║╔══╗     ╔══╗║Mo║║↓ ║║→ ║║⚙→║║▽ ║
+║  ║║  ║╚══╝╚══╝║  ║║▽ ║     ║⚙←║║← ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝╔══╗╔══╗╚══╝║  ║     ║  ║╚══╝╔══╗╔══╗╚══╝╚══╝
+╔══╗╔══╗║▽ ║║▽ ║╔══╗╚══╝     ╚══╝╔══╗║Mo║║▽ ║╔══╗╔══╗
+║▽ ║║▽ ║║  ║║  ║║▽ ║╔══╗     ╔══╗║Mo║║5 ║║  ║║▽ ║║▽ ║
+║  ║║  ║╚══╝╚══╝║  ║║▽ ║     ║Mo║║4 ║╚══╝╚══╝║  ║║  ║
+╚══╝╚══╝        ╚══╝║  ║     ║3 ║╚══╝        ╚══╝╚══╝
+                    ╚══╝     ╚══╝
+
+           ╔══╗╔══╗ ╔══╗     ╔══╗ ╔══╗╔══╗
+           ║▽ ║║▽ ║ ║▽ ║     ║Mo║ ║Mo║║*1║
+           ║  ║║  ║ ║  ║     ║1 ║ ║2 ║║  ║
+           ╚══╝╚══╝ ╚══╝     ╚══╝ ╚══╝╚══╝
+*1 - QK_LAYER_LOCK
+```
+
+By default layers command reads keyboard layout data straight from keyboard but it works only for Vial keyboards,
+VIA keyboards doesn't have layout data in keyboard memory and it's necessary to pass metadata file as an argument
+Such a files can be downloaded from here https://github.com/the-via/keyboards/tree/master/src
+
+
+```
+❯ vitaly -i 611 layers -m k6pro.json
+Product name: "Keychron K6 Pro" id: 611,
+Manufacturer name: "Keychron", id: 13364,
+Release: 256, Serial: "", Path: "DevSrvsID:4316856485"
+Layer: 0
+╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══════╗╔══╗
+║⎋ ║║1 ║║2 ║║3 ║║4 ║║5 ║║6 ║║7 ║║8 ║║9 ║║0 ║║- ║║= ║║⌫     ║║*1║
+║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║      ║║  ║
+╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══════╝╚══╝
+╔════╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔════╗╔══╗
+║⇥   ║║Q ║║W ║║E ║║R ║║T ║║Y ║║U ║║I ║║O ║║P ║║( ║║) ║║\   ║║⇱ ║
+║    ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║    ║║  ║
+╚════╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚════╝╚══╝
+╔═════╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔═══════╗╔══╗
+║⇪    ║║A ║║S ║║D ║║F ║║G ║║H ║║J ║║K ║║L ║║; ║║' ║║⏎      ║║⇞ ║
+║     ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║       ║║  ║
+╚═════╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚═══════╝╚══╝
+╔═══════╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗╔═════╗╔══╗╔══╗
+║L⇧     ║║Z ║║X ║║C ║║V ║║B ║║N ║║M ║║, ║║. ║║/ ║║R⇧   ║║↑ ║║⇟ ║
+║       ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║  ║║     ║║  ║║  ║
+╚═══════╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝╚═════╝╚══╝╚══╝
+╔═══╗╔═══╗╔═══╗╔═══════════════════════╗╔══╗╔══╗╔══╗╔══╗╔══╗╔══╗
+║L⎈ ║║⌨  ║║⌨  ║║␣                      ║║⌨ ║║MO║║TG║║← ║║↓ ║║→ ║
+║   ║║0  ║║2  ║║                       ║║3 ║║2 ║║4 ║║  ║║  ║║  ║
+╚═══╝╚═══╝╚═══╝╚═══════════════════════╝╚══╝╚══╝╚══╝╚══╝╚══╝╚══╝
+*1 - QK_BACKLIGHT_STEP
+```
+
+::: warning
+For now vitaly doesn't support keybord meta files with rotated buttons, support might be added later
+:::
+
+::: warning
+--meta option is temporary solution, later keyboard metadata database can be embedded into application
+:::
+
+
+### Keys subcommand
+
+Keys subcommand is able to dump and assign signle button to layer and position
+
+Dump
+
+```
+❯ vitaly -i 4626 keys -l 0 -p 0,0
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Key on layer=0, row=0, col=0 => KC_ESCAPE
+```
+
+Assign
+
+```
+❯ vitaly -i 4626 keys -l 0 -p 0,0 -v KC_COMMA
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Key on layer=0, row=0, col=0 set to => KC_COMMA, keycode = 0x36
+```
+
+Key command accepts all official QMK keycodes listed here together with aliases https://docs.qmk.fm/keycodes_basic .
+It is expected to support all the things which are proposed by QMK itself like MO(1), MT(MOD\_LSFT,KC\_2), LSFT(KC\_1) etc...
+
+### Combos subcommand
+
+
+Combos subcommand is able to dump existing combos and add new combos to buttons
+
+Dump
+
+```
+❯ vitaly -i 4626 combos
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Combos list:
+0) KC_E + KC_R = LSFT(KC_9)
+1) KC_U + KC_I = LSFT(KC_0)
+2) KC_Q + KC_W = LSFT(KC_GRAVE)
+3) KC_S + KC_D = MO(4)
+4) KC_AUDIO_VOL_DOWN + KC_AUDIO_VOL_UP = KC_AUDIO_MUTE
+5) KC_K + KC_L = MO(4)
+6) KC_O + KC_P = LSFT(KC_BACKSLASH)
+7) KC_A + KC_S = KC_GRAVE
+8) KC_W + KC_E = TG(5)
+9) KC_D + KC_F = LSFT(KC_LEFT_BRACKET)
+10) KC_J + KC_K = LSFT(KC_RIGHT_BRACKET)
+11) KC_Z + KC_X = MO(3)
+12) KC_L + KC_SEMICOLON = KC_BACKSLASH
+13) KC_C + KC_V = KC_LEFT_BRACKET
+14) KC_M + KC_COMMA = KC_RIGHT_BRACKET
+15) KC_COMMA + KC_DOT = KC_BACKSPACE
+16) KC_X + KC_C = MO(2)
+17) KC_DOT + KC_SLASH = MO(3)
+18) KC_LEFT_SHIFT + KC_RIGHT_SHIFT = QK_CAPS_WORD_TOGGLE
+Combo slots 19 - 31 are EMPTY
+```
+
+New combo
+
+```
+❯ vitaly -i 4626 combos -n 19 -v 'KC_1 + KC_2 = KC_3'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Saving combo 19) KC_1 + KC_2 = KC_3
+```
+
+
+Delete combo 
+```
+❯ vitaly -i 4626 combos -n 19 -v 'KC_NO = KC_NO'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Saving combo 19) EMPTY
+```
+
+
+### TapDances command
+
+Tap dances command allows to dump and define tapdances.
+
+Value format is
+
+```
+TAP_KEY + HOLD_KEY + DOUBLE_TAP_KEY + TAPHOLD_KEY ~ TAPPING_TERM_MS
+```
+
+Define example
+```
+❯ cargo run -- -i 4626 tapdances -n 0 -v 'KC_1 + LSFT(KC_1) ~ 30'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Saving tap dance 0) On tap: KC_1, On hold: LSFT(KC_1), Tapping term (ms) = 30
+```
+
+Dump
+
+```
+❯ vitaly -i 4626 tapdances
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+TapDance list:
+0) On tap: KC_1, On hold: LSFT(KC_1), Tapping term (ms) = 30
+TapDance slots 1 - 31 are EMPTY
+```
+
+Undefine tapdance
+```
+❯ vitaly -i 4626 tapdances -n 0 -v 'KC_NO ~ 30'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Saving tap dance 0) EMPTY
+```
+
+
+### KeyOverrides subcommand
+
+KeyOverrides subcommand is designed to dump and define key overrides
+
+Dump 
+```
+❯ vitaly -i 4626 keyoverrides
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+KeyOverride list:
+0) trigger = KC_BACKSPACE; replacement = KC_DELETE; layers = 0;
+	trigger_mods = MOD_BIT_LSHIFT;
+	negative_mod_mask = KC_NO;
+	suppressed_mods = MOD_BIT_LSHIFT;
+	ko_option_activation_trigger_down = true
+	ko_option_activation_required_mod_down = false
+	ko_option_activation_negative_mod_up = false
+	ko_option_one_mod = false
+	ko_option_no_reregister_trigger = false
+	ko_option_no_unregister_on_other_key_down = false
+	ko_enabled = true
+1) EMPTY
+...
+```
+
+value format is
+```
+trigger=KC_1; replacement=KC_2; layers=1|2|3; trigger_mods=LS|RS; negative_mod_mask=LC|RC; suppressed_mods =LGUI|RGUI; options=ko_enabled|ko_option_activation_trigger_down
+```
+
+Define key override example
+
+```
+❯ vitaly -i 4626 keyoverrides -n 1 -v 'trigger=KC_1; replacement=KC_2; layers=0; trigger_mods=MOD_BIT_LSHIFT; suppressed_mods=MOD_BIT_LSHIFT; options=ko_enabled'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Key override 1) trigger = KC_1; replacement = KC_2; layers = 0;
+	trigger_mods = MOD_BIT_LSHIFT;
+	negative_mod_mask = KC_NO;
+	suppressed_mods = MOD_BIT_LSHIFT;
+	ko_option_activation_trigger_down = false
+	ko_option_activation_required_mod_down = false
+	ko_option_activation_negative_mod_up = false
+	ko_option_one_mod = false
+	ko_option_no_reregister_trigger = false
+	ko_option_no_unregister_on_other_key_down = false
+	ko_enabled = true
+Saved
+```
+
+Clean key override
+
+```
+❯ vitaly -i 4626 keyoverrides -n 1 -v 'trigger=KC_NO'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Key override 1) EMPTY
+Saved
+```
+
+### AltRepeats
+
+AltRepeats subcommand allows to dump and define subrepeats
+
+
+Define alt repleat
+
+```
+❯ vitaly -i 4626 altrepeats -n 0 -v 'keycode=KC_1; alt_keycode=KC_2; allowed_mods=MOD_BIT_LSHIFT; options=arep_enabled'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Saving altrepeat 0) keycode = KC_1; alt_keycode = KC_2;
+	allowed_mods = MOD_BIT_LSHIFT;
+	arep_option_default_to_this_alt_key = false
+	arep_option_bidirectional = false
+	arep_option_ignore_mod_handedness = false
+	arep_enabled = true
+```
+
+List defined alt repeats
+
+```
+❯ vitaly -i 4626 altrepeats
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+AltRepeat list:
+0) keycode = KC_1; alt_keycode = KC_2;
+	allowed_mods = MOD_BIT_LSHIFT;
+	arep_option_default_to_this_alt_key = false
+	arep_option_bidirectional = false
+	arep_option_ignore_mod_handedness = false
+	arep_enabled = true
+1) EMPTY
+...
+```
+
+Delete alt repeat
+
+```
+❯ vitaly -i 4626 altrepeats -n 0 -v 'keycode=KC_NO'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
+Saving altrepeat 0) EMPTY
+```

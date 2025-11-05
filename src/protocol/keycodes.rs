@@ -95,18 +95,27 @@ pub fn bitmod_to_name(modcode: u8) -> String {
     return dest;
 }
 
-fn name_to_mod(mods: &str) -> Result<u16, KeyParsingError> {
-    let mut m = 0x0u16;
+const MOD_LCTL: u8 = 0x01;
+const MOD_LSFT: u8 = 0x02;
+const MOD_LALT: u8 = 0x04;
+const MOD_LGUI: u8 = 0x08;
+const MOD_RCTL: u8 = 0x11;
+const MOD_RSFT: u8 = 0x12;
+const MOD_RALT: u8 = 0x14;
+const MOD_RGUI: u8 = 0x18;
+
+fn name_to_mod(mods: &str) -> Result<u8, KeyParsingError> {
+    let mut m = 0x0u8;
     for mp in mods.to_string().split("|") {
         match mp {
-            "MOD_BIT_LCTL" | "LCTL" | "CTL" | "C" => m |= 0x01,
-            "MOD_BIT_LSFT" | "LSFT" | "SFT" | "S" => m |= 0x02,
-            "MOD_BIT_LALT" | "LALT" | "ALT" | "A" => m |= 0x04,
-            "MOD_BIT_LGUI" | "LGUI" | "GUI" | "G" => m |= 0x08,
-            "MOD_BIT_RCTL" | "RCTL" => m |= 0x11,
-            "MOD_BIT_RSFT" | "RSFT" => m |= 0x12,
-            "MOD_BIT_RALT" | "RALT" => m |= 0x14,
-            "MOD_BIT_RGUI" | "RGUI" => m |= 0x18,
+            "MOD_LCTL" | "LCTL" | "CTL" | "C" => m |= MOD_LCTL,
+            "MOD_LSFT" | "LSFT" | "SFT" | "S" => m |= MOD_LSFT,
+            "MOD_LALT" | "LALT" | "ALT" | "A" => m |= MOD_LALT,
+            "MOD_LGUI" | "LGUI" | "GUI" | "G" => m |= MOD_LGUI,
+            "MOD_RCTL" | "RCTL" => m |= MOD_RCTL,
+            "MOD_RSFT" | "RSFT" => m |= MOD_RSFT,
+            "MOD_RALT" | "RALT" => m |= MOD_RALT,
+            "MOD_RGUI" | "RGUI" => m |= MOD_RGUI,
             &_ => {
                 return Err(KeyParsingError(
                     format!("can't parse mod {}", mp).to_string(),
@@ -115,6 +124,58 @@ fn name_to_mod(mods: &str) -> Result<u16, KeyParsingError> {
         }
     }
     Ok(m)
+}
+
+pub fn mod_to_name(modcode: u8) -> String {
+    let mut dest = String::new();
+    if modcode & MOD_RCTL == MOD_RCTL {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_RCTL");
+    } else if modcode & MOD_LCTL == MOD_LCTL {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_LCTL");
+    }
+    if modcode & MOD_RSFT == MOD_RSFT {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_RSFT");
+    } else if modcode & MOD_LSFT == MOD_LSFT {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_LSFT");
+    }
+    if modcode & MOD_RALT == MOD_RALT {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_RALT");
+    } else if modcode & MOD_LALT == MOD_LALT {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_LALT");
+    }
+    if modcode & MOD_RGUI == MOD_RGUI {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_RGUI");
+    } else if modcode & MOD_LGUI == MOD_LGUI {
+        if dest.len() > 0 {
+            dest.push('|');
+        }
+        dest.push_str("MOD_LGUI");
+    }
+    if dest.len() == 0 {
+        dest.push_str("KC_NO");
+    }
+    return dest;
 }
 
 fn parse_layer(layer: &String) -> Result<u16, KeyParsingError> {
@@ -233,12 +294,12 @@ pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
                 }
                 Some((layer, mo)) => {
                     let l: u16 = parse_layer(&layer.to_string())?;
-                    let m = name_to_mod(mo)?;
+                    let m = name_to_mod(mo)? as u16;
                     keycode = 0x5000 | ((l & 0xF) << 5) | (m & 0x1F);
                 }
             },
             "OSM" => {
-                let m = name_to_mod(&right)?;
+                let m = name_to_mod(&right)? as u16;
                 keycode = 0x52A0 | (m & 0x1F);
             }
             "TT" => {
@@ -271,7 +332,7 @@ pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
                     ))
                 }
                 Some((mods, key)) => {
-                    let m = name_to_mod(&mods.to_string())?;
+                    let m = name_to_mod(&mods.to_string())? as u16;
                     let k = name_to_qid(&key.to_string())?;
                     keycode = 0x2000 | ((m & 0x1F) << 8) | (k & 0xFF);
                 }
@@ -395,9 +456,7 @@ pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
     } else {
         match name_to_code::FULLNAMES.get(n.as_str()) {
             Some(value) => Ok(*value),
-            None => Err(KeyParsingError(
-                format!("can't find key {}", n).to_string(),
-            )),
+            None => Err(KeyParsingError(format!("can't find key {}", n).to_string())),
         }
     }
 }
@@ -433,71 +492,6 @@ pub fn qid_to_short(keycode: u16) -> String {
         },
     }
     dest
-}
-
-const MOD_LCTL: u8 = 0x01;
-const MOD_LSFT: u8 = 0x02;
-const MOD_LALT: u8 = 0x04;
-const MOD_LGUI: u8 = 0x08;
-const MOD_RCTL: u8 = 0x11;
-const MOD_RSFT: u8 = 0x12;
-const MOD_RALT: u8 = 0x14;
-const MOD_RGUI: u8 = 0x18;
-
-pub fn mod_to_name(modcode: u8) -> String {
-    let mut dest = String::new();
-    if modcode & MOD_RCTL == MOD_RCTL {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_RCTL");
-    }
-    if modcode & MOD_LCTL == MOD_LCTL {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_LCTL");
-    }
-    if modcode & MOD_RSFT == MOD_RSFT {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_RSFT");
-    }
-    if modcode & MOD_LSFT == MOD_LSFT {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_LSFT");
-    }
-    if modcode & MOD_RALT == MOD_RALT {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_RALT");
-    }
-    if modcode & MOD_LALT == MOD_LALT {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_LALT");
-    }
-    if modcode & MOD_RGUI == MOD_RGUI {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_RGUI");
-    }
-    if modcode & MOD_LGUI == MOD_LGUI {
-        if dest.len() > 0 {
-            dest.push('|');
-        }
-        dest.push_str("MOD_LGUI");
-    }
-    if dest.len() == 0 {
-        dest.push_str("KC_NO");
-    }
-    return dest;
 }
 
 pub fn qid_to_name(keycode: u16) -> String {
@@ -686,4 +680,188 @@ pub fn qid_to_name(keycode: u16) -> String {
         },
     }
     dest
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_name_to_bitmod_raw() {
+        assert_eq!(name_to_bitmod("MOD_LCTL").unwrap(), MOD_BIT_LCTRL);
+        assert_eq!(name_to_bitmod("LCTL").unwrap(), MOD_BIT_LCTRL);
+        assert_eq!(name_to_bitmod("CTL").unwrap(), MOD_BIT_LCTRL);
+        assert_eq!(name_to_bitmod("LC").unwrap(), MOD_BIT_LCTRL);
+        assert_eq!(name_to_bitmod("C").unwrap(), MOD_BIT_LCTRL);
+
+        assert_eq!(name_to_bitmod("MOD_BIT_LCTRL").unwrap(), MOD_BIT_LCTRL);
+        assert_eq!(name_to_bitmod("MOD_BIT_LSHIFT").unwrap(), MOD_BIT_LSHIFT);
+        assert_eq!(name_to_bitmod("MOD_BIT_LALT").unwrap(), MOD_BIT_LALT);
+        assert_eq!(name_to_bitmod("MOD_BIT_LGUI").unwrap(), MOD_BIT_LGUI);
+
+        assert_eq!(name_to_bitmod("MOD_BIT_RCTRL").unwrap(), MOD_BIT_RCTRL);
+        assert_eq!(name_to_bitmod("MOD_BIT_RSHIFT").unwrap(), MOD_BIT_RSHIFT);
+        assert_eq!(name_to_bitmod("MOD_BIT_RALT").unwrap(), MOD_BIT_RALT);
+        assert_eq!(name_to_bitmod("MOD_BIT_RGUI").unwrap(), MOD_BIT_RGUI);
+    }
+
+    #[test]
+    fn test_name_to_bitmod_or() {
+        assert_eq!(
+            name_to_bitmod("C|S").unwrap(),
+            MOD_BIT_LCTRL | MOD_BIT_LSHIFT
+        );
+        assert_eq!(name_to_bitmod("C|G").unwrap(), MOD_BIT_LCTRL | MOD_BIT_LGUI);
+    }
+
+    #[test]
+    fn test_name_to_bitmod_neg1() -> Result<(), String> {
+        match name_to_bitmod("unknown") {
+            Err(_) => Ok(()),
+            Ok(_) => Err("should be error".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_name_to_bitmod_neg2() -> Result<(), String> {
+        match name_to_bitmod("MOD_BIT_LSHIFT|unknown") {
+            Err(_) => Ok(()),
+            Ok(_) => Err("should be error".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_bitmod_to_name_raw() {
+        assert_eq!("MOD_BIT_LCTRL", bitmod_to_name(MOD_BIT_LCTRL));
+        assert_eq!("MOD_BIT_LSHIFT", bitmod_to_name(MOD_BIT_LSHIFT));
+        assert_eq!("MOD_BIT_LALT", bitmod_to_name(MOD_BIT_LALT));
+        assert_eq!("MOD_BIT_LGUI", bitmod_to_name(MOD_BIT_LGUI));
+        assert_eq!("MOD_BIT_RCTRL", bitmod_to_name(MOD_BIT_RCTRL));
+        assert_eq!("MOD_BIT_RSHIFT", bitmod_to_name(MOD_BIT_RSHIFT));
+        assert_eq!("MOD_BIT_RALT", bitmod_to_name(MOD_BIT_RALT));
+        assert_eq!("MOD_BIT_RGUI", bitmod_to_name(MOD_BIT_RGUI));
+    }
+
+    #[test]
+    fn test_bitmod_to_name_or() {
+        assert_eq!(
+            "MOD_BIT_LCTRL|MOD_BIT_LSHIFT",
+            bitmod_to_name(MOD_BIT_LCTRL | MOD_BIT_LSHIFT)
+        );
+    }
+
+    #[test]
+    fn test_bitmod_to_name_no() {
+        assert_eq!("KC_NO", bitmod_to_name(0));
+    }
+
+    #[test]
+    fn test_name_to_mod_raw() {
+        assert_eq!(name_to_mod("MOD_LCTL").unwrap(), MOD_LCTL);
+        assert_eq!(name_to_mod("MOD_LSFT").unwrap(), MOD_LSFT);
+        assert_eq!(name_to_mod("MOD_LALT").unwrap(), MOD_LALT);
+        assert_eq!(name_to_mod("MOD_LGUI").unwrap(), MOD_LGUI);
+
+        assert_eq!(name_to_mod("MOD_RCTL").unwrap(), MOD_RCTL);
+        assert_eq!(name_to_mod("MOD_RSFT").unwrap(), MOD_RSFT);
+        assert_eq!(name_to_mod("MOD_RALT").unwrap(), MOD_RALT);
+        assert_eq!(name_to_mod("MOD_RGUI").unwrap(), MOD_RGUI);
+    }
+
+    #[test]
+    fn test_name_to_mod_or() {
+        assert_eq!(
+            name_to_mod("MOD_LSFT|MOD_LCTL").unwrap(),
+            MOD_LCTL | MOD_LSFT
+        );
+        assert_eq!(
+            name_to_mod("MOD_LGUI|MOD_LCTL").unwrap(),
+            MOD_LCTL | MOD_LGUI
+        );
+        assert_eq!(
+            name_to_mod("MOD_RGUI|MOD_LCTL").unwrap(),
+            MOD_RCTL | MOD_LGUI
+        );
+        assert_eq!(
+            name_to_mod("MOD_RCTL|MOD_RALT").unwrap(),
+            MOD_RCTL | MOD_RALT
+        );
+    }
+
+    #[test]
+    fn test_name_to_mod_neg1() -> Result<(), String> {
+        match name_to_mod("unknown") {
+            Err(_) => Ok(()),
+            Ok(_) => Err("should be error".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_name_to_mod_neg2() -> Result<(), String> {
+        match name_to_mod("MOD_LSFT|unknown") {
+            Err(_) => Ok(()),
+            Ok(_) => Err("should be error".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_mod_to_name_raw() {
+        assert_eq!("MOD_LCTL", mod_to_name(MOD_LCTL));
+        assert_eq!("MOD_LSFT", mod_to_name(MOD_LSFT));
+        assert_eq!("MOD_LALT", mod_to_name(MOD_LALT));
+        assert_eq!("MOD_LGUI", mod_to_name(MOD_LGUI));
+        assert_eq!("MOD_RCTL", mod_to_name(MOD_RCTL));
+        assert_eq!("MOD_RSFT", mod_to_name(MOD_RSFT));
+        assert_eq!("MOD_RALT", mod_to_name(MOD_RALT));
+        assert_eq!("MOD_RGUI", mod_to_name(MOD_RGUI));
+    }
+
+    #[test]
+    fn test_mod_to_name_or() {
+        assert_eq!("MOD_LCTL|MOD_LSFT", mod_to_name(MOD_LCTL | MOD_LSFT));
+        assert_eq!("MOD_RCTL|MOD_RSFT", mod_to_name(MOD_RCTL | MOD_RSFT));
+        assert_eq!("MOD_RCTL|MOD_RSFT", mod_to_name(MOD_LCTL | MOD_RSFT));
+        assert_eq!("MOD_RSFT|MOD_RALT", mod_to_name(MOD_RALT | MOD_RSFT));
+        assert_eq!("MOD_RSFT|MOD_RGUI", mod_to_name(MOD_RGUI | MOD_RSFT));
+    }
+
+    #[test]
+    fn test_mod_to_name_no() {
+        assert_eq!("KC_NO", mod_to_name(0));
+    }
+
+    #[test]
+    fn test_qid_no() {
+        assert_eq!("KC_NO", qid_to_name(0));
+    }
+
+    #[test]
+    fn test_qid_neg() -> Result<(), String>  {
+        match name_to_qid(&"unknown".to_string()) {
+            Err(_) => Ok(()),
+            Ok(_) => Err("shoud be error".to_string()),
+        }
+    }
+    #[test]
+    fn test_qid() {
+        for s in [
+            "KC_1",
+            "LCTL(KC_1)",
+            "LSFT(KC_GRAVE)",
+            "LALT(KC_COMMA)",
+            "RALT(KC_COMMA)",
+            "MT(MOD_LSFT,KC_2)",
+            "TD(1)",
+            "TG(2)",
+            "MO(3)",
+            "TO(4)",
+            "RSA(KC_6)",
+            "RCS(KC_I)",
+            "HYPR(KC_NO)",
+            "MEH(KC_D)",
+            "LAG(KC_F)",
+        ] {
+            assert_eq!(qid_to_name(name_to_qid(&s.to_string()).unwrap()), s);
+        }
+    }
 }

@@ -5,7 +5,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use thiserror::Error;
 
-#[derive(Error,Debug)]
+#[derive(Error, Debug)]
 #[error("MetaParsingError")]
 pub struct MetaParsingError;
 
