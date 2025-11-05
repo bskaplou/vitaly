@@ -37,7 +37,7 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
     let mut x_pos = 0f64;
     let mut y_pos = 0f64;
     let mut x_mod = 0f64;
-    let mut y_mod = 0f64;
+    let y_mod = 0f64;
     let mut rx = 0f64;
     let mut ry = 0f64;
     match keymap.as_array() {
@@ -45,8 +45,8 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
             let mut w = 1f64;
             let mut h = 1f64;
             let mut r = 0f64;
-            let mut y = 0f64;
-            let mut x = 0f64;
+            //let mut y = 0f64;
+            //let mut x = 0f64;
             let mut decal = false;
 
             for row in rows.iter() {
@@ -57,6 +57,7 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                             if item.is_object() {
                                 for (key, value) in item.as_object().unwrap() {
                                     match key.as_str() {
+                                        /*
                                         "x" => {
                                             x = value.as_f64().unwrap();
                                             x_mod += value.as_f64().unwrap();
@@ -65,6 +66,7 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                             y_mod += value.as_f64().unwrap();
                                             y = value.as_f64().unwrap();
                                         }
+                                        */
                                         "w" => w = value.as_f64().unwrap(),
                                         "h" => h = value.as_f64().unwrap(),
                                         "r" => r = value.as_f64().unwrap(),
@@ -108,7 +110,8 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                             wire_y: yy,
                                         };
                                     } else {
-                                        println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
+                                        //println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
+                                        /*
                                         let teta = -r.to_radians();
                                         let teta_sin = teta.sin();
                                         let teta_cos = teta.cos();
@@ -124,7 +127,8 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                             wire_x: xx,
                                             wire_y: yy,
                                         };
-                                        //return Err(MetaParsingError);
+                                        */
+                                        return Err(MetaParsingError.into());
                                     }
                                     buttons.push(but);
                                 }
