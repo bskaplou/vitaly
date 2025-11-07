@@ -30,6 +30,7 @@ enum CommandEnum {
     Layers(CommandLayers),
     Keys(CommandKeys),
     Combos(CommandCombos),
+    Macros(CommandMacros),
     TapDances(CommandTapDances),
     KeyOverrides(CommandKeyOverrides),
     AltRepeats(CommandAltRepeats),
@@ -53,6 +54,19 @@ struct CommandCombos {
     number: Option<u8>,
 
     /// value expression in format KEY_1 + KEY_2 + KEY_3 + KEY_4 = KEY_5
+    #[argh(option, short = 'v')]
+    value: Option<String>,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// Macros operations
+#[argh(subcommand, name = "macros")]
+struct CommandMacros {
+    /// macro number
+    #[argh(option, short = 'n')]
+    number: Option<u8>,
+
+    /// value expression in format UNKNOWN
     #[argh(option, short = 'v')]
     value: Option<String>,
 }
@@ -172,6 +186,8 @@ fn run_devices(
             capabilities.companion_hid_version
         );
         println!("\tlayer_count: {}", capabilities.layer_count);
+        println!("\tmacro_count: {}", capabilities.macro_count);
+        println!("\tmacro_buffer_size: {}", capabilities.macro_buffer_size);
         println!("\ttap_dance_count: {}", capabilities.tap_dance_count);
         println!("\tcombo_count: {}", capabilities.combo_count);
         println!("\tkey_override_count: {}", capabilities.key_override_count);
@@ -204,10 +220,9 @@ fn run_combos(
     }
     let n: u8 = match number {
         Some(num) => {
-            if num >= capabilities.tap_dance_count {
+            if num >= capabilities.combo_count {
                 return Err(CommandError(
-                    format!("Only {} tap dances avialable", capabilities.tap_dance_count)
-                        .to_string(),
+                    format!("Only {} combo avialable", capabilities.combo_count).to_string(),
                 )
                 .into());
             }
@@ -263,6 +278,50 @@ fn run_combos(
                 }
             }
         }
+    }
+    Ok(())
+}
+
+fn run_macros(
+    api: &HidApi,
+    device: &DeviceInfo,
+    number: Option<u8>,
+    value: &Option<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let device_path = device.path();
+    let dev = api.open_path(device_path)?;
+    let capabilities = protocol::scan_capabilities(&dev)?;
+
+    if capabilities.macro_count == 0 {
+        return Err(CommandError(
+            format!("device {:?} has doesn't support macros", device).to_string(),
+        )
+        .into());
+    }
+    let n: u8 = match number {
+        Some(num) => {
+            if num >= capabilities.macro_count {
+                return Err(CommandError(
+                    format!("Only {} macros avialable", capabilities.macro_count).to_string(),
+                )
+                .into());
+            }
+            num
+        }
+        None => 0,
+    };
+    match value {
+        None => {
+            let macros = protocol::load_macros(
+                &dev,
+                capabilities.macro_count,
+                capabilities.macro_buffer_size,
+            )?;
+            for m in macros {
+                println!("{:?}", m)
+            }
+        }
+        Some(value) => todo!(),
     }
     Ok(())
 }
@@ -803,6 +862,9 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         CommandEnum::Devices(ops) => run_devices(&api, device, ops.capabilities),
                         CommandEnum::Combos(ops) => {
                             run_combos(&api, device, ops.number, &ops.value)
+                        }
+                        CommandEnum::Macros(ops) => {
+                            run_macros(&api, device, ops.number, &ops.value)
                         }
                         CommandEnum::TapDances(ops) => {
                             run_tapdances(&api, device, ops.number, &ops.value)

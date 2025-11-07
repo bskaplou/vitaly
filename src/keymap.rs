@@ -37,7 +37,7 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
     let mut x_pos = 0f64;
     let mut y_pos = 0f64;
     let mut x_mod = 0f64;
-    let y_mod = 0f64;
+    let mut y_mod = 0f64;
     let mut rx = 0f64;
     let mut ry = 0f64;
     match keymap.as_array() {
@@ -57,16 +57,14 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                             if item.is_object() {
                                 for (key, value) in item.as_object().unwrap() {
                                     match key.as_str() {
-                                        /*
                                         "x" => {
-                                            x = value.as_f64().unwrap();
+                                            //x = value.as_f64().unwrap();
                                             x_mod += value.as_f64().unwrap();
                                         }
                                         "y" => {
                                             y_mod += value.as_f64().unwrap();
-                                            y = value.as_f64().unwrap();
+                                            //y = value.as_f64().unwrap();
                                         }
-                                        */
                                         "w" => w = value.as_f64().unwrap(),
                                         "h" => h = value.as_f64().unwrap(),
                                         "r" => r = value.as_f64().unwrap(),

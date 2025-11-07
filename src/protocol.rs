@@ -19,6 +19,9 @@ pub use crate::protocol::tap_dance::{load_tap_dances, set_tap_dance, TapDance};
 pub mod combo;
 pub use crate::protocol::combo::{load_combos, set_combo, Combo};
 
+pub mod r#macro;
+pub use crate::protocol::r#macro::load_macros;
+
 pub mod qmk_settings;
 pub use crate::protocol::qmk_settings::{
     get_qmk_value, load_qmk_definitions, load_qmk_qsids, reset_qmk_values, set_qmk_value, QmkValue,
@@ -33,6 +36,9 @@ const HID_LAYERS_IN: u8 = 0x88;
 const GET_VERSION: u8 = 0x00;
 const HID_LAYERS_OUT_VERSION: u8 = 0x91;
 
+pub const VIAL_PROTOCOL_DYNAMIC: u32 = 4;
+pub const VIAL_PROTOCOL_QMK_SETTINGS: u32 = 4;
+
 const CMD_VIA_GET_PROTOCOL_VERSION: u8 = 0x01;
 const CMD_VIA_VIAL_PREFIX: u8 = 0xFE;
 const CMD_VIAL_GET_KEYBOARD_ID: u8 = 0x00;
@@ -44,8 +50,6 @@ const CMD_VIA_KEYMAP_GET_BUFFER: u8 = 0x12;
 const VIA_UNHANDLED: u8 = 0xFF;
 
 const CMD_VIAL_DYNAMIC_ENTRY_OP: u8 = 0x0D;
-pub const VIAL_PROTOCOL_DYNAMIC: u32 = 4;
-pub const VIAL_PROTOCOL_QMK_SETTINGS: u32 = 4;
 const DYNAMIC_VIAL_GET_NUMBER_OF_ENTRIES: u8 = 0x00;
 const DYNAMIC_VIAL_TAP_DANCE_GET: u8 = 0x01;
 const DYNAMIC_VIAL_TAP_DANCE_SET: u8 = 0x02;
@@ -59,6 +63,13 @@ const CMD_VIAL_QMK_SETTINGS_QUERY: u8 = 0x09;
 const CMD_VIAL_QMK_SETTINGS_GET: u8 = 0x0A;
 const CMD_VIAL_QMK_SETTINGS_SET: u8 = 0x0B;
 const CMD_VIAL_QMK_SETTINGS_RESET: u8 = 0x0C;
+
+const CMD_VIA_MACRO_GET_COUNT: u8 = 0x0C;
+const CMD_VIA_MACRO_GET_BUFFER_SIZE: u8 = 0x0D;
+const CMD_VIA_MACRO_GET_BUFFER: u8 = 0x0E;
+const CMD_VIA_MACRO_SET_BUFFER: u8 = 0x0F;
+
+const BUFFER_FETCH_CHUNK: u8 = 28;
 
 #[derive(Error, Debug)]
 pub enum ProtocolError {
@@ -133,6 +144,8 @@ pub struct Capabilities {
     pub combo_count: u8,
     pub key_override_count: u8,
     pub alt_repeat_key_count: u8,
+    pub macro_count: u8,
+    pub macro_buffer_size: u16,
     pub caps_word: bool,
     pub layer_lock: bool,
 }
@@ -142,6 +155,8 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
     let vial_version;
     let companion_hid_version;
     let layer_count;
+    let macro_count;
+    let macro_buffer_size;
 
     via_version = send_recv(&device, &[CMD_VIA_GET_PROTOCOL_VERSION])?[2];
     match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_KEYBOARD_ID]) {
@@ -181,12 +196,37 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
             Err(e) => return Err(e),
         }
     }
+
+    match send_recv(&device, &[CMD_VIA_MACRO_GET_COUNT]) {
+        Ok(buff) => {
+            if buff[0] != VIA_UNHANDLED {
+                macro_count = buff[1]
+            } else {
+                macro_count = 0
+            }
+        }
+        Err(e) => return Err(e),
+    }
+
+    match send_recv(&device, &[CMD_VIA_MACRO_GET_BUFFER_SIZE]) {
+        Ok(buff) => {
+            if buff[0] != VIA_UNHANDLED {
+                macro_buffer_size = ((buff[1] as u16) << 8) + (buff[2] as u16);
+            } else {
+                macro_buffer_size = 0
+            }
+        }
+        Err(e) => return Err(e),
+    }
+
     if vial_version < VIAL_PROTOCOL_DYNAMIC {
         return Ok(Capabilities {
             via_version: via_version,
             vial_version: vial_version,
             companion_hid_version: companion_hid_version,
             layer_count: layer_count,
+            macro_count: macro_count,
+            macro_buffer_size: macro_buffer_size,
             tap_dance_count: 0,
             combo_count: 0,
             key_override_count: 0,
@@ -211,6 +251,8 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
                     vial_version: vial_version,
                     companion_hid_version: companion_hid_version,
                     layer_count: layer_count,
+                    macro_count: macro_count,
+                    macro_buffer_size: macro_buffer_size,
                     tap_dance_count: buff[0],
                     combo_count: buff[1],
                     key_override_count: buff[2],
@@ -339,8 +381,6 @@ impl Keymap {
         }
     }
 }
-
-const BUFFER_FETCH_CHUNK: u8 = 28;
 
 pub fn load_layers_keys(
     device: &HidDevice,

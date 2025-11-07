@@ -836,7 +836,7 @@ mod tests {
     }
 
     #[test]
-    fn test_qid_neg() -> Result<(), String>  {
+    fn test_qid_neg() -> Result<(), String> {
         match name_to_qid(&"unknown".to_string()) {
             Err(_) => Ok(()),
             Ok(_) => Err("shoud be error".to_string()),
