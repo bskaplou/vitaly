@@ -43,64 +43,40 @@ enum MacroParsingState {
     CommandWithArgs(u8, u8),
 }
 
-impl Macro {
-    fn deserialize_single(index: u8, data: &[u8]) -> Result<Macro, Box<dyn std::error::Error>> {
-        let mut steps = Vec::new();
-        let mut s: MacroParsingState = MacroParsingState::Start;
-        for i in 0..data.len() {
-            match s {
-                MacroParsingState::Start => match data[i] {
-                    SS_QMK_PREFIX => s = MacroParsingState::NextCommand,
-                    _ => s = MacroParsingState::Text(i),
-                },
-                MacroParsingState::Text(start_index) => match data[i] {
-                    SS_QMK_PREFIX => {
-                        let step =
-                            MacroStep::Text(str::from_utf8(&data[start_index..i])?.to_string());
-                        steps.push(step);
-                        s = MacroParsingState::NextCommand
-                    }
-                    _ => {
-                        // text goes on
-                    }
-                },
-                MacroParsingState::NextCommand => s = MacroParsingState::Command(data[i]),
-                MacroParsingState::Command(cmd) => {
-                    if cmd == SS_DELAY_CODE
-                        || cmd == VIAL_MACRO_EXT_TAP
-                        || cmd == VIAL_MACRO_EXT_DOWN
-                        || cmd == VIAL_MACRO_EXT_UP
-                    {
-                        s = MacroParsingState::CommandWithArgs(cmd, data[i])
-                    } else {
-                        let step = match cmd {
-                            SS_TAP_CODE => MacroStep::Tap(data[i] as u16),
-                            SS_DOWN_CODE => MacroStep::Down(data[i] as u16),
-                            SS_UP_CODE => MacroStep::Up(data[i] as u16),
-                            _ => {
-                                return Err(MacroParsingError(
-                                    format!("Unknown command {}", cmd).to_string(),
-                                )
-                                .into())
-                            }
-                        };
-                        steps.push(step);
-                        s = MacroParsingState::Start
-                    }
+impl Macro {}
+
+fn deserialize_single(index: u8, data: &[u8]) -> Result<Macro, Box<dyn std::error::Error>> {
+    let mut steps = Vec::new();
+    let mut s: MacroParsingState = MacroParsingState::Start;
+    for i in 0..data.len() {
+        match s {
+            MacroParsingState::Start => match data[i] {
+                SS_QMK_PREFIX => s = MacroParsingState::NextCommand,
+                _ => s = MacroParsingState::Text(i),
+            },
+            MacroParsingState::Text(start_index) => match data[i] {
+                SS_QMK_PREFIX => {
+                    let step = MacroStep::Text(str::from_utf8(&data[start_index..i])?.to_string());
+                    steps.push(step);
+                    s = MacroParsingState::NextCommand
                 }
-                MacroParsingState::CommandWithArgs(cmd, arg1) => {
-                    let arg2 = data[i];
-                    let mut kc = (arg1 as u16) + ((arg2 as u16) << 8);
-                    if kc > 0xFF00 {
-                        kc = (kc & 0xFF) << 8
-                    }
+                _ => {
+                    // text goes on
+                }
+            },
+            MacroParsingState::NextCommand => s = MacroParsingState::Command(data[i]),
+            MacroParsingState::Command(cmd) => {
+                if cmd == SS_DELAY_CODE
+                    || cmd == VIAL_MACRO_EXT_TAP
+                    || cmd == VIAL_MACRO_EXT_DOWN
+                    || cmd == VIAL_MACRO_EXT_UP
+                {
+                    s = MacroParsingState::CommandWithArgs(cmd, data[i])
+                } else {
                     let step = match cmd {
-                        SS_DELAY_CODE => {
-                            MacroStep::Delay(((arg2 as u16) - 1) * 255 + ((arg1 as u16) - 1))
-                        }
-                        VIAL_MACRO_EXT_TAP => MacroStep::Tap(kc),
-                        VIAL_MACRO_EXT_DOWN => MacroStep::Down(kc),
-                        VIAL_MACRO_EXT_UP => MacroStep::Up(kc),
+                        SS_TAP_CODE => MacroStep::Tap(data[i] as u16),
+                        SS_DOWN_CODE => MacroStep::Down(data[i] as u16),
+                        SS_UP_CODE => MacroStep::Up(data[i] as u16),
                         _ => {
                             return Err(MacroParsingError(
                                 format!("Unknown command {}", cmd).to_string(),
@@ -112,42 +88,60 @@ impl Macro {
                     s = MacroParsingState::Start
                 }
             }
-        }
-        match s {
-            MacroParsingState::Start => {
-                // Fine! Last command wasn't text
-            }
-            MacroParsingState::Text(start_index) => {
-                let step =
-                    MacroStep::Text(str::from_utf8(&data[start_index..data.len()])?.to_string());
-                steps.push(step)
-            }
-            _ => {
-                return Err(
-                    MacroParsingError("Unexpected state after last byte".to_string()).into(),
-                )
-            }
-        }
-        Ok(Macro { index, steps })
-    }
-
-    pub fn deserialize(data: Vec<u8>) -> Result<Vec<Macro>, Box<dyn std::error::Error>> {
-        let mut start = 0;
-        let mut pos = 0;
-        let mut macroses = Vec::new();
-        if data.len() != 0 && !(data.len() == 1 && data[0] == 0) {
-            for i in 0..data.len() {
-                if data[i] == 0 {
-                    let macro_bytes = data.get(start..i).unwrap();
-                    let m = Self::deserialize_single(pos, macro_bytes)?;
-                    macroses.push(m);
-                    pos += 1;
-                    start = i + 1;
+            MacroParsingState::CommandWithArgs(cmd, arg1) => {
+                let arg2 = data[i];
+                let mut kc = (arg1 as u16) + ((arg2 as u16) << 8);
+                if kc > 0xFF00 {
+                    kc = (kc & 0xFF) << 8
                 }
+                let step = match cmd {
+                    SS_DELAY_CODE => {
+                        MacroStep::Delay(((arg2 as u16) - 1) * 255 + ((arg1 as u16) - 1))
+                    }
+                    VIAL_MACRO_EXT_TAP => MacroStep::Tap(kc),
+                    VIAL_MACRO_EXT_DOWN => MacroStep::Down(kc),
+                    VIAL_MACRO_EXT_UP => MacroStep::Up(kc),
+                    _ => {
+                        return Err(MacroParsingError(
+                            format!("Unknown command {}", cmd).to_string(),
+                        )
+                        .into())
+                    }
+                };
+                steps.push(step);
+                s = MacroParsingState::Start
             }
         }
-        Ok(macroses)
     }
+    match s {
+        MacroParsingState::Start => {
+            // Fine! Last command wasn't text
+        }
+        MacroParsingState::Text(start_index) => {
+            let step = MacroStep::Text(str::from_utf8(&data[start_index..data.len()])?.to_string());
+            steps.push(step)
+        }
+        _ => return Err(MacroParsingError("Unexpected state after last byte".to_string()).into()),
+    }
+    Ok(Macro { index, steps })
+}
+
+pub fn deserialize(data: Vec<u8>) -> Result<Vec<Macro>, Box<dyn std::error::Error>> {
+    let mut start = 0;
+    let mut pos = 0;
+    let mut macroses = Vec::new();
+    if data.len() != 0 && !(data.len() == 1 && data[0] == 0) {
+        for i in 0..data.len() {
+            if data[i] == 0 {
+                let macro_bytes = data.get(start..i).unwrap();
+                let m = deserialize_single(pos, macro_bytes)?;
+                macroses.push(m);
+                pos += 1;
+                start = i + 1;
+            }
+        }
+    }
+    Ok(macroses)
 }
 
 pub fn load_macros(
@@ -197,5 +191,5 @@ pub fn load_macros(
             Err(e) => return Err(e.into()),
         }
     }
-    Ok(Macro::deserialize(macro_buffer)?)
+    Ok(deserialize(macro_buffer)?)
 }
