@@ -486,6 +486,24 @@ Updated macros list:
 Macros successfully updated
 ```
 
+Delete macro
+
+```
+❯ vitaly -i 4626 macros -n 7 -v ''
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4317317913"
+Updated macros list:
+0) Delay(5); Delay(1000)
+1) Text(test)
+2) Down(KC_1)
+3) Up(KC_1)
+4) Tap(KC_1)
+5) Text(TEST); Delay(100)
+6) Tap(QK_KB_0)
+Macros successfully updated
+```
+
 ### TapDances command
 
 Tap dances command allows to dump and define tapdances.
