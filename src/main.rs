@@ -66,7 +66,7 @@ struct CommandMacros {
     #[argh(option, short = 'n')]
     number: Option<u8>,
 
-    /// value expression in format UNKNOWN
+    /// value expression in format Text(some text); Tap(KC_1); Down(KC_D); Up(KC_D)
     #[argh(option, short = 'v')]
     value: Option<String>,
 }
@@ -310,18 +310,54 @@ fn run_macros(
         }
         None => 0,
     };
+    let mut macros = protocol::load_macros(
+        &dev,
+        capabilities.macro_count,
+        capabilities.macro_buffer_size,
+    )?;
     match value {
         None => {
-            let macros = protocol::load_macros(
-                &dev,
-                capabilities.macro_count,
-                capabilities.macro_buffer_size,
-            )?;
-            for m in macros {
-                println!("{:?}", m)
+            if matches!(number, None) {
+                println!("Macros list:");
+                for m in macros {
+                    println!("{}", m)
+                }
+            } else {
+                if macros.len() > n.into() {
+                    println!("{}", macros[n as usize])
+                } else {
+                    return Err(
+                        CommandError(format!("Macro {} is not defined", n).to_string()).into(),
+                    );
+                }
             }
         }
-        Some(value) => todo!(),
+        Some(value) => {
+            let parts = value.split(";").map(|s| s.trim()).collect();
+            let m = protocol::Macro::from_strings(n, parts)?;
+            if !m.empty() {
+                if (n as usize) < macros.len() {
+                    macros[n as usize] = m;
+                } else {
+                    macros.push(m);
+                }
+            } else {
+                if (n as usize) < macros.len() {
+                    macros.remove(n as usize);
+                } else {
+                    return Err(CommandError(
+                        format!("Can't delete undefined macro {}", n).to_string(),
+                    )
+                    .into());
+                }
+            }
+            println!("Updated macros list:");
+            for m in &macros {
+                println!("{}", m)
+            }
+            protocol::set_macros(&dev, &capabilities, &macros)?;
+            println!("Macros successfully updated");
+        }
     }
     Ok(())
 }

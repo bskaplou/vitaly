@@ -430,6 +430,61 @@ Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
 Saving combo 19) EMPTY
 ```
 
+### Macros subcommand
+
+Macros subcommand allows to dump and define macroses.
+
+Value format is
+
+```
+Text(some text); Tap(KC_1); Down(KC_D); Up(KC_D)
+```
+
+Full dump example
+
+```
+❯ vitaly -i 4626 macros
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4317317913"
+Macros list:
+0) Delay(5); Delay(1000)
+1) Text(test)
+2) Down(KC_1)
+3) Up(KC_1)
+4) Tap(KC_1)
+5) Text(TEST); Delay(100)
+6) Tap(QK_KB_0)
+```
+
+Single macro dump example
+
+```
+❯ vitaly -i 4626 macros -n 5
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4317317913"
+5) Text(TEST); Delay(100)
+```
+
+Define new macro
+
+```
+❯ vitaly -i 4626 macros -n 7 -v 'Tap(KC_E); Delay(100); Tap(KC_S)'
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4317317913"
+Updated macros list:
+0) Delay(5); Delay(1000)
+1) Text(test)
+2) Down(KC_1)
+3) Up(KC_1)
+4) Tap(KC_1)
+5) Text(TEST); Delay(100)
+6) Tap(QK_KB_0)
+7) Tap(KC_E); Delay(100); Tap(KC_S)
+Macros successfully updated
+```
 
 ### TapDances command
 

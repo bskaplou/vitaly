@@ -20,7 +20,7 @@ pub mod combo;
 pub use crate::protocol::combo::{load_combos, set_combo, Combo};
 
 pub mod r#macro;
-pub use crate::protocol::r#macro::load_macros;
+pub use crate::protocol::r#macro::{load_macros, set_macros, Macro};
 
 pub mod qmk_settings;
 pub use crate::protocol::qmk_settings::{
