@@ -154,7 +154,7 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
     Ok(buttons)
 }
 
-pub fn render_and_dump(buttons: Vec<Button>, labels: Option<HashMap<(u8, u8), String>>) {
+pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), String>>) {
     let mut buff = Buffer::new();
     for button in buttons {
         let b = button.scale(4.0);

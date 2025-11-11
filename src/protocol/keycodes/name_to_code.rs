@@ -885,6 +885,34 @@ pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
     m.insert("MS_ACL2", *m.get("QK_MOUSE_ACCELERATION_2").unwrap());
     m.insert("KC_LCTL", *m.get("KC_LEFT_CTRL").unwrap());
     m.insert("KC_LSFT", *m.get("KC_LEFT_SHIFT").unwrap());
+
+    // vial's alisases
+    m.insert("KC_LSHIFT", *m.get("KC_LEFT_SHIFT").unwrap());
+    m.insert("KC_RSHIFT", *m.get("KC_LEFT_SHIFT").unwrap());
+    m.insert("KC_RCTRL", *m.get("KC_RIGHT_CTRL").unwrap());
+    m.insert("KC_LCTRL", *m.get("KC_LEFT_CTRL").unwrap());
+    m.insert("KC_SCOLON", *m.get("KC_SEMICOLON").unwrap());
+    m.insert("KC_PGDOWN", *m.get("KC_PAGE_DOWN").unwrap());
+    m.insert("KC_WH_D", *m.get("QK_MOUSE_WHEEL_DOWN").unwrap());
+    m.insert("KC_WH_U", *m.get("QK_MOUSE_WHEEL_UP").unwrap());
+    m.insert("KC_WH_L", *m.get("QK_MOUSE_WHEEL_LEFT").unwrap());
+    m.insert("KC_WH_R", *m.get("QK_MOUSE_WHEEL_RIGHT").unwrap());
+    m.insert("KC_MS_U", *m.get("QK_MOUSE_CURSOR_UP").unwrap());
+    m.insert("KC_MS_D", *m.get("QK_MOUSE_CURSOR_DOWN").unwrap());
+    m.insert("KC_MS_L", *m.get("QK_MOUSE_CURSOR_LEFT").unwrap());
+    m.insert("KC_MS_R", *m.get("QK_MOUSE_CURSOR_RIGHT").unwrap());
+    m.insert("KC_BTN1", *m.get("QK_MOUSE_BUTTON_1").unwrap());
+    m.insert("KC_BTN2", *m.get("QK_MOUSE_BUTTON_2").unwrap());
+    m.insert("KC_BTN3", *m.get("QK_MOUSE_BUTTON_3").unwrap());
+    m.insert("KC_BTN4", *m.get("QK_MOUSE_BUTTON_4").unwrap());
+    m.insert("KC_BTN5", *m.get("QK_MOUSE_BUTTON_5").unwrap());
+    m.insert("KC_BTN6", *m.get("QK_MOUSE_BUTTON_6").unwrap());
+    m.insert("KC_BTN7", *m.get("QK_MOUSE_BUTTON_7").unwrap());
+    m.insert("KC_BTN8", *m.get("QK_MOUSE_BUTTON_8").unwrap());
+    m.insert("KC_NUMLOCK", *m.get("KC_NUM_LOCK").unwrap());
+    m.insert("KC_BSPACE", *m.get("KC_BACKSPACE").unwrap());
+    // end of vial's aliases
+
     m.insert("KC_LALT", *m.get("KC_LEFT_ALT").unwrap());
     m.insert("KC_LOPT", *m.get("KC_LEFT_ALT").unwrap());
     m.insert("KC_LGUI", *m.get("KC_LEFT_GUI").unwrap());

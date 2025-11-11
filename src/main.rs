@@ -34,6 +34,7 @@ enum CommandEnum {
     TapDances(CommandTapDances),
     KeyOverrides(CommandKeyOverrides),
     AltRepeats(CommandAltRepeats),
+    Load(CommandLoad),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -165,6 +166,23 @@ struct CommandSettings {
     reset: bool,
 }
 
+#[derive(FromArgs, PartialEq, Debug)]
+/// Load layout from file
+#[argh(subcommand, name = "load")]
+struct CommandLoad {
+    /// meta file (to use instead of vial meta)
+    #[argh(option, short = 'm')]
+    meta: Option<String>,
+
+    /// path to layout file
+    #[argh(option, short = 'f')]
+    file: String,
+
+    /// preview content of layout file instead of loading into keyboard
+    #[argh(switch, short = 'p')]
+    preview: bool,
+}
+
 #[allow(dead_code)]
 #[derive(Error, Debug)]
 #[error("{0}")]
@@ -234,9 +252,9 @@ fn run_combos(
         None => {
             let combos = protocol::load_combos(&dev, capabilities.combo_count)?;
             if matches!(number, None) {
-                let combo_count = combos.len() - 1;
+                let combo_count = combos.len();
                 let mut last_non_empty = capabilities.combo_count;
-                for idxm in 0..=combo_count {
+                for idxm in 1..=combo_count {
                     let idx = combo_count - idxm;
                     last_non_empty = idx as u8;
                     if !combos[idx as usize].empty() {
@@ -244,13 +262,13 @@ fn run_combos(
                     }
                 }
                 println!("Combos list:");
-                for idx in 0..=last_non_empty {
+                for idx in 0..last_non_empty {
                     println!("{}", combos[idx as usize]);
                 }
                 if last_non_empty < capabilities.combo_count {
                     println!(
                         "Combo slots {} - {} are EMPTY",
-                        last_non_empty + 1,
+                        last_non_empty,
                         capabilities.combo_count - 1
                     );
                 }
@@ -405,9 +423,9 @@ fn run_tapdances(
         None => {
             let tapdances = protocol::load_tap_dances(&dev, capabilities.tap_dance_count)?;
             if matches!(number, None) {
-                let tapdance_count = tapdances.len() - 1;
+                let tapdance_count = tapdances.len();
                 let mut last_non_empty = capabilities.tap_dance_count;
-                for idxm in 0..=tapdance_count {
+                for idxm in 1..=tapdance_count {
                     let idx = tapdance_count - idxm;
                     last_non_empty = idx as u8;
                     if !tapdances[idx as usize].empty() {
@@ -415,13 +433,13 @@ fn run_tapdances(
                     }
                 }
                 println!("TapDance list:");
-                for idx in 0..=last_non_empty {
+                for idx in 0..last_non_empty {
                     println!("{}", tapdances[idx as usize]);
                 }
                 if last_non_empty < capabilities.tap_dance_count {
                     println!(
                         "TapDance slots {} - {} are EMPTY",
-                        last_non_empty + 1,
+                        last_non_empty,
                         capabilities.tap_dance_count - 1
                     );
                 }
@@ -508,9 +526,25 @@ fn run_altrepeats(
         None => {
             let altrepeats = protocol::load_alt_repeats(&dev, capabilities.alt_repeat_key_count)?;
             if matches!(number, None) {
+                let altrepeat_count = altrepeats.len();
+                let mut last_non_empty = capabilities.alt_repeat_key_count;
+                for idxm in 1..=altrepeat_count {
+                    let idx = altrepeat_count - idxm;
+                    last_non_empty = idx as u8;
+                    if !altrepeats[idx as usize].empty() {
+                        break;
+                    }
+                }
                 println!("AltRepeat list:");
-                for idx in 0..capabilities.alt_repeat_key_count {
+                for idx in 0..last_non_empty {
                     println!("{}", altrepeats[idx as usize]);
+                }
+                if last_non_empty < capabilities.alt_repeat_key_count {
+                    println!(
+                        "AltRepeat slots {} - {} are EMPTY",
+                        last_non_empty,
+                        capabilities.alt_repeat_key_count - 1
+                    );
                 }
             } else {
                 println!("{}", altrepeats[n as usize]);
@@ -567,9 +601,25 @@ fn run_keyoverrides(
         None => {
             let keyoverrides = protocol::load_key_overrides(&dev, capabilities.key_override_count)?;
             if matches!(number, None) {
+                let keyoverride_count = keyoverrides.len();
+                let mut last_non_empty = capabilities.key_override_count;
+                for idxm in 1..=keyoverride_count {
+                    let idx = keyoverride_count - idxm;
+                    last_non_empty = idx as u8;
+                    if !keyoverrides[idx as usize].empty() {
+                        break;
+                    }
+                }
                 println!("KeyOverride list:");
-                for idx in 0..capabilities.key_override_count {
+                for idx in 0..last_non_empty {
                     println!("{}", keyoverrides[idx as usize]);
+                }
+                if last_non_empty < capabilities.key_override_count {
+                    println!(
+                        "KeyOverride slots {} - {} are EMPTY",
+                        last_non_empty,
+                        capabilities.key_override_count - 1
+                    );
                 }
             } else {
                 println!("{}", keyoverrides[n as usize]);
@@ -631,7 +681,7 @@ fn run_layers(
         }
     };
     if positions == true {
-        keymap::render_and_dump(buttons, None);
+        keymap::render_and_dump(&buttons, None);
     } else {
         let layer_number: u8;
         match number {
@@ -662,7 +712,7 @@ fn run_layers(
             }
         }
         println!("Layer: {}", layer_number);
-        keymap::render_and_dump(buttons, Some(button_labels));
+        keymap::render_and_dump(&buttons, Some(button_labels));
         for (idx, fat) in fat_labels.into_iter().enumerate() {
             println!("*{} - {}", idx + 1, fat);
         }
@@ -876,6 +926,73 @@ fn run_settings(
     Ok(())
 }
 
+fn run_load(
+    api: &HidApi,
+    device: &DeviceInfo,
+    meta_file: &Option<String>,
+    file: &String,
+    preview: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let device_path = device.path();
+    let dev = api.open_path(device_path)?;
+    let capabilities = protocol::scan_capabilities(&dev)?;
+    let meta = load_meta(&dev, &capabilities, meta_file)?;
+    let cols = meta["matrix"]["cols"].as_u64().unwrap() as u8;
+    let rows = meta["matrix"]["rows"].as_u64().unwrap() as u8;
+    let buttons = match keymap::keymap_to_buttons(&meta["layouts"]["keymap"]) {
+        Ok(btns) => btns,
+        Err(e) => {
+            return Err(
+                CommandError(format!("failed to process keymaps {:?}", e).to_string()).into(),
+            );
+        }
+    };
+    let layout_str = fs::read_to_string(file)?;
+    let root_json: Value = serde_json::from_str(&layout_str)?;
+    let root = root_json
+        .as_object()
+        .ok_or("config file root is not object")?;
+    let layers = root
+        .get("layout")
+        .ok_or("config file has no layout defined")?
+        .as_array()
+        .ok_or("layout should be an array")?;
+    let keys = protocol::Keymap::from_json(rows, cols, capabilities.layer_count, layers)?;
+    if preview {
+        for layer_number in 0..capabilities.layer_count {
+            let mut button_labels = HashMap::new();
+            let mut fat_labels = Vec::new();
+            for button in &buttons {
+                let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
+                let mut slim_label = true;
+                for (idx, part) in label.split(',').enumerate() {
+                    if part.chars().count() > 3 || idx > 1 {
+                        slim_label &= false;
+                    }
+                }
+                if !slim_label {
+                    fat_labels.push(label);
+                    button_labels.insert(
+                        (button.wire_x, button.wire_y),
+                        format!("*{}", fat_labels.len()),
+                    );
+                } else {
+                    button_labels.insert((button.wire_x, button.wire_y), label);
+                }
+            }
+            println!("Layer: {}", layer_number);
+            keymap::render_and_dump(&buttons, Some(button_labels));
+            for (idx, fat) in fat_labels.into_iter().enumerate() {
+                println!("*{} - {}", idx + 1, fat);
+            }
+            if layer_number + 1 != capabilities.layer_count {
+                println!("");
+            }
+        }
+    }
+    Ok(())
+}
+
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
     match HidApi::new() {
         Ok(api) => {
@@ -924,6 +1041,9 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         ),
                         CommandEnum::Settings(ops) => {
                             run_settings(&api, device, &ops.qsid, &ops.value, ops.reset)
+                        }
+                        CommandEnum::Load(ops) => {
+                            run_load(&api, device, &ops.meta, &ops.file, ops.preview)
                         }
                     };
                     match result {

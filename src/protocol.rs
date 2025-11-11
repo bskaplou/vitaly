@@ -336,6 +336,53 @@ pub struct Keymap {
 pub struct KeymapError(String);
 
 impl Keymap {
+    pub fn from_json(
+        rows: u8,
+        cols: u8,
+        layers: u8,
+        layers_data: &Vec<Value>,
+    ) -> Result<Keymap, Box<dyn std::error::Error>> {
+        let mut keys = Vec::<u8>::new();
+        for layer in layers_data {
+            for row in layer
+                .as_array()
+                .ok_or("layer content should be array of rows")?
+            {
+                for value in row
+                    .as_array()
+                    .ok_or("row content should be array of keycodes")?
+                {
+                    let keycode: u16;
+                    if value.is_number() {
+                        keycode = 0;
+                    } else if value.is_string() {
+                        let string_value = value.as_str().unwrap().to_string();
+                        if string_value.starts_with("0x") {
+                            let (_, hex) = string_value
+                                .split_once("x")
+                                .ok_or("Incorrect hex encoding")?;
+                            keycode = u16::from_str_radix(hex, 16)?;
+                        } else {
+                            keycode = keycodes::name_to_qid(&string_value)?;
+                        }
+                    } else {
+                        return Err(
+                            KeymapError("keycode should be number or string".to_string()).into(),
+                        );
+                    }
+                    keys.push((keycode >> 8) as u8);
+                    keys.push((keycode & 0xFF) as u8);
+                }
+            }
+        }
+        Ok(Keymap {
+            rows,
+            cols,
+            layers,
+            keys,
+        })
+    }
+
     pub fn get_short(
         &self,
         layer: u8,
