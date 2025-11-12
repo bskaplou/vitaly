@@ -71,6 +71,10 @@ const CMD_VIA_MACRO_GET_BUFFER_SIZE: u8 = 0x0D;
 const CMD_VIA_MACRO_GET_BUFFER: u8 = 0x0E;
 const CMD_VIA_MACRO_SET_BUFFER: u8 = 0x0F;
 
+const CMD_VIAL_GET_UNLOCK_STATUS: u8 = 0x05;
+const CMD_VIAL_UNLOCK_START: u8 = 0x06;
+const CMD_VIAL_UNLOCK_POLL: u8 = 0x07;
+
 const BUFFER_FETCH_CHUNK: u8 = 28;
 
 #[derive(Error, Debug)]
@@ -482,4 +486,60 @@ pub fn set_keycode(
         Ok(_) => Ok(()),
         Err(e) => Err(ProtocolError::HidError(e).into()),
     }
+}
+
+#[derive(Debug)]
+pub struct LockedStatus {
+    pub locked: bool,
+    pub unlock_in_progress: bool,
+    pub unlock_buttons: Vec<(u8, u8)>,
+}
+
+pub fn get_locked_status(
+    device: &HidDevice,
+) -> Result<LockedStatus, Box<dyn std::error::Error>> {
+    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_UNLOCK_STATUS]) {
+        Ok(data) => {
+            // println!("{:?}", data);
+            let mut unlock_buttons = Vec::new();
+            let locked = data[0] == 0;
+            let unlock_in_progress = data[1] == 1;
+            for i in 0..15 {
+                let row = data[2 + i * 2];
+                let col = data[3 + i * 2];
+                if row != 255 && col != 255 {
+                    unlock_buttons.push((row, col))
+                }
+            }
+            Ok(LockedStatus {
+                locked,
+                unlock_in_progress,
+                unlock_buttons,
+            })
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
+pub fn start_unlock(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
+    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_START]) {
+        Ok(_) => {
+            //println!("start_unlock {:?}", data);
+            Ok(())
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
+pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8), Box<dyn std::error::Error>> {
+    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_POLL]) {
+        Ok(data) => {
+            //println!("unlock poll{:?}", data);
+            let unlocked = data[0] == 1;
+            let seconds_remaining = data[2];
+            Ok((unlocked, seconds_remaining))
+        }
+        Err(e) => Err(e.into()),
+    }
+
 }

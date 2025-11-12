@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use thiserror::Error;
+use std::{thread, time};
 
 pub mod keymap;
 pub mod protocol;
@@ -26,6 +27,7 @@ struct VialClient {
 #[argh(subcommand)]
 enum CommandEnum {
     Devices(CommandDevices),
+    Lock(CommandLock),
     Settings(CommandSettings),
     Layers(CommandLayers),
     Keys(CommandKeys),
@@ -44,6 +46,15 @@ struct CommandDevices {
     /// scan for capabilities
     #[argh(switch, short = 'c')]
     capabilities: bool,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// List connected devices
+#[argh(subcommand, name = "lock")]
+struct CommandLock {
+    /// scan for capabilities
+    #[argh(switch, short = 'u')]
+    unlock: bool,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -217,6 +228,39 @@ fn run_devices(
         println!("\tlayer_lock: {}", capabilities.layer_lock);
     }
     println!("");
+    Ok(())
+}
+
+fn run_lock(
+    api: &HidApi,
+    device: &DeviceInfo,
+    unlock: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let device_path = device.path();
+    let dev = api.open_path(device_path)?;
+    let capabilities = protocol::scan_capabilities(&dev)?;
+    if capabilities.vial_version == 0 {
+        println!("Device doesn't support locking");
+    } else {
+        let mut status = protocol::get_locked_status(&dev)?;
+        // println!("{:?}", status);
+        println!("Device is locked: {}", status.locked);
+        if status.locked && unlock {
+            println!("Starting unlock process...");
+            protocol::start_unlock(&dev)?;
+            let second = time::Duration::from_millis(1000);
+            let mut unlocked = false;
+            let mut seconds_remaining: u8;
+            while ! unlocked {
+                thread::sleep(second);
+                (unlocked, seconds_remaining) = protocol::unlock_poll(&dev)?;
+                println!("Seconds remaining: {} keep pushing...", seconds_remaining);
+            }
+            status = protocol::get_locked_status(&dev)?;
+            println!("Device is locked: {}", status.locked);
+        }
+    }
+
     Ok(())
 }
 
@@ -966,6 +1010,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                     );
                     let result = match command {
                         CommandEnum::Devices(ops) => run_devices(&api, device, ops.capabilities),
+                        CommandEnum::Lock(ops) => run_lock(&api, device, ops.unlock),
                         CommandEnum::Combos(ops) => {
                             run_combos(&api, device, ops.number, &ops.value)
                         }
