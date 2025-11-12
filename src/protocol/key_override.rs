@@ -126,15 +126,34 @@ impl KeyOverride {
         })
     }
 
-    pub fn empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.trigger == 0 && !self.ko_enabled
+    }
+
+    pub fn empty(index: u8) -> KeyOverride {
+        KeyOverride {
+            index,
+            trigger: 0,
+            replacement: 0,
+            layers: 0,
+            trigger_mods: 0,
+            negative_mod_mask: 0,
+            suppressed_mods: 0,
+            ko_option_activation_trigger_down: false,
+            ko_option_activation_required_mod_down: false,
+            ko_option_activation_negative_mod_up: false,
+            ko_option_one_mod: false,
+            ko_option_no_reregister_trigger: false,
+            ko_option_no_unregister_on_other_key_down: false,
+            ko_enabled: false,
+        }
     }
 }
 
 impl fmt::Display for KeyOverride {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}) ", self.index)?;
-        if self.empty() {
+        if self.is_empty() {
             Ok(write!(f, "EMPTY")?)
         } else {
             write!(f, "trigger = {}; ", keycodes::qid_to_name(self.trigger))?;

@@ -85,15 +85,28 @@ impl AltRepeat {
         })
     }
 
-    pub fn empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.keycode == 0 && !self.arep_enabled
+    }
+
+    pub fn empty(index: u8) -> AltRepeat {
+        AltRepeat {
+            index,
+            keycode: 0,
+            alt_keycode: 0,
+            allowed_mods: 0,
+            arep_option_default_to_this_alt_key: false,
+            arep_option_bidirectional: false,
+            arep_option_ignore_mod_handedness: false,
+            arep_enabled: false,
+        }
     }
 }
 
 impl fmt::Display for AltRepeat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}) ", self.index)?;
-        if self.empty() {
+        if self.is_empty() {
             Ok(write!(f, "EMPTY")?)
         } else {
             write!(f, "keycode = {}; ", keycodes::qid_to_name(self.keycode))?;

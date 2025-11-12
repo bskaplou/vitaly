@@ -272,7 +272,7 @@ Layer: 0
 Layer command accepts --number option which specifies layer number to dump
 
 ```
-❯ cargo run -- -i 4626 layers -n 2
+❯ vitaly -i 4626 layers -n 2
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running `target/debug/vial_cli -i 4626 layers -n 2`
 Product name: "silakka54" id: 4626,
@@ -423,7 +423,7 @@ Saving combo 19) KC_1 + KC_2 = KC_3
 
 Delete combo 
 ```
-❯ vitaly -i 4626 combos -n 19 -v 'KC_NO = KC_NO'
+❯ vitaly -i 4626 combos -n 19 -v ''
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
@@ -516,7 +516,7 @@ TAP_KEY + HOLD_KEY + DOUBLE_TAP_KEY + TAPHOLD_KEY ~ TAPPING_TERM_MS
 
 Define example
 ```
-❯ cargo run -- -i 4626 tapdances -n 0 -v 'KC_1 + LSFT(KC_1) ~ 30'
+❯ vitaly -i 4626 tapdances -n 0 -v 'KC_1 + LSFT(KC_1) ~ 30'
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
@@ -537,7 +537,7 @@ TapDance slots 1 - 31 are EMPTY
 
 Undefine tapdance
 ```
-❯ vitaly -i 4626 tapdances -n 0 -v 'KC_NO ~ 30'
+❯ vitaly -i 4626 tapdances -n 0 -v ''
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
@@ -600,7 +600,7 @@ Saved
 Clean key override
 
 ```
-❯ vitaly -i 4626 keyoverrides -n 1 -v 'trigger=KC_NO'
+❯ vitaly -i 4626 keyoverrides -n 1 -v ''
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
@@ -649,7 +649,7 @@ AltRepeat list:
 Delete alt repeat
 
 ```
-❯ vitaly -i 4626 altrepeats -n 0 -v 'keycode=KC_NO'
+❯ vitaly -i 4626 altrepeats -n 0 -v ''
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"

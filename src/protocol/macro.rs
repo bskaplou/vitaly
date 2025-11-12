@@ -7,6 +7,7 @@ use hidapi::HidDevice;
 use std::cmp::min;
 use std::fmt;
 use thiserror::Error;
+//use serde_json::Value;
 
 const SS_QMK_PREFIX: u8 = 1;
 const SS_TAP_CODE: u8 = 1;
@@ -98,6 +99,24 @@ impl MacroStep {
             }
         }
     }
+
+    /*
+    fn from_json(action: Value, argument: Value) -> Result<MacroStep, Box<dyn std::error::Error>> {
+        let right = right[0..(right.len() - 1)].to_string();
+        match left {
+            "delay" => Ok(MacroStep::Delay(right.parse()?)),
+            "text" => Ok(MacroStep::Text(right)),
+            "tap" => Ok(MacroStep::Tap(keycodes::name_to_qid(&right)?)),
+            "down" => Ok(MacroStep::Down(keycodes::name_to_qid(&right)?)),
+            "up" => Ok(MacroStep::Up(keycodes::name_to_qid(&right)?)),
+            _ => {
+                return Err(
+                    MacroParsingError(format!("Unknown macro step {}", right).to_string()).into(),
+                )
+            }
+        }
+    }
+    */
 }
 
 impl fmt::Display for MacroStep {
@@ -127,8 +146,15 @@ impl Macro {
         result
     }
 
-    pub fn empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.steps.len() == 0
+    }
+
+    pub fn empty(index: u8) -> Macro {
+        Macro {
+            index,
+            steps: Vec::new(),
+        }
     }
 
     pub fn from_strings(index: u8, steps: Vec<&str>) -> Result<Macro, Box<dyn std::error::Error>> {
@@ -148,7 +174,7 @@ impl Macro {
 impl fmt::Display for Macro {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}) ", self.index)?;
-        if self.empty() {
+        if self.is_empty() {
             Ok(write!(f, "EMPTY")?)
         } else {
             for (i, step) in self.steps.iter().enumerate() {
@@ -363,7 +389,7 @@ pub fn set_macros(
         )
         .into());
     }
-    //println!(">>{:?}", data);
+    // println!(">>{:?}", data);
     let mut offset: u16 = 0;
     while offset < capabilities.macro_buffer_size {
         let mut msg: [u8; MESSAGE_LENGTH] = [0u8; MESSAGE_LENGTH];

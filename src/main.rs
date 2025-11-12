@@ -253,22 +253,22 @@ fn run_combos(
             let combos = protocol::load_combos(&dev, capabilities.combo_count)?;
             if matches!(number, None) {
                 let combo_count = combos.len();
-                let mut last_non_empty = capabilities.combo_count;
+                let mut first_empty = capabilities.combo_count;
                 for idxm in 1..=combo_count {
                     let idx = combo_count - idxm;
-                    last_non_empty = idx as u8;
-                    if !combos[idx as usize].empty() {
+                    if !combos[idx as usize].is_empty() {
                         break;
                     }
+                    first_empty = idx as u8;
                 }
                 println!("Combos list:");
-                for idx in 0..last_non_empty {
+                for idx in 0..first_empty {
                     println!("{}", combos[idx as usize]);
                 }
-                if last_non_empty < capabilities.combo_count {
+                if first_empty < capabilities.combo_count {
                     println!(
                         "Combo slots {} - {} are EMPTY",
-                        last_non_empty,
+                        first_empty,
                         capabilities.combo_count - 1
                     );
                 }
@@ -277,24 +277,18 @@ fn run_combos(
             }
         }
         Some(value) => {
-            let (keys_all, output) = value.split_once("=").unwrap();
-            let keys: Vec<_> = keys_all.split("+").collect();
-            match protocol::Combo::from_strings(n, keys, output) {
-                Ok(combo) => {
-                    println!("Saving combo {}", combo);
-                    match protocol::set_combo(&dev, &combo) {
-                        Ok(_) => {
-                            // nothing here
-                        }
-                        Err(e) => {
-                            println!("Failed to save combo {:?}", e);
-                        }
-                    }
+            let combo = match value.len() {
+                0 => protocol::Combo::empty(n),
+                _ => {
+                    let (keys_all, output) = value
+                        .split_once("=")
+                        .ok_or("resulting action should be declared after =")?;
+                    let keys: Vec<_> = keys_all.split("+").collect();
+                    protocol::Combo::from_strings(n, keys, output)?
                 }
-                Err(e) => {
-                    println!("Failed to parse combo {:?}", e);
-                }
-            }
+            };
+            protocol::set_combo(&dev, &combo)?;
+            println!("Combo {} saved", combo);
         }
     }
     Ok(())
@@ -353,7 +347,7 @@ fn run_macros(
         Some(value) => {
             let parts = value.split(";").map(|s| s.trim()).collect();
             let m = protocol::Macro::from_strings(n, parts)?;
-            if !m.empty() {
+            if !m.is_empty() {
                 if (n as usize) < macros.len() {
                     macros[n as usize] = m;
                 } else {
@@ -378,16 +372,6 @@ fn run_macros(
         }
     }
     Ok(())
-}
-
-fn parse_num(num: &String) -> Result<u16, CommandError> {
-    let parsed: Result<u16, _> = num.parse();
-    match parsed {
-        Ok(p) => Ok(p),
-        Err(_) => Err(CommandError(
-            format!("can't argument {} should be num", num).to_string(),
-        )),
-    }
 }
 
 fn run_tapdances(
@@ -424,22 +408,22 @@ fn run_tapdances(
             let tapdances = protocol::load_tap_dances(&dev, capabilities.tap_dance_count)?;
             if matches!(number, None) {
                 let tapdance_count = tapdances.len();
-                let mut last_non_empty = capabilities.tap_dance_count;
+                let mut first_empty = capabilities.tap_dance_count;
                 for idxm in 1..=tapdance_count {
                     let idx = tapdance_count - idxm;
-                    last_non_empty = idx as u8;
-                    if !tapdances[idx as usize].empty() {
+                    if !tapdances[idx as usize].is_empty() {
                         break;
                     }
+                    first_empty = idx as u8;
                 }
                 println!("TapDance list:");
-                for idx in 0..last_non_empty {
+                for idx in 0..first_empty {
                     println!("{}", tapdances[idx as usize]);
                 }
-                if last_non_empty < capabilities.tap_dance_count {
+                if first_empty < capabilities.tap_dance_count {
                     println!(
                         "TapDance slots {} - {} are EMPTY",
-                        last_non_empty,
+                        first_empty,
                         capabilities.tap_dance_count - 1
                     );
                 }
@@ -448,25 +432,19 @@ fn run_tapdances(
             }
         }
         Some(value) => {
-            let (keys_all, output) = value.split_once("~").unwrap();
-            let out: u16 = parse_num(&output.replace(" ", ""))?;
-            let keys: Vec<_> = keys_all.split("+").collect();
-            match protocol::TapDance::from_strings(n, keys, out) {
-                Ok(tapdance) => {
-                    println!("Saving tap dance {}", tapdance);
-                    match protocol::set_tap_dance(&dev, &tapdance) {
-                        Ok(_) => {
-                            // nothing here
-                        }
-                        Err(e) => {
-                            println!("Failed to save tap dance {:?}", e);
-                        }
-                    }
+            let tapdance = match value.len() {
+                0 => protocol::TapDance::empty(n),
+                _ => {
+                    let (keys_all, output) = value
+                        .split_once("~")
+                        .ok_or("tapping term in ms should be passed after ~")?;
+                    let out: u16 = output.replace(" ", "").parse()?;
+                    let keys: Vec<_> = keys_all.split("+").collect();
+                    protocol::TapDance::from_strings(n, keys, out)?
                 }
-                Err(e) => {
-                    println!("Failed to parse tap dance {:?}", e);
-                }
-            }
+            };
+            protocol::set_tap_dance(&dev, &tapdance)?;
+            println!("TapDance {} saved", tapdance);
         }
     }
     Ok(())
@@ -505,44 +483,37 @@ fn run_altrepeats(
     };
     match value {
         Some(value) => {
-            match protocol::AltRepeat::from_strings(n, value.replace(" ", "").split(";").collect())
-            {
-                Ok(ar) => {
-                    println!("Saving altrepeat {}", ar);
-                    match protocol::set_alt_repeat(&dev, &ar) {
-                        Ok(_) => {
-                            // nothing here
-                        }
-                        Err(e) => {
-                            println!("Failed to save altrepeat {:?}", e);
-                        }
-                    }
+            let alt_repeat = match value.len() {
+                0 => protocol::AltRepeat::empty(n),
+                _ => {
+                    let cleaned = value.replace(" ", "");
+                    let parts: Vec<_> = cleaned.split(";").collect();
+                    protocol::AltRepeat::from_strings(n, parts)?
                 }
-                Err(e) => {
-                    println!("Failed to parse altrepeat {:?}", e);
-                }
-            }
+            };
+            protocol::set_alt_repeat(&dev, &alt_repeat)?;
+            println!("AltRepeat {} saved", alt_repeat);
         }
         None => {
             let altrepeats = protocol::load_alt_repeats(&dev, capabilities.alt_repeat_key_count)?;
             if matches!(number, None) {
                 let altrepeat_count = altrepeats.len();
-                let mut last_non_empty = capabilities.alt_repeat_key_count;
+                let mut first_empty = capabilities.alt_repeat_key_count;
                 for idxm in 1..=altrepeat_count {
                     let idx = altrepeat_count - idxm;
-                    last_non_empty = idx as u8;
-                    if !altrepeats[idx as usize].empty() {
+                    if !altrepeats[idx as usize].is_empty() {
                         break;
                     }
+                    first_empty = idx as u8;
                 }
                 println!("AltRepeat list:");
-                for idx in 0..last_non_empty {
+                for idx in 0..first_empty {
                     println!("{}", altrepeats[idx as usize]);
                 }
-                if last_non_empty < capabilities.alt_repeat_key_count {
+                if first_empty < capabilities.alt_repeat_key_count {
                     println!(
                         "AltRepeat slots {} - {} are EMPTY",
-                        last_non_empty,
+                        first_empty,
                         capabilities.alt_repeat_key_count - 1
                     );
                 }
@@ -586,38 +557,37 @@ fn run_keyoverrides(
         None => 0,
     };
     match value {
-        Some(value) => match protocol::KeyOverride::from_strings(
-            n,
-            value.replace(" ", "").split(";").collect(),
-        ) {
-            Ok(ko) => {
-                protocol::set_key_override(&dev, &ko)?;
-                println!("Key override {}\nSaved", ko);
-            }
-            Err(e) => {
-                println!("failed to parse key override {:?}", e);
-            }
-        },
+        Some(value) => {
+            let ko = match value.len() {
+                0 => protocol::KeyOverride::empty(n),
+                _ => protocol::KeyOverride::from_strings(
+                    n,
+                    value.replace(" ", "").split(";").collect(),
+                )?,
+            };
+            protocol::set_key_override(&dev, &ko)?;
+            println!("KeyOverride {} saved", ko);
+        }
         None => {
             let keyoverrides = protocol::load_key_overrides(&dev, capabilities.key_override_count)?;
             if matches!(number, None) {
                 let keyoverride_count = keyoverrides.len();
-                let mut last_non_empty = capabilities.key_override_count;
+                let mut first_empty = capabilities.key_override_count;
                 for idxm in 1..=keyoverride_count {
                     let idx = keyoverride_count - idxm;
-                    last_non_empty = idx as u8;
-                    if !keyoverrides[idx as usize].empty() {
+                    if !keyoverrides[idx as usize].is_empty() {
                         break;
                     }
+                    first_empty = idx as u8;
                 }
                 println!("KeyOverride list:");
-                for idx in 0..last_non_empty {
+                for idx in 0..first_empty {
                     println!("{}", keyoverrides[idx as usize]);
                 }
-                if last_non_empty < capabilities.key_override_count {
+                if first_empty < capabilities.key_override_count {
                     println!(
                         "KeyOverride slots {} - {} are EMPTY",
-                        last_non_empty,
+                        first_empty,
                         capabilities.key_override_count - 1
                     );
                 }
@@ -661,6 +631,40 @@ fn load_meta(
     }
 }
 
+fn render_layer(
+    keys: &protocol::Keymap,
+    buttons: &Vec<keymap::Button>,
+    layer_number: u8,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut button_labels = HashMap::new();
+    let mut fat_labels = Vec::new();
+    for button in buttons {
+        let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
+        let mut slim_label = true;
+        for (idx, part) in label.split(',').enumerate() {
+            if part.chars().count() > 3 || idx > 1 {
+                slim_label &= false;
+            }
+        }
+        if !slim_label {
+            fat_labels.push(label);
+            button_labels.insert(
+                (button.wire_x, button.wire_y),
+                format!("*{}", fat_labels.len()),
+            );
+        } else {
+            button_labels.insert((button.wire_x, button.wire_y), label);
+        }
+    }
+    println!("Layer: {}", layer_number);
+    keymap::render_and_dump(&buttons, Some(button_labels));
+    for (idx, fat) in fat_labels.into_iter().enumerate() {
+        println!("*{} - {}", idx + 1, fat);
+    }
+    println!("");
+    Ok(())
+}
+
 fn run_layers(
     api: &HidApi,
     device: &DeviceInfo,
@@ -672,50 +676,18 @@ fn run_layers(
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
     let meta = load_meta(&dev, &capabilities, &meta_file)?;
-    let buttons = match keymap::keymap_to_buttons(&meta["layouts"]["keymap"]) {
-        Ok(btns) => btns,
-        Err(e) => {
-            return Err(
-                CommandError(format!("failed to process keymaps {:?}", e).to_string()).into(),
-            );
-        }
-    };
+    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
     if positions == true {
         keymap::render_and_dump(&buttons, None);
     } else {
-        let layer_number: u8;
-        match number {
-            Some(n) => layer_number = n,
-            None => layer_number = 0,
-        }
+        let layer_number: u8 = match number {
+            Some(n) => n,
+            None => 0,
+        };
         let cols = meta["matrix"]["cols"].as_u64().unwrap() as u8;
         let rows = meta["matrix"]["rows"].as_u64().unwrap() as u8;
         let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
-        let mut button_labels = HashMap::new();
-        let mut fat_labels = Vec::new();
-        for button in &buttons {
-            let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
-            let mut slim_label = true;
-            for (idx, part) in label.split(',').enumerate() {
-                if part.chars().count() > 3 || idx > 1 {
-                    slim_label &= false;
-                }
-            }
-            if !slim_label {
-                fat_labels.push(label);
-                button_labels.insert(
-                    (button.wire_x, button.wire_y),
-                    format!("*{}", fat_labels.len()),
-                );
-            } else {
-                button_labels.insert((button.wire_x, button.wire_y), label);
-            }
-        }
-        println!("Layer: {}", layer_number);
-        keymap::render_and_dump(&buttons, Some(button_labels));
-        for (idx, fat) in fat_labels.into_iter().enumerate() {
-            println!("*{} - {}", idx + 1, fat);
-        }
+        render_layer(&keys, &buttons, layer_number)?
     }
     Ok(())
 }
@@ -939,14 +911,8 @@ fn run_load(
     let meta = load_meta(&dev, &capabilities, meta_file)?;
     let cols = meta["matrix"]["cols"].as_u64().unwrap() as u8;
     let rows = meta["matrix"]["rows"].as_u64().unwrap() as u8;
-    let buttons = match keymap::keymap_to_buttons(&meta["layouts"]["keymap"]) {
-        Ok(btns) => btns,
-        Err(e) => {
-            return Err(
-                CommandError(format!("failed to process keymaps {:?}", e).to_string()).into(),
-            );
-        }
-    };
+    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
+
     let layout_str = fs::read_to_string(file)?;
     let root_json: Value = serde_json::from_str(&layout_str)?;
     let root = root_json
@@ -957,37 +923,24 @@ fn run_load(
         .ok_or("config file has no layout defined")?
         .as_array()
         .ok_or("layout should be an array")?;
+
     let keys = protocol::Keymap::from_json(rows, cols, capabilities.layer_count, layers)?;
+    let combos = protocol::load_combos_from_json(root.get("combo").ok_or("combo is not defined")?)?;
+    let tap_dances = protocol::load_tap_dances_from_json(
+        root.get("tap_dance").ok_or("tad_dance is not defined")?,
+    )?;
+
     if preview {
         for layer_number in 0..capabilities.layer_count {
-            let mut button_labels = HashMap::new();
-            let mut fat_labels = Vec::new();
-            for button in &buttons {
-                let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
-                let mut slim_label = true;
-                for (idx, part) in label.split(',').enumerate() {
-                    if part.chars().count() > 3 || idx > 1 {
-                        slim_label &= false;
-                    }
-                }
-                if !slim_label {
-                    fat_labels.push(label);
-                    button_labels.insert(
-                        (button.wire_x, button.wire_y),
-                        format!("*{}", fat_labels.len()),
-                    );
-                } else {
-                    button_labels.insert((button.wire_x, button.wire_y), label);
-                }
-            }
-            println!("Layer: {}", layer_number);
-            keymap::render_and_dump(&buttons, Some(button_labels));
-            for (idx, fat) in fat_labels.into_iter().enumerate() {
-                println!("*{} - {}", idx + 1, fat);
-            }
-            if layer_number + 1 != capabilities.layer_count {
-                println!("");
-            }
+            render_layer(&keys, &buttons, layer_number)?
+        }
+        println!("Combos:");
+        for combo in &combos {
+            println!("{}", &combo);
+        }
+        println!("TapDances:");
+        for tap_dance in &tap_dances {
+            println!("{}", &tap_dance);
         }
     }
     Ok(())

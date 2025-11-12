@@ -4,7 +4,13 @@ use crate::protocol::{
     DYNAMIC_VIAL_TAP_DANCE_GET, DYNAMIC_VIAL_TAP_DANCE_SET, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
+use serde_json::Value;
 use std::fmt;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+#[error("{0}")]
+pub struct TapDanceFormatError(pub String);
 
 #[derive(Debug)]
 pub struct TapDance {
@@ -36,15 +42,67 @@ impl TapDance {
         })
     }
 
-    pub fn empty(&self) -> bool {
+    pub fn from_json(
+        index: u8,
+        tap_dances_json: &Value,
+    ) -> Result<TapDance, Box<dyn std::error::Error>> {
+        let mut ks: [u16; 5] = [0x0; 5];
+        let values = tap_dances_json
+            .as_array()
+            .ok_or("TapDances should be encoded into array")?;
+        for (pos, val) in values.iter().enumerate() {
+            match pos {
+                0 | 1 | 2 | 3 => {
+                    let value_string = val
+                        .as_str()
+                        .ok_or("TapDance elements 0-3 should be strings")?;
+                    let qid = keycodes::name_to_qid(&value_string.to_string())?;
+                    ks[pos] = qid
+                }
+                4 => {
+                    ks[pos] = val
+                        .as_u64()
+                        .ok_or("TapDance 3th element should be positive number")?
+                        as u16
+                }
+                _ => {
+                    return Err(TapDanceFormatError(
+                        "TapDance array should be strictly 5 elements long".to_string(),
+                    )
+                    .into());
+                }
+            }
+        }
+        Ok(TapDance {
+            index: index,
+            tap: ks[0],
+            hold: ks[1],
+            double_tap: ks[2],
+            tap_hold: ks[3],
+            tapping_term: ks[4],
+        })
+    }
+
+    pub fn is_empty(&self) -> bool {
         self.tap == 0 && self.hold == 0 && self.double_tap == 0 && self.tap_hold == 0
+    }
+
+    pub fn empty(index: u8) -> TapDance {
+        TapDance {
+            index: index,
+            tap: 0,
+            hold: 0,
+            double_tap: 0,
+            tap_hold: 0,
+            tapping_term: 0,
+        }
     }
 }
 
 impl fmt::Display for TapDance {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}) ", self.index)?;
-        if self.empty() {
+        if self.is_empty() {
             Ok(write!(f, "EMPTY")?)
         } else {
             if self.tap != 0 {
@@ -106,6 +164,19 @@ pub fn load_tap_dances(
         }
     }
     Ok(tapdances)
+}
+
+pub fn load_tap_dances_from_json(
+    tap_dances_json: &Value,
+) -> Result<Vec<TapDance>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    let tap_dances = tap_dances_json
+        .as_array()
+        .ok_or("TapDances should be encoded as array")?;
+    for (i, tap_dance) in tap_dances.iter().enumerate() {
+        result.push(TapDance::from_json(i as u8, tap_dance)?)
+    }
+    Ok(result)
 }
 
 pub fn set_tap_dance(

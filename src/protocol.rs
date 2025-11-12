@@ -14,10 +14,12 @@ pub mod alt_repeat;
 pub use crate::protocol::alt_repeat::{load_alt_repeats, set_alt_repeat, AltRepeat};
 
 pub mod tap_dance;
-pub use crate::protocol::tap_dance::{load_tap_dances, set_tap_dance, TapDance};
+pub use crate::protocol::tap_dance::{
+    load_tap_dances, load_tap_dances_from_json, set_tap_dance, TapDance,
+};
 
 pub mod combo;
-pub use crate::protocol::combo::{load_combos, set_combo, Combo};
+pub use crate::protocol::combo::{load_combos, load_combos_from_json, set_combo, Combo};
 
 pub mod r#macro;
 pub use crate::protocol::r#macro::{load_macros, set_macros, Macro};
