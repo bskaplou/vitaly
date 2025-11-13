@@ -1,13 +1,13 @@
-use crate::protocol::keycodes;
+use crate::keycodes;
 use crate::protocol::{
     send_recv, Capabilities, ProtocolError, BUFFER_FETCH_CHUNK, CMD_VIA_MACRO_GET_BUFFER,
     CMD_VIA_MACRO_SET_BUFFER, MESSAGE_LENGTH, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
+use serde_json::Value;
 use std::cmp::min;
 use std::fmt;
 use thiserror::Error;
-//use serde_json::Value;
 
 const SS_QMK_PREFIX: u8 = 1;
 const SS_TAP_CODE: u8 = 1;
@@ -100,23 +100,40 @@ impl MacroStep {
         }
     }
 
-    /*
-    fn from_json(action: Value, argument: Value) -> Result<MacroStep, Box<dyn std::error::Error>> {
-        let right = right[0..(right.len() - 1)].to_string();
-        match left {
-            "delay" => Ok(MacroStep::Delay(right.parse()?)),
-            "text" => Ok(MacroStep::Text(right)),
-            "tap" => Ok(MacroStep::Tap(keycodes::name_to_qid(&right)?)),
-            "down" => Ok(MacroStep::Down(keycodes::name_to_qid(&right)?)),
-            "up" => Ok(MacroStep::Up(keycodes::name_to_qid(&right)?)),
-            _ => {
+    fn from_json(step_json: &Value) -> Result<MacroStep, Box<dyn std::error::Error>> {
+        let step = step_json
+            .as_array()
+            .ok_or("macro step should be an array")?;
+        if step.len() != 2 {
+            return Err(MacroParsingError(
+                "macro step array should be strictly 2 elements long".to_string(),
+            )
+            .into());
+        }
+        let action = &step[0];
+        let argument = &step[1];
+        let text_arg = argument.as_str().ok_or("text argument should be string");
+        match action.as_str().ok_or("action should be string")? {
+            "delay" => Ok(MacroStep::Delay(
+                argument.as_u64().ok_or("delay argument should be number")? as u16,
+            )),
+            "text" => Ok(MacroStep::Text(text_arg?.to_string())),
+            "tap" => Ok(MacroStep::Tap(keycodes::name_to_qid(
+                &text_arg?.to_string(),
+            )?)),
+            "down" => Ok(MacroStep::Down(keycodes::name_to_qid(
+                &text_arg?.to_string(),
+            )?)),
+            "up" => Ok(MacroStep::Up(keycodes::name_to_qid(
+                &text_arg?.to_string(),
+            )?)),
+            action => {
                 return Err(
-                    MacroParsingError(format!("Unknown macro step {}", right).to_string()).into(),
+                    MacroParsingError(format!("Unknown macro step {}", action).to_string()).into(),
                 )
             }
         }
     }
-    */
 }
 
 impl fmt::Display for MacroStep {
@@ -169,6 +186,20 @@ impl Macro {
             steps: parsed_steps,
         })
     }
+
+    pub fn from_json(index: u8, steps_json: &Value) -> Result<Macro, Box<dyn std::error::Error>> {
+        let mut parsed_steps = Vec::new();
+        let steps = steps_json
+            .as_array()
+            .ok_or("macro should be defined as array of macro steps")?;
+        for step in steps {
+            parsed_steps.push(MacroStep::from_json(step)?);
+        }
+        Ok(Macro {
+            index,
+            steps: parsed_steps,
+        })
+    }
 }
 
 impl fmt::Display for Macro {
@@ -186,6 +217,19 @@ impl fmt::Display for Macro {
             return Ok(());
         }
     }
+}
+
+pub fn load_macros_from_json(
+    macros_json: &Value,
+) -> Result<Vec<Macro>, Box<dyn std::error::Error>> {
+    let macros = macros_json
+        .as_array()
+        .ok_or("macro value should be an array")?;
+    let mut result = Vec::new();
+    for (i, m) in macros.iter().enumerate() {
+        result.push(Macro::from_json(i as u8, m)?);
+    }
+    Ok(result)
 }
 
 // State machine here

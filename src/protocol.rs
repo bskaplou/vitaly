@@ -5,7 +5,7 @@ use std::cmp::min;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
-pub mod keycodes;
+use crate::keycodes;
 
 pub mod key_override;
 pub use crate::protocol::key_override::{load_key_overrides, set_key_override, KeyOverride};
@@ -22,11 +22,12 @@ pub mod combo;
 pub use crate::protocol::combo::{load_combos, load_combos_from_json, set_combo, Combo};
 
 pub mod r#macro;
-pub use crate::protocol::r#macro::{load_macros, set_macros, Macro};
+pub use crate::protocol::r#macro::{load_macros, load_macros_from_json, set_macros, Macro};
 
 pub mod qmk_settings;
 pub use crate::protocol::qmk_settings::{
-    get_qmk_value, load_qmk_definitions, load_qmk_qsids, reset_qmk_values, set_qmk_value, QmkValue,
+    get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings_from_json,
+    reset_qmk_values, set_qmk_value, QmkValue,
 };
 
 pub const USAGE_PAGE: u16 = 0xFF60;
@@ -495,9 +496,7 @@ pub struct LockedStatus {
     pub unlock_buttons: Vec<(u8, u8)>,
 }
 
-pub fn get_locked_status(
-    device: &HidDevice,
-) -> Result<LockedStatus, Box<dyn std::error::Error>> {
+pub fn get_locked_status(device: &HidDevice) -> Result<LockedStatus, Box<dyn std::error::Error>> {
     match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_UNLOCK_STATUS]) {
         Ok(data) => {
             // println!("{:?}", data);
@@ -541,5 +540,4 @@ pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8), Box<dyn std::error:
         }
         Err(e) => Err(e.into()),
     }
-
 }

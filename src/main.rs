@@ -5,9 +5,10 @@ use hidapi::{DeviceInfo, HidApi, HidDevice};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
-use thiserror::Error;
 use std::{thread, time};
+use thiserror::Error;
 
+pub mod keycodes;
 pub mod keymap;
 pub mod protocol;
 
@@ -231,6 +232,37 @@ fn run_devices(
     Ok(())
 }
 
+fn load_meta(
+    dev: &HidDevice,
+    capabilities: &protocol::Capabilities,
+    meta_file: &Option<String>,
+) -> Result<Value, Box<dyn std::error::Error>> {
+    match meta_file {
+        Some(meta_file) => {
+            let meta_str = fs::read_to_string(meta_file)?;
+            Ok(serde_json::from_str(&meta_str)?)
+        }
+        None => {
+            if capabilities.vial_version == 0 {
+                return Err(CommandError(
+                    format!("device doesn't support vial protocol").to_string(),
+                )
+                .into());
+            }
+            let meta_data = match protocol::load_vial_meta(&dev) {
+                Ok(meta_data) => meta_data,
+                Err(e) => {
+                    return Err(CommandError(
+                        format!("failed to load vial meta {:?}", e).to_string(),
+                    )
+                    .into());
+                }
+            };
+            Ok(meta_data)
+        }
+    }
+}
+
 fn run_lock(
     api: &HidApi,
     device: &DeviceInfo,
@@ -239,6 +271,7 @@ fn run_lock(
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
+    let meta = load_meta(&dev, &capabilities, &None)?;
     if capabilities.vial_version == 0 {
         println!("Device doesn't support locking");
     } else {
@@ -246,12 +279,19 @@ fn run_lock(
         // println!("{:?}", status);
         println!("Device is locked: {}", status.locked);
         if status.locked && unlock {
-            println!("Starting unlock process...");
+            println!("Starting unlock process... ");
+            println!("Push marked buttons and keep then pushed to unlock...");
+            let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
+            let mut button_labels = HashMap::new();
+            for (row, col) in &status.unlock_buttons {
+                button_labels.insert((*row, *col), "☆☆,☆☆".to_string());
+            }
+            keymap::render_and_dump(&buttons, Some(button_labels));
             protocol::start_unlock(&dev)?;
             let second = time::Duration::from_millis(1000);
             let mut unlocked = false;
             let mut seconds_remaining: u8;
-            while ! unlocked {
+            while !unlocked {
                 thread::sleep(second);
                 (unlocked, seconds_remaining) = protocol::unlock_poll(&dev)?;
                 println!("Seconds remaining: {} keep pushing...", seconds_remaining);
@@ -410,6 +450,12 @@ fn run_macros(
             println!("Updated macros list:");
             for m in &macros {
                 println!("{}", m)
+            }
+            if capabilities.vial_version > 0 {
+                let status = protocol::get_locked_status(&dev)?;
+                if status.locked {
+                    return Err(CommandError("Keyboard is locked, macroses can't be updated, keyboard might be unlocked with subcommand 'lock -u'".to_string()).into());
+                }
             }
             protocol::set_macros(&dev, &capabilities, &macros)?;
             println!("Macros successfully updated");
@@ -644,37 +690,6 @@ fn run_keyoverrides(
     Ok(())
 }
 
-fn load_meta(
-    dev: &HidDevice,
-    capabilities: &protocol::Capabilities,
-    meta_file: &Option<String>,
-) -> Result<Value, Box<dyn std::error::Error>> {
-    match meta_file {
-        Some(meta_file) => {
-            let meta_str = fs::read_to_string(meta_file)?;
-            Ok(serde_json::from_str(&meta_str)?)
-        }
-        None => {
-            if capabilities.vial_version == 0 {
-                return Err(CommandError(
-                    format!("device doesn't support vial protocol").to_string(),
-                )
-                .into());
-            }
-            let meta_data = match protocol::load_vial_meta(&dev) {
-                Ok(meta_data) => meta_data,
-                Err(e) => {
-                    return Err(CommandError(
-                        format!("failed to load vial meta {:?}", e).to_string(),
-                    )
-                    .into());
-                }
-            };
-            Ok(meta_data)
-        }
-    }
-}
-
 fn render_layer(
     keys: &protocol::Keymap,
     buttons: &Vec<keymap::Button>,
@@ -691,11 +706,19 @@ fn render_layer(
             }
         }
         if !slim_label {
-            fat_labels.push(label);
-            button_labels.insert(
-                (button.wire_x, button.wire_y),
-                format!("*{}", fat_labels.len()),
-            );
+            match fat_labels.contains(&label) {
+                false => {
+                    fat_labels.push(label);
+                    button_labels.insert(
+                        (button.wire_x, button.wire_y),
+                        format!("*{}", fat_labels.len()),
+                    );
+                }
+                true => {
+                    let pos = fat_labels.iter().position(|e| *e == label).unwrap();
+                    button_labels.insert((button.wire_x, button.wire_y), format!("*{}", pos));
+                }
+            }
         } else {
             button_labels.insert((button.wire_x, button.wire_y), label);
         }
@@ -764,7 +787,7 @@ fn run_keys(
     let row: u8 = p_parts.next().unwrap().parse()?;
     let col: u8 = p_parts.next().unwrap().parse()?;
     match value {
-        Some(value) => match protocol::keycodes::name_to_qid(value) {
+        Some(value) => match keycodes::name_to_qid(value) {
             Ok(keycode) => {
                 protocol::set_keycode(&dev, layer, row, col, keycode)?;
                 println!(
@@ -835,11 +858,10 @@ fn run_settings(
                 for field in group["fields"].as_array().unwrap() {
                     let qsid = field["qsid"].as_u64().unwrap() as u16;
                     let title = field["title"].as_str().unwrap();
-                    let width: u8;
-                    match &field["width"] {
-                        Value::Number(n) => width = n.as_u64().unwrap() as u8,
-                        _ => width = 1,
-                    }
+                    let width: u8 = match &field["width"] {
+                        Value::Number(n) => n.as_u64().unwrap() as u8,
+                        _ => 1,
+                    };
                     let bool_field = field["type"].as_str().unwrap() == "boolean";
                     let with_bits = !matches!(field["bit"], Value::Null);
                     if qsid == tsid
@@ -973,6 +995,11 @@ fn run_load(
     let tap_dances = protocol::load_tap_dances_from_json(
         root.get("tap_dance").ok_or("tad_dance is not defined")?,
     )?;
+    let qmk_settings = protocol::load_qmk_settings_from_json(
+        root.get("settings").ok_or("settings are not defined")?,
+    )?;
+    let macros =
+        protocol::load_macros_from_json(root.get("macro").ok_or("settings are not defined")?)?;
 
     if preview {
         for layer_number in 0..capabilities.layer_count {
@@ -980,11 +1007,81 @@ fn run_load(
         }
         println!("Combos:");
         for combo in &combos {
-            println!("{}", &combo);
+            if !combo.is_empty() {
+                println!("{}", &combo);
+            }
         }
+        println!("");
+
+        println!("Macros:");
+        for m in &macros {
+            if !m.is_empty() {
+                println!("{}", &m);
+            }
+        }
+        println!("");
+
         println!("TapDances:");
         for tap_dance in &tap_dances {
-            println!("{}", &tap_dance);
+            if !tap_dance.is_empty() {
+                println!("{}", &tap_dance);
+            }
+        }
+        println!("");
+
+        if capabilities.vial_version >= protocol::VIAL_PROTOCOL_QMK_SETTINGS {
+            let settings_defs = protocol::load_qmk_definitions()?;
+            println!("Settings:");
+            for group in settings_defs["tabs"].as_array().unwrap() {
+                let group_name = group["name"].as_str().unwrap();
+                let mut header_shown = false;
+                for field in group["fields"].as_array().unwrap() {
+                    let title = field["title"].as_str().unwrap();
+                    let qsid = field["qsid"].as_u64().unwrap() as u16;
+                    if qmk_settings.contains_key(&qsid) {
+                        if !header_shown {
+                            println!("{}:", group_name);
+                            header_shown = true;
+                        }
+                        match field["type"].as_str().unwrap() {
+                            "integer" => {
+                                println!(
+                                    "\t{}) {} = {}",
+                                    qsid,
+                                    title,
+                                    qmk_settings.get(&qsid).unwrap().get()
+                                );
+                            }
+                            "boolean" => match field["bit"].as_u64() {
+                                None => {
+                                    println!(
+                                        "\t{}) {} = {}",
+                                        qsid,
+                                        title,
+                                        qmk_settings.get(&qsid).unwrap().get() != 0
+                                    );
+                                }
+                                Some(bit) => {
+                                    println!(
+                                        "\t{}) {} = {}",
+                                        qsid,
+                                        title,
+                                        qmk_settings.get(&qsid).unwrap().get_bool(bit as u8)
+                                    );
+                                }
+                            },
+                            t => {
+                                return Err(
+                                    CommandError(format!("Unknown setting type {:?}", t)).into()
+                                );
+                            }
+                        }
+                    }
+                }
+                if header_shown {
+                    println!("");
+                }
+            }
         }
     }
     Ok(())

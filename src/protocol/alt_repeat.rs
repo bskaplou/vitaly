@@ -1,4 +1,4 @@
-use crate::protocol::keycodes;
+use crate::keycodes;
 use crate::protocol::{
     send, send_recv, ProtocolError, CMD_VIAL_DYNAMIC_ENTRY_OP, CMD_VIA_VIAL_PREFIX,
     DYNAMIC_VIAL_ALT_REPEAT_KEY_GET, DYNAMIC_VIAL_ALT_REPEAT_KEY_SET, VIA_UNHANDLED,

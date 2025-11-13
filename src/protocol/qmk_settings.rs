@@ -3,7 +3,9 @@ use crate::protocol::{
     CMD_VIAL_QMK_SETTINGS_RESET, CMD_VIAL_QMK_SETTINGS_SET, CMD_VIA_VIAL_PREFIX, MESSAGE_LENGTH,
 };
 use hidapi::HidDevice;
+use serde_json::Value;
 use std::cmp::max;
+use std::collections::HashMap;
 
 pub fn load_qmk_definitions() -> serde_json::Result<serde_json::Value> {
     let qmk_settings_json = include_str!("qmk_settings.json");
@@ -134,4 +136,19 @@ pub fn reset_qmk_values(device: &HidDevice) -> Result<(), Box<dyn std::error::Er
         }
         Err(e) => Err(e.into()),
     }
+}
+
+pub fn load_qmk_settings_from_json(
+    settings_json: &Value,
+) -> Result<HashMap<u16, QmkValue>, Box<dyn std::error::Error>> {
+    let mut result = HashMap::new();
+    let settings = settings_json
+        .as_object()
+        .ok_or("Settings should be an object")?;
+    for (key, value) in settings {
+        let qsid: u16 = key.parse()?;
+        let val = value.as_u64().ok_or("value shoudld be u32")? as u32;
+        result.insert(qsid, QmkValue { value: val });
+    }
+    Ok(result)
 }
