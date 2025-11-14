@@ -45,8 +45,8 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
             let mut w = 1f64;
             let mut h = 1f64;
             let mut r = 0f64;
-            //let mut y = 0f64;
-            //let mut x = 0f64;
+            let mut y = 0f64;
+            let mut x = 0f64;
             let mut decal = false;
 
             for row in rows.iter() {
@@ -54,88 +54,111 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                 match row.as_array() {
                     Some(items) => {
                         for item in items {
-                            if item.is_object() {
-                                for (key, value) in item.as_object().unwrap() {
-                                    match key.as_str() {
-                                        "x" => {
-                                            //x = value.as_f64().unwrap();
-                                            x_mod += value.as_f64().unwrap();
-                                        }
-                                        "y" => {
-                                            y_mod += value.as_f64().unwrap();
-                                            //y = value.as_f64().unwrap();
-                                        }
-                                        "w" => w = value.as_f64().unwrap(),
-                                        "h" => h = value.as_f64().unwrap(),
-                                        "r" => r = value.as_f64().unwrap(),
-                                        "rx" => rx = value.as_f64().unwrap(),
-                                        "ry" => ry = value.as_f64().unwrap(),
-                                        "d" => decal = value.as_bool().unwrap(),
-                                        &_ => {
-                                            // println!("warning ignored value {:?} = {:?}", key, value)
-                                        }
-                                    }
-                                }
-                            } else {
-                                if !decal {
-                                    // skip decals entirely
-                                    let mut value = item.as_str().unwrap();
-                                    if value.contains('\n') {
-                                        let mut s = value.split('\n');
-                                        loop {
-                                            value = s.next().unwrap();
-                                            if value.len() > 0 {
-                                                // println!("value {:?}", value);
-                                                break;
+                            match item {
+                                Value::Object(item) => {
+                                    for (key, value) in item {
+                                        match key.as_str() {
+                                            "x" => {
+                                                x = value.as_f64().ok_or("x should be a number")?;
+                                                x_mod += x;
+                                            }
+                                            "y" => {
+                                                y = value.as_f64().ok_or("y should be a number")?;
+                                                y_mod += y;
+                                            }
+                                            "w" => {
+                                                w = value.as_f64().ok_or("w should be a number")?
+                                            }
+                                            "h" => {
+                                                h = value.as_f64().ok_or("h should be a number")?
+                                            }
+                                            "r" => {
+                                                r = value.as_f64().ok_or("r should be a number")?
+                                            }
+                                            "rx" => {
+                                                rx =
+                                                    value.as_f64().ok_or("rx should be a number")?
+                                            }
+                                            "ry" => {
+                                                ry =
+                                                    value.as_f64().ok_or("ry should be a number")?
+                                            }
+                                            "d" => {
+                                                decal = value.as_bool().ok_or("d should be bool")?
+                                            }
+                                            &_ => {
+                                                // println!("warning ignored value {:?} = {:?}", key, value)
                                             }
                                         }
                                     }
-                                    let mut parts = value.split(',');
-                                    let xx: u8 = parts.next().unwrap().parse().unwrap();
-                                    let yy: u8 = parts.next().unwrap().parse().unwrap();
-                                    let but;
-                                    if r == 0.0 && rx == 0.0 && ry == 0.0 {
-                                        let bx = x_pos + x_mod;
-                                        let by = y_pos + y_mod;
-                                        let bw = w;
-                                        let bh = h;
-                                        but = Button {
-                                            x: bx,
-                                            y: by,
-                                            w: bw,
-                                            h: bh,
-                                            wire_x: xx,
-                                            wire_y: yy,
-                                        };
-                                    } else {
-                                        //println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
-                                        /*
-                                        let teta = -r.to_radians();
-                                        let teta_sin = teta.sin();
-                                        let teta_cos = teta.cos();
-                                        let bx = x * teta_cos + y * teta_sin + rx;
-                                        let by = -x * teta_sin + y * teta_cos + ry;
-                                        let bw = 1.0;
-                                        let bh = 1.0;
-                                        but = Button {
-                                            x: bx,
-                                            y: by,
-                                            w: bw,
-                                            h: bh,
-                                            wire_x: xx,
-                                            wire_y: yy,
-                                        };
-                                        */
-                                        return Err(MetaParsingError.into());
-                                    }
-                                    buttons.push(but);
                                 }
-                                //println!("! {:?} => {:?}", item.as_str().unwrap(), &but);
-                                x_pos += x_mod + w;
-                                w = 1.0;
-                                h = 1.0;
-                                x_mod = 0.0;
-                                decal = false;
+                                Value::String(item) => {
+                                    if !decal {
+                                        // skip decals entirely
+                                        let mut value = item.as_str();
+                                        if value.contains('\n') {
+                                            let mut s = value.split('\n');
+                                            loop {
+                                                value = s.next().ok_or("incorrect button value")?;
+                                                if value.len() > 0 {
+                                                    // println!("value {:?}", value);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if let Some((xxx, yyy)) = value.split_once(',') {
+                                            let xx: u8 = xxx.parse()?;
+                                            let yy: u8 = yyy.parse()?;
+                                            let but;
+                                            if r == 0.0 && rx == 0.0 && ry == 0.0 {
+                                                let bx = x_pos + x_mod;
+                                                let by = y_pos + y_mod;
+                                                let bw = w;
+                                                let bh = h;
+                                                but = Button {
+                                                    x: bx,
+                                                    y: by,
+                                                    w: bw,
+                                                    h: bh,
+                                                    wire_x: xx,
+                                                    wire_y: yy,
+                                                };
+                                            } else {
+                                                //println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
+                                                /*
+                                                let teta = -r.to_radians();
+                                                let teta_sin = teta.sin();
+                                                let teta_cos = teta.cos();
+                                                let bx = x * teta_cos + y * teta_sin + rx;
+                                                let by = -x * teta_sin + y * teta_cos + ry;
+                                                let bw = 1.0;
+                                                let bh = 1.0;
+                                                but = Button {
+                                                    x: bx,
+                                                    y: by,
+                                                    w: bw,
+                                                    h: bh,
+                                                    wire_x: xx,
+                                                    wire_y: yy,
+                                                };
+                                                */
+                                                return Err(MetaParsingError.into());
+                                            }
+                                            buttons.push(but);
+                                        } else {
+                                            return Err(MetaParsingError.into());
+                                        }
+                                    }
+                                    x_pos += x_mod + w;
+                                    w = 1.0;
+                                    h = 1.0;
+                                    x_mod = 0.0;
+                                    decal = false;
+                                    //println!("! {:?} => {:?}", item.as_str().unwrap(), &but);
+                                }
+                                _ => {
+                                    return Err(MetaParsingError.into());
+                                }
                             }
                         }
                     }

@@ -329,7 +329,7 @@ pub fn deserialize(data: Vec<u8>) -> Result<Vec<Macro>, Box<dyn std::error::Erro
     if data.len() != 0 && !(data.len() == 1 && data[0] == 0) {
         for i in 0..data.len() {
             if data[i] == 0 {
-                let macro_bytes = data.get(start..i).unwrap();
+                let macro_bytes = data.get(start..i).ok_or("fatal deserialization error")?;
                 let m = deserialize_single(pos, macro_bytes)?;
                 macroses.push(m);
                 pos += 1;

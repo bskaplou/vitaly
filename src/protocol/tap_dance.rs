@@ -27,7 +27,7 @@ impl TapDance {
         index: u8,
         keys: Vec<&str>,
         tapping_term: u16,
-    ) -> Result<TapDance, keycodes::KeyParsingError> {
+    ) -> Result<TapDance, Box<dyn std::error::Error>> {
         let mut ks: [u16; 4] = [0x0; 4];
         for (idx, kn) in keys.iter().enumerate() {
             ks[idx] = keycodes::name_to_qid(&kn.to_string())?;

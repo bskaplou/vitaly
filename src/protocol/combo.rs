@@ -27,7 +27,7 @@ impl Combo {
         index: u8,
         keys: Vec<&str>,
         output: &str,
-    ) -> Result<Combo, keycodes::KeyParsingError> {
+    ) -> Result<Combo, Box<dyn std::error::Error>> {
         let mut ks: [u16; 4] = [0x0; 4];
         let out = keycodes::name_to_qid(&output.to_string())?;
         for (idx, kn) in keys.iter().enumerate() {

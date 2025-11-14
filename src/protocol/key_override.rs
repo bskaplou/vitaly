@@ -4,6 +4,7 @@ use crate::protocol::{
     DYNAMIC_VIAL_KEY_OVERRIDE_GET, DYNAMIC_VIAL_KEY_OVERRIDE_SET, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
+use serde_json::Value;
 use std::fmt;
 
 #[derive(Debug)]
@@ -28,7 +29,7 @@ impl KeyOverride {
     pub fn from_strings(
         index: u8,
         keys: Vec<&str>,
-    ) -> Result<KeyOverride, keycodes::KeyParsingError> {
+    ) -> Result<KeyOverride, Box<dyn std::error::Error>> {
         let mut trigger = 0u16;
         let mut replacement = 0u16;
         let mut layers = 0u16;
@@ -45,7 +46,7 @@ impl KeyOverride {
 
         if keys.len() > 0 {
             for part in keys {
-                let (left, right) = part.split_once("=").unwrap();
+                let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
                 match left {
                     "trigger" | "t" => {
                         trigger = keycodes::name_to_qid(&right.to_string())?;
@@ -53,7 +54,7 @@ impl KeyOverride {
                     "replacement" | "r" => replacement = keycodes::name_to_qid(&right.to_string())?,
                     "layers" | "l" => {
                         for l in right.split("|") {
-                            let layer: u8 = l.parse().unwrap();
+                            let layer: u8 = l.parse()?;
                             layers |= 1 << layer;
                         }
                     }
@@ -103,11 +104,109 @@ impl KeyOverride {
                     _ => {
                         return Err(keycodes::KeyParsingError(
                             format!("Unknown setting {}", left).to_string(),
-                        ));
+                        )
+                        .into());
                     }
                 }
             }
         }
+        Ok(KeyOverride {
+            index: index,
+            trigger: trigger,
+            replacement: replacement,
+            layers: layers,
+            trigger_mods: trigger_mods,
+            negative_mod_mask: negative_mod_mask,
+            suppressed_mods: suppressed_mods,
+            ko_option_activation_trigger_down: ko_option_activation_trigger_down,
+            ko_option_activation_required_mod_down: ko_option_activation_required_mod_down,
+            ko_option_activation_negative_mod_up: ko_option_activation_negative_mod_up,
+            ko_option_one_mod: ko_option_one_mod,
+            ko_option_no_reregister_trigger: ko_option_no_reregister_trigger,
+            ko_option_no_unregister_on_other_key_down: ko_option_no_unregister_on_other_key_down,
+            ko_enabled: ko_enabled,
+        })
+    }
+
+    pub fn from_json(
+        index: u8,
+        key_override_json: &Value,
+    ) -> Result<KeyOverride, Box<dyn std::error::Error>> {
+        let mut trigger = 0u16;
+        let mut replacement = 0u16;
+        let mut layers = 0u16;
+        let mut trigger_mods = 0u8;
+        let mut negative_mod_mask = 0u8;
+        let mut suppressed_mods = 0u8;
+        let mut ko_option_activation_trigger_down = false;
+        let mut ko_option_activation_required_mod_down = false;
+        let mut ko_option_activation_negative_mod_up = false;
+        let mut ko_option_one_mod = false;
+        let mut ko_option_no_reregister_trigger = false;
+        let mut ko_option_no_unregister_on_other_key_down = false;
+        let mut ko_enabled = false;
+
+        let key_override = key_override_json
+            .as_object()
+            .ok_or("key_override element should be an object")?;
+        for (key, value) in key_override {
+            match key.as_str() {
+                "trigger" => {
+                    trigger = keycodes::name_to_qid(
+                        &value
+                            .as_str()
+                            .ok_or("trigger value should be string")?
+                            .to_string(),
+                    )?;
+                }
+                "replacement" => {
+                    replacement = keycodes::name_to_qid(
+                        &value
+                            .as_str()
+                            .ok_or("replacement value should be string")?
+                            .to_string(),
+                    )?;
+                }
+                "layers" => {
+                    layers = value.as_u64().ok_or("layer value should be a number")? as u16;
+                }
+                "trigger_mods" => {
+                    trigger_mods = value
+                        .as_u64()
+                        .ok_or("trigger_mods value should be a number")?
+                        as u8;
+                }
+                "negative_mod_mask" => {
+                    negative_mod_mask = value
+                        .as_u64()
+                        .ok_or("negative_mod_mask value should be a number")?
+                        as u8;
+                }
+                "suppressed_mods" => {
+                    suppressed_mods = value
+                        .as_u64()
+                        .ok_or("suppressed_mods value should be a number")?
+                        as u8;
+                }
+                "options" => {
+                    let options = value.as_u64().ok_or("options value should be a number")? as u16;
+                    ko_option_activation_trigger_down = options & (1 << 0) == (1 << 0);
+                    ko_option_activation_required_mod_down = options & (1 << 1) == (1 << 1);
+                    ko_option_activation_negative_mod_up = options & (1 << 2) == (1 << 2);
+                    ko_option_one_mod = options & (1 << 3) == (1 << 3);
+                    ko_option_no_reregister_trigger = options & (1 << 4) == (1 << 4);
+                    ko_option_no_unregister_on_other_key_down = options & (1 << 5) == (1 << 5);
+                    ko_enabled = options & (1 << 7) == (1 << 7);
+                }
+                _ => {
+                    return Err(keycodes::KeyParsingError(
+                        format!("Unknown key_override key {}", key).to_string(),
+                    )
+                    .into());
+                }
+            }
+        }
+
         Ok(KeyOverride {
             index: index,
             trigger: trigger,
@@ -218,6 +317,19 @@ impl fmt::Display for KeyOverride {
             Ok(write!(f, "\n\tko_enabled = {}", self.ko_enabled)?)
         }
     }
+}
+
+pub fn load_key_overrides_from_json(
+    key_overrides_json: &Value,
+) -> Result<Vec<KeyOverride>, Box<dyn std::error::Error>> {
+    let key_overrides = key_overrides_json
+        .as_array()
+        .ok_or("key_override should be an array")?;
+    let mut result = Vec::new();
+    for (i, key_override) in key_overrides.iter().enumerate() {
+        result.push(KeyOverride::from_json(i as u8, &key_override)?);
+    }
+    Ok(result)
 }
 
 pub fn load_key_overrides(

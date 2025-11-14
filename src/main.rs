@@ -706,16 +706,15 @@ fn render_layer(
             }
         }
         if !slim_label {
-            match fat_labels.contains(&label) {
-                false => {
+            match fat_labels.iter().position(|e| *e == label) {
+                None => {
                     fat_labels.push(label);
                     button_labels.insert(
                         (button.wire_x, button.wire_y),
                         format!("*{}", fat_labels.len()),
                     );
                 }
-                true => {
-                    let pos = fat_labels.iter().position(|e| *e == label).unwrap();
+                Some(pos) => {
                     button_labels.insert((button.wire_x, button.wire_y), format!("*{}", pos));
                 }
             }
@@ -751,8 +750,12 @@ fn run_layers(
             Some(n) => n,
             None => 0,
         };
-        let cols = meta["matrix"]["cols"].as_u64().unwrap() as u8;
-        let rows = meta["matrix"]["rows"].as_u64().unwrap() as u8;
+        let cols = meta["matrix"]["cols"]
+            .as_u64()
+            .ok_or("matrix/cols not found in meta")? as u8;
+        let rows = meta["matrix"]["rows"]
+            .as_u64()
+            .ok_or("matrix/rows not found in meta")? as u8;
         let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
         render_layer(&keys, &buttons, layer_number)?
     }
@@ -771,21 +774,21 @@ fn run_keys(
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
     let meta = load_meta(&dev, &capabilities, &meta_file)?;
-    let cols = meta["matrix"]["cols"].as_u64().unwrap() as u8;
-    let rows = meta["matrix"]["rows"].as_u64().unwrap() as u8;
-    if position.split(',').count() != 2 {
-        return Err(CommandError(
-            format!(
-                "position {:?} is incorrect, should be in format row,col for example 0,1",
-                position
-            )
-            .to_string(),
-        )
-        .into());
+    let cols = meta["matrix"]["cols"]
+        .as_u64()
+        .ok_or("matrix/cols not found in meta")? as u8;
+    let rows = meta["matrix"]["rows"]
+        .as_u64()
+        .ok_or("matrix/rows not found in meta")? as u8;
+
+    let row: u8;
+    let col: u8;
+    if let Some((r, c)) = position.split_once(',') {
+        row = r.parse()?;
+        col = c.parse()?;
+    } else {
+        return Err(CommandError("position format is 'row,col'".to_string()).into());
     }
-    let mut p_parts = position.split(',');
-    let row: u8 = p_parts.next().unwrap().parse()?;
-    let col: u8 = p_parts.next().unwrap().parse()?;
     match value {
         Some(value) => match keycodes::name_to_qid(value) {
             Ok(keycode) => {
@@ -845,27 +848,34 @@ fn run_settings(
             let qsid_full_str = qsid_full.to_string();
             let tsid: u16;
             let tbit: u8;
-            if qsid_full_str.contains('.') {
-                let (l, r) = qsid_full_str.split_once('.').unwrap();
+            if let Some((l, r)) = qsid_full_str.split_once('.') {
                 tsid = l.parse()?;
                 tbit = r.parse()?;
             } else {
                 tsid = qsid_full_str.parse()?;
                 tbit = 0;
             }
-            for group in settings["tabs"].as_array().unwrap() {
+            for group in settings["tabs"]
+                .as_array()
+                .ok_or("tabs should be an array")?
+            {
                 //let group_name = group["name"].as_str().unwrap();
-                for field in group["fields"].as_array().unwrap() {
-                    let qsid = field["qsid"].as_u64().unwrap() as u16;
-                    let title = field["title"].as_str().unwrap();
+                for field in group["fields"]
+                    .as_array()
+                    .ok_or("fields should be an array")?
+                {
+                    let qsid = field["qsid"].as_u64().ok_or("qsid should be a number")? as u16;
+                    let title = field["title"].as_str().ok_or("title should be a string")?;
                     let width: u8 = match &field["width"] {
-                        Value::Number(n) => n.as_u64().unwrap() as u8,
+                        Value::Number(n) => n.as_u64().ok_or("width shoulbe a number")? as u8,
                         _ => 1,
                     };
-                    let bool_field = field["type"].as_str().unwrap() == "boolean";
+                    let bool_field =
+                        field["type"].as_str().ok_or("type should be string")? == "boolean";
                     let with_bits = !matches!(field["bit"], Value::Null);
                     if qsid == tsid
-                        && (with_bits == false || (field["bit"].as_u64().unwrap() as u8) == tbit)
+                        && (with_bits == false
+                            || (field["bit"].as_u64().ok_or("bit should be number")? as u8) == tbit)
                     {
                         match value {
                             None => {
@@ -917,35 +927,40 @@ fn run_settings(
         None => {
             let mut values_cache = HashMap::new();
 
-            for group in settings["tabs"].as_array().unwrap() {
-                let group_name = group["name"].as_str().unwrap();
+            for group in settings["tabs"]
+                .as_array()
+                .ok_or("tabs should be an array")?
+            {
+                let group_name = group["name"].as_str().ok_or("name should be a string")?;
                 println!("\n{}:", group_name);
-                for field in group["fields"].as_array().unwrap() {
-                    let width: u8;
-                    match &field["width"] {
-                        Value::Number(n) => width = n.as_u64().unwrap() as u8,
-                        _ => width = 1,
-                    }
-                    let title = field["title"].as_str().unwrap();
-                    let qsid = field["qsid"].as_u64().unwrap() as u16;
+                for field in group["fields"]
+                    .as_array()
+                    .ok_or("fields should be an array")?
+                {
+                    let width: u8 = match &field["width"] {
+                        Value::Number(n) => n.as_u64().ok_or("width should be a number")? as u8,
+                        _ => 1,
+                    };
+                    let title = field["title"].as_str().ok_or("title should be a string")?;
+                    let qsid = field["qsid"].as_u64().ok_or("title should be a number")? as u16;
                     if qsids.contains(&qsid) {
                         let value;
                         if values_cache.contains_key(&qsid) {
-                            value = *values_cache.get(&qsid).unwrap();
+                            value = *values_cache.get(&qsid).ok_or("cache broken")?;
                         } else {
                             value = protocol::get_qmk_value(&dev, qsid, width)?;
                             values_cache.insert(qsid, value);
                         }
-                        match field["type"].as_str().unwrap() {
+                        match field["type"].as_str().ok_or("type should be a string")? {
                             "boolean" => match field["bit"].as_number() {
                                 Some(n) => {
-                                    let pos = n.as_u64().unwrap() as u8;
+                                    let pos = n.as_u64().ok_or("bit should be a number")? as u8;
                                     println!(
                                         "\t{}.{}) {} = {}",
                                         qsid,
                                         pos,
                                         title,
-                                        value.get_bool(n.as_u64().unwrap() as u8)
+                                        value.get_bool(pos)
                                     );
                                 }
                                 None => {
@@ -975,8 +990,12 @@ fn run_load(
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
     let meta = load_meta(&dev, &capabilities, meta_file)?;
-    let cols = meta["matrix"]["cols"].as_u64().unwrap() as u8;
-    let rows = meta["matrix"]["rows"].as_u64().unwrap() as u8;
+    let cols = meta["matrix"]["cols"]
+        .as_u64()
+        .ok_or("matrix/cols not found in meta")? as u8;
+    let rows = meta["matrix"]["rows"]
+        .as_u64()
+        .ok_or("matrix/rows not found in meta")? as u8;
     let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
 
     let layout_str = fs::read_to_string(file)?;
@@ -998,8 +1017,17 @@ fn run_load(
     let qmk_settings = protocol::load_qmk_settings_from_json(
         root.get("settings").ok_or("settings are not defined")?,
     )?;
-    let macros =
-        protocol::load_macros_from_json(root.get("macro").ok_or("settings are not defined")?)?;
+    let macros = protocol::load_macros_from_json(root.get("macro").ok_or("macro is not defined")?)?;
+
+    let key_overrides = protocol::load_key_overrides_from_json(
+        root.get("key_override")
+            .ok_or("key_override are not defined")?,
+    )?;
+
+    let alt_repeats = protocol::load_alt_repeats_from_json(
+        root.get("alt_repeat_key")
+            .ok_or("alt_repeat_key are not defined")?,
+    )?;
 
     if preview {
         for layer_number in 0..capabilities.layer_count {
@@ -1029,44 +1057,56 @@ fn run_load(
         }
         println!("");
 
+        println!("KeyOverrides:");
+        for key_override in &key_overrides {
+            if !key_override.is_empty() {
+                println!("{}", &key_override);
+            }
+        }
+        println!("");
+
+        println!("AltRepeatKeys:");
+        for alt_repeat in &alt_repeats {
+            if !alt_repeat.is_empty() {
+                println!("{}", &alt_repeat);
+            }
+        }
+        println!("");
+
         if capabilities.vial_version >= protocol::VIAL_PROTOCOL_QMK_SETTINGS {
             let settings_defs = protocol::load_qmk_definitions()?;
             println!("Settings:");
-            for group in settings_defs["tabs"].as_array().unwrap() {
-                let group_name = group["name"].as_str().unwrap();
+            for group in settings_defs["tabs"]
+                .as_array()
+                .ok_or("tabs should be an array")?
+            {
+                let group_name = group["name"].as_str().ok_or("name shoule be a string")?;
                 let mut header_shown = false;
-                for field in group["fields"].as_array().unwrap() {
-                    let title = field["title"].as_str().unwrap();
-                    let qsid = field["qsid"].as_u64().unwrap() as u16;
-                    if qmk_settings.contains_key(&qsid) {
+                for field in group["fields"]
+                    .as_array()
+                    .ok_or("fields shoulbe a an array")?
+                {
+                    let title = field["title"].as_str().ok_or("title should be a string")?;
+                    let qsid = field["qsid"].as_u64().ok_or("qsid should be a number")? as u16;
+                    if let Some(value) = qmk_settings.get(&qsid) {
                         if !header_shown {
                             println!("{}:", group_name);
                             header_shown = true;
                         }
-                        match field["type"].as_str().unwrap() {
+                        match field["type"].as_str().ok_or("type should be a string")? {
                             "integer" => {
-                                println!(
-                                    "\t{}) {} = {}",
-                                    qsid,
-                                    title,
-                                    qmk_settings.get(&qsid).unwrap().get()
-                                );
+                                println!("\t{}) {} = {}", qsid, title, value.get());
                             }
                             "boolean" => match field["bit"].as_u64() {
                                 None => {
-                                    println!(
-                                        "\t{}) {} = {}",
-                                        qsid,
-                                        title,
-                                        qmk_settings.get(&qsid).unwrap().get() != 0
-                                    );
+                                    println!("\t{}) {} = {}", qsid, title, value.get() != 0);
                                 }
                                 Some(bit) => {
                                     println!(
                                         "\t{}) {} = {}",
                                         qsid,
                                         title,
-                                        qmk_settings.get(&qsid).unwrap().get_bool(bit as u8)
+                                        value.get_bool(bit as u8)
                                     );
                                 }
                             },

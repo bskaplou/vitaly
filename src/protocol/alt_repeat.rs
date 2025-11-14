@@ -4,6 +4,7 @@ use crate::protocol::{
     DYNAMIC_VIAL_ALT_REPEAT_KEY_GET, DYNAMIC_VIAL_ALT_REPEAT_KEY_SET, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
+use serde_json::Value;
 use std::fmt;
 
 #[derive(Debug)]
@@ -22,7 +23,7 @@ impl AltRepeat {
     pub fn from_strings(
         index: u8,
         keys: Vec<&str>,
-    ) -> Result<AltRepeat, keycodes::KeyParsingError> {
+    ) -> Result<AltRepeat, Box<dyn std::error::Error>> {
         let mut keycode = 0u16;
         let mut alt_keycode = 0u16;
         let mut allowed_mods = 0u8;
@@ -33,7 +34,7 @@ impl AltRepeat {
 
         if keys.len() > 0 {
             for part in keys {
-                let (left, right) = part.split_once("=").unwrap();
+                let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
                 match left {
                     "keycode" | "k" => keycode = keycodes::name_to_qid(&right.to_string())?,
                     "alt_keycode" | "a" => alt_keycode = keycodes::name_to_qid(&right.to_string())?,
@@ -60,7 +61,8 @@ impl AltRepeat {
                                 _ => {
                                     return Err(keycodes::KeyParsingError(
                                         format!("Unknown option {}", left).to_string(),
-                                    ));
+                                    )
+                                    .into());
                                 }
                             }
                         }
@@ -68,11 +70,79 @@ impl AltRepeat {
                     _ => {
                         return Err(keycodes::KeyParsingError(
                             format!("Unknown setting {}", left).to_string(),
-                        ));
+                        )
+                        .into());
                     }
                 }
             }
         }
+        Ok(AltRepeat {
+            index: index,
+            keycode: keycode,
+            alt_keycode: alt_keycode,
+            allowed_mods: allowed_mods,
+            arep_option_default_to_this_alt_key: arep_option_default_to_this_alt_key,
+            arep_option_bidirectional: arep_option_bidirectional,
+            arep_option_ignore_mod_handedness: arep_option_ignore_mod_handedness,
+            arep_enabled: arep_enabled,
+        })
+    }
+
+    pub fn from_json(
+        index: u8,
+        alt_repeat_json: &Value,
+    ) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+        let mut keycode = 0u16;
+        let mut alt_keycode = 0u16;
+        let mut allowed_mods = 0u8;
+        let mut arep_option_default_to_this_alt_key = false;
+        let mut arep_option_bidirectional = false;
+        let mut arep_option_ignore_mod_handedness = false;
+        let mut arep_enabled = false;
+        let alt_repeat = alt_repeat_json
+            .as_object()
+            .ok_or("alt_repeat element should be an object")?;
+
+        for (key, value) in alt_repeat {
+            match key.as_str() {
+                "keycode" => {
+                    keycode = keycodes::name_to_qid(
+                        &value
+                            .as_str()
+                            .ok_or("keycode value should be string")?
+                            .to_string(),
+                    )?;
+                }
+                "alt_keycode" => {
+                    alt_keycode = keycodes::name_to_qid(
+                        &value
+                            .as_str()
+                            .ok_or("keycode value should be string")?
+                            .to_string(),
+                    )?;
+                }
+                "allowed_mods" => {
+                    allowed_mods = value
+                        .as_u64()
+                        .ok_or("allowed_mods value should be a number")?
+                        as u8;
+                }
+                "options" => {
+                    let options = value.as_u64().ok_or("options value should be a number")? as u16;
+                    arep_option_default_to_this_alt_key = options & (1 << 0) == (1 << 0);
+                    arep_option_bidirectional = options & (1 << 1) == (1 << 1);
+                    arep_option_ignore_mod_handedness = options & (1 << 2) == (1 << 2);
+                    arep_enabled = options & (1 << 3) == (1 << 3);
+                }
+                _ => {
+                    return Err(keycodes::KeyParsingError(
+                        format!("Unknown alt_repeat key {}", key).to_string(),
+                    )
+                    .into());
+                }
+            }
+        }
+
         Ok(AltRepeat {
             index: index,
             keycode: keycode,
@@ -176,6 +246,19 @@ pub fn load_alt_repeats(
         }
     }
     Ok(altrepeats)
+}
+
+pub fn load_alt_repeats_from_json(
+    alt_repeats_json: &Value,
+) -> Result<Vec<AltRepeat>, Box<dyn std::error::Error>> {
+    let alt_repeats = alt_repeats_json
+        .as_array()
+        .ok_or("alt_repeats_json should be an array")?;
+    let mut result = Vec::new();
+    for (i, alt_repeat) in alt_repeats.iter().enumerate() {
+        result.push(AltRepeat::from_json(i as u8, &alt_repeat)?);
+    }
+    Ok(result)
 }
 
 pub fn set_alt_repeat(

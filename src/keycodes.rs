@@ -198,11 +198,10 @@ fn parse_num(num: &String) -> Result<u16, KeyParsingError> {
     }
 }
 
-pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
+pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
     let n = name.replace(" ", "");
-    if n.contains("(") {
+    if let Some((left, right_str)) = n.split_once('(') {
         let keycode;
-        let (left, right_str) = n.split_once('(').unwrap();
         let mut right_s = right_str.to_string();
         right_s.pop(); // kill closing )
         let right = right_s.to_owned();
@@ -290,7 +289,8 @@ pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
                             right
                         )
                         .to_string(),
-                    ))
+                    )
+                    .into())
                 }
                 Some((layer, mo)) => {
                     let l: u16 = parse_layer(&layer.to_string())?;
@@ -313,7 +313,8 @@ pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
                             right
                         )
                         .to_string(),
-                    ))
+                    )
+                    .into())
                 }
                 Some((layer, key)) => {
                     let l: u16 = parse_layer(&layer.to_string())?;
@@ -329,7 +330,8 @@ pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
                             right
                         )
                         .to_string(),
-                    ))
+                    )
+                    .into())
                 }
                 Some((mods, key)) => {
                     let m = name_to_mod(&mods.to_string())? as u16;
@@ -447,16 +449,16 @@ pub fn name_to_qid(name: &String) -> Result<u16, KeyParsingError> {
                 keycode = 0x5700 | (i & 0xFF);
             }
             &_ => {
-                return Err(KeyParsingError(
-                    format!("can't find macro {}", left).to_string(),
-                ))
+                return Err(
+                    KeyParsingError(format!("can't find macro {}", left).to_string()).into(),
+                )
             }
         }
         Ok(keycode)
     } else {
         match name_to_code::FULLNAMES.get(n.as_str()) {
             Some(value) => Ok(*value),
-            None => Err(KeyParsingError(format!("can't find key {}", n).to_string())),
+            None => Err(KeyParsingError(format!("can't find key {}", n).to_string()).into()),
         }
     }
 }

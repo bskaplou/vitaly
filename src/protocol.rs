@@ -8,10 +8,14 @@ use thiserror::Error;
 use crate::keycodes;
 
 pub mod key_override;
-pub use crate::protocol::key_override::{load_key_overrides, set_key_override, KeyOverride};
+pub use crate::protocol::key_override::{
+    load_key_overrides, load_key_overrides_from_json, set_key_override, KeyOverride,
+};
 
 pub mod alt_repeat;
-pub use crate::protocol::alt_repeat::{load_alt_repeats, set_alt_repeat, AltRepeat};
+pub use crate::protocol::alt_repeat::{
+    load_alt_repeats, load_alt_repeats_from_json, set_alt_repeat, AltRepeat,
+};
 
 pub mod tap_dance;
 pub use crate::protocol::tap_dance::{
@@ -359,24 +363,24 @@ impl Keymap {
                     .as_array()
                     .ok_or("row content should be array of keycodes")?
                 {
-                    let keycode: u16;
-                    if value.is_number() {
-                        keycode = 0;
-                    } else if value.is_string() {
-                        let string_value = value.as_str().unwrap().to_string();
-                        if string_value.starts_with("0x") {
-                            let (_, hex) = string_value
-                                .split_once("x")
-                                .ok_or("Incorrect hex encoding")?;
-                            keycode = u16::from_str_radix(hex, 16)?;
-                        } else {
-                            keycode = keycodes::name_to_qid(&string_value)?;
+                    let keycode: u16 = match value {
+                        Value::Number(_) => 0,
+                        Value::String(value) => {
+                            if value.starts_with("0x") {
+                                let (_, hex) =
+                                    value.split_once("x").ok_or("Incorrect hex encoding")?;
+                                u16::from_str_radix(hex, 16)?
+                            } else {
+                                keycodes::name_to_qid(&value)?
+                            }
                         }
-                    } else {
-                        return Err(
-                            KeymapError("keycode should be number or string".to_string()).into(),
-                        );
-                    }
+                        _ => {
+                            return Err(KeymapError(
+                                "keycode should be number or string".to_string(),
+                            )
+                            .into());
+                        }
+                    };
                     keys.push((keycode >> 8) as u8);
                     keys.push((keycode & 0xFF) as u8);
                 }
