@@ -100,33 +100,61 @@ impl MacroStep {
         }
     }
 
-    fn from_json(step_json: &Value) -> Result<MacroStep, Box<dyn std::error::Error>> {
+    fn from_json(step_json: &Value) -> Result<Vec<MacroStep>, Box<dyn std::error::Error>> {
         let step = step_json
             .as_array()
             .ok_or("macro step should be an array")?;
-        if step.len() != 2 {
+        if step.len() < 2 {
             return Err(MacroParsingError(
-                "macro step array should be strictly 2 elements long".to_string(),
+                "macro step array should be at least 2 elements long".to_string(),
             )
             .into());
         }
+        let mut result = Vec::new();
         let action = &step[0];
-        let argument = &step[1];
-        let text_arg = argument.as_str().ok_or("text argument should be string");
         match action.as_str().ok_or("action should be string")? {
-            "delay" => Ok(MacroStep::Delay(
-                argument.as_u64().ok_or("delay argument should be number")? as u16,
-            )),
-            "text" => Ok(MacroStep::Text(text_arg?.to_string())),
-            "tap" => Ok(MacroStep::Tap(keycodes::name_to_qid(
-                &text_arg?.to_string(),
-            )?)),
-            "down" => Ok(MacroStep::Down(keycodes::name_to_qid(
-                &text_arg?.to_string(),
-            )?)),
-            "up" => Ok(MacroStep::Up(keycodes::name_to_qid(
-                &text_arg?.to_string(),
-            )?)),
+            "delay" => {
+                for arg in &step[1..] {
+                    result.push(MacroStep::Delay(
+                        arg.as_u64().ok_or("delay argument should be number")? as u16,
+                    ));
+                }
+                Ok(result)
+            }
+            "text" => {
+                for arg in &step[1..] {
+                    let text_arg = arg.as_str().ok_or("text argument should be string");
+                    result.push(MacroStep::Text(text_arg?.to_string()));
+                }
+                Ok(result)
+            }
+            "tap" => {
+                for arg in &step[1..] {
+                    let text_arg = arg.as_str().ok_or("text argument should be string");
+                    result.push(MacroStep::Tap(keycodes::name_to_qid(
+                        &text_arg?.to_string(),
+                    )?));
+                }
+                Ok(result)
+            }
+            "down" => {
+                for arg in &step[1..] {
+                    let text_arg = arg.as_str().ok_or("text argument should be string");
+                    result.push(MacroStep::Down(keycodes::name_to_qid(
+                        &text_arg?.to_string(),
+                    )?));
+                }
+                Ok(result)
+            }
+            "up" => {
+                for arg in &step[1..] {
+                    let text_arg = arg.as_str().ok_or("text argument should be string");
+                    result.push(MacroStep::Up(keycodes::name_to_qid(
+                        &text_arg?.to_string(),
+                    )?));
+                }
+                Ok(result)
+            }
             action => {
                 return Err(
                     MacroParsingError(format!("Unknown macro step {}", action).to_string()).into(),
@@ -193,7 +221,7 @@ impl Macro {
             .as_array()
             .ok_or("macro should be defined as array of macro steps")?;
         for step in steps {
-            parsed_steps.push(MacroStep::from_json(step)?);
+            parsed_steps.append(&mut MacroStep::from_json(step)?);
         }
         Ok(Macro {
             index,

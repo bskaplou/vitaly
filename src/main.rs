@@ -2,7 +2,7 @@ extern crate hidapi;
 
 use argh::FromArgs;
 use hidapi::{DeviceInfo, HidApi, HidDevice};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
 use std::{thread, time};
@@ -38,6 +38,7 @@ enum CommandEnum {
     KeyOverrides(CommandKeyOverrides),
     AltRepeats(CommandAltRepeats),
     Load(CommandLoad),
+    Save(CommandSave),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -193,6 +194,19 @@ struct CommandLoad {
     /// preview content of layout file instead of loading into keyboard
     #[argh(switch, short = 'p')]
     preview: bool,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// Load layout from file
+#[argh(subcommand, name = "save")]
+struct CommandSave {
+    /// meta file (to use instead of vial meta)
+    #[argh(option, short = 'm')]
+    meta: Option<String>,
+
+    /// path to layout file
+    #[argh(option, short = 'f')]
+    file: String,
 }
 
 #[allow(dead_code)]
@@ -1010,70 +1024,93 @@ fn run_load(
         .ok_or("layout should be an array")?;
 
     let keys = protocol::Keymap::from_json(rows, cols, capabilities.layer_count, layers)?;
-    let combos = protocol::load_combos_from_json(root.get("combo").ok_or("combo is not defined")?)?;
-    let tap_dances = protocol::load_tap_dances_from_json(
-        root.get("tap_dance").ok_or("tad_dance is not defined")?,
-    )?;
-    let qmk_settings = protocol::load_qmk_settings_from_json(
-        root.get("settings").ok_or("settings are not defined")?,
-    )?;
+    let combos = match capabilities.combo_count {
+        0 => Vec::new(),
+        _ => protocol::load_combos_from_json(root.get("combo").ok_or("combo is not defined")?)?,
+    };
+    let tap_dances = match capabilities.tap_dance_count {
+        0 => Vec::new(),
+        _ => protocol::load_tap_dances_from_json(
+            root.get("tap_dance").ok_or("tad_dance is not defined")?,
+        )?,
+    };
     let macros = protocol::load_macros_from_json(root.get("macro").ok_or("macro is not defined")?)?;
 
-    let key_overrides = protocol::load_key_overrides_from_json(
-        root.get("key_override")
-            .ok_or("key_override are not defined")?,
-    )?;
+    let key_overrides = match capabilities.key_override_count {
+        0 => Vec::new(),
+        _ => protocol::load_key_overrides_from_json(
+            root.get("key_override")
+                .ok_or("key_override are not defined")?,
+        )?,
+    };
 
-    let alt_repeats = protocol::load_alt_repeats_from_json(
-        root.get("alt_repeat_key")
-            .ok_or("alt_repeat_key are not defined")?,
-    )?;
+    let alt_repeats = match capabilities.alt_repeat_key_count {
+        0 => Vec::new(),
+        _ => protocol::load_alt_repeats_from_json(
+            root.get("alt_repeat_key")
+                .ok_or("alt_repeat_key are not defined")?,
+        )?,
+    };
 
     if preview {
         for layer_number in 0..capabilities.layer_count {
             render_layer(&keys, &buttons, layer_number)?
         }
-        println!("Combos:");
-        for combo in &combos {
-            if !combo.is_empty() {
-                println!("{}", &combo);
-            }
-        }
-        println!("");
 
-        println!("Macros:");
-        for m in &macros {
-            if !m.is_empty() {
-                println!("{}", &m);
+        if combos.len() > 0 {
+            println!("Combos:");
+            for combo in &combos {
+                if !combo.is_empty() {
+                    println!("{}", &combo);
+                }
             }
+            println!("");
         }
-        println!("");
 
-        println!("TapDances:");
-        for tap_dance in &tap_dances {
-            if !tap_dance.is_empty() {
-                println!("{}", &tap_dance);
+        if macros.len() > 0 {
+            println!("Macros:");
+            for m in &macros {
+                if !m.is_empty() {
+                    println!("{}", &m);
+                }
             }
+            println!("");
         }
-        println!("");
 
-        println!("KeyOverrides:");
-        for key_override in &key_overrides {
-            if !key_override.is_empty() {
-                println!("{}", &key_override);
+        if tap_dances.len() > 0 {
+            println!("TapDances:");
+            for tap_dance in &tap_dances {
+                if !tap_dance.is_empty() {
+                    println!("{}", &tap_dance);
+                }
             }
+            println!("");
         }
-        println!("");
 
-        println!("AltRepeatKeys:");
-        for alt_repeat in &alt_repeats {
-            if !alt_repeat.is_empty() {
-                println!("{}", &alt_repeat);
+        if key_overrides.len() > 0 {
+            println!("KeyOverrides:");
+            for key_override in &key_overrides {
+                if !key_override.is_empty() {
+                    println!("{}", &key_override);
+                }
             }
+            println!("");
         }
-        println!("");
+
+        if alt_repeats.len() > 0 {
+            println!("AltRepeatKeys:");
+            for alt_repeat in &alt_repeats {
+                if !alt_repeat.is_empty() {
+                    println!("{}", &alt_repeat);
+                }
+            }
+            println!("");
+        }
 
         if capabilities.vial_version >= protocol::VIAL_PROTOCOL_QMK_SETTINGS {
+            let qmk_settings = protocol::load_qmk_settings_from_json(
+                root.get("settings").ok_or("settings are not defined")?,
+            )?;
             let settings_defs = protocol::load_qmk_definitions()?;
             println!("Settings:");
             for group in settings_defs["tabs"]
@@ -1124,6 +1161,60 @@ fn run_load(
             }
         }
     }
+    Ok(())
+}
+
+fn run_save(
+    api: &HidApi,
+    device: &DeviceInfo,
+    meta_file: &Option<String>,
+    file: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let device_path = device.path();
+    let dev = api.open_path(device_path)?;
+
+    let uid: u64 = protocol::load_uid(&dev)?;
+    let capabilities = protocol::scan_capabilities(&dev)?;
+    let meta = load_meta(&dev, &capabilities, meta_file)?;
+    let cols = meta["matrix"]["cols"]
+        .as_u64()
+        .ok_or("matrix/cols not found in meta")? as u8;
+    let rows = meta["matrix"]["rows"]
+        .as_u64()
+        .ok_or("matrix/rows not found in meta")? as u8;
+    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
+
+    let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
+    let combos = match capabilities.combo_count {
+        0 => Vec::new(),
+        _ => protocol::load_combos(&dev, capabilities.combo_count)?,
+    };
+    let tap_dances = match capabilities.tap_dance_count {
+        0 => Vec::new(),
+        _ => protocol::load_tap_dances(&dev, capabilities.tap_dance_count)?,
+    };
+    let macros = protocol::load_macros(
+        &dev,
+        capabilities.macro_count,
+        capabilities.macro_buffer_size,
+    )?;
+
+    let key_overrides = match capabilities.key_override_count {
+        0 => Vec::new(),
+        _ => protocol::load_key_overrides(&dev, capabilities.key_override_count)?,
+    };
+
+    let alt_repeats = match capabilities.alt_repeat_key_count {
+        0 => Vec::new(),
+        _ => protocol::load_alt_repeats(&dev, capabilities.alt_repeat_key_count)?,
+    };
+
+    let result = json!({
+        "uid": uid
+    });
+
+    println!("{}", result);
+
     Ok(())
 }
 
@@ -1180,6 +1271,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         CommandEnum::Load(ops) => {
                             run_load(&api, device, &ops.meta, &ops.file, ops.preview)
                         }
+                        CommandEnum::Save(ops) => run_save(&api, device, &ops.meta, &ops.file),
                     };
                     match result {
                         Ok(_) => {

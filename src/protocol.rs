@@ -545,3 +545,15 @@ pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8), Box<dyn std::error:
         Err(e) => Err(e.into()),
     }
 }
+
+pub fn load_uid(device: &HidDevice) -> Result<u64, Box<dyn std::error::Error>> {
+    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX]) {
+        Ok(data) => {
+            let mut uid_bytes: [u8; 8] = [0; 8];
+            uid_bytes.copy_from_slice(&data[4..12]);
+            let uid: u64 = u64::from_le_bytes(uid_bytes);
+            Ok(uid)
+        }
+        Err(e) => Err(e.into()),
+    }
+}
