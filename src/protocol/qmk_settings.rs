@@ -3,7 +3,7 @@ use crate::protocol::{
     CMD_VIAL_QMK_SETTINGS_RESET, CMD_VIAL_QMK_SETTINGS_SET, CMD_VIA_VIAL_PREFIX, MESSAGE_LENGTH,
 };
 use hidapi::HidDevice;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::cmp::max;
 use std::collections::HashMap;
 
@@ -122,6 +122,34 @@ pub fn set_qmk_value(
     }
 }
 
+pub fn load_qmk_settings(
+    device: &HidDevice,
+) -> Result<HashMap<u16, QmkValue>, Box<dyn std::error::Error>> {
+    let mut result = HashMap::new();
+    let sids = load_qmk_qsids(device)?;
+    let definitions = load_qmk_definitions()?;
+    for group in definitions["tabs"]
+        .as_array()
+        .ok_or("tabs should be an array")?
+    {
+        for field in group["fields"]
+            .as_array()
+            .ok_or("fields should be an array")?
+        {
+            let qsid = field["qsid"].as_u64().ok_or("qsid should be a number")? as u16;
+            if sids.contains(&qsid) {
+                let width: u8 = match &field["width"] {
+                    Value::Number(n) => n.as_u64().ok_or("width shoulbe a number")? as u8,
+                    _ => 1,
+                };
+                let value = get_qmk_value(&device, qsid, width)?;
+                result.insert(qsid, value);
+            }
+        }
+    }
+    Ok(result)
+}
+
 pub fn reset_qmk_values(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
     let buff: [u8; 2] = [CMD_VIA_VIAL_PREFIX, CMD_VIAL_QMK_SETTINGS_RESET];
     match send_recv(&device, &buff) {
@@ -151,4 +179,14 @@ pub fn load_qmk_settings_from_json(
         result.insert(qsid, QmkValue { value: val });
     }
     Ok(result)
+}
+
+pub fn qmk_settings_to_json(
+    values: &HashMap<u16, QmkValue>,
+) -> Result<Value, Box<dyn std::error::Error>> {
+    let mut result = Map::new();
+    for (key, value) in values {
+        result.insert(key.to_string(), value.get().into());
+    }
+    Ok(Value::Object(result))
 }

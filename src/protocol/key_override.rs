@@ -4,7 +4,7 @@ use crate::protocol::{
     DYNAMIC_VIAL_KEY_OVERRIDE_GET, DYNAMIC_VIAL_KEY_OVERRIDE_SET, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt;
 
 #[derive(Debug)]
@@ -26,6 +26,32 @@ pub struct KeyOverride {
 }
 
 impl KeyOverride {
+    pub fn options(&self) -> u8 {
+        let mut options = 0u8;
+        if self.ko_option_activation_trigger_down {
+            options |= 1;
+        }
+        if self.ko_option_activation_required_mod_down {
+            options |= 1 << 1;
+        }
+        if self.ko_option_activation_negative_mod_up {
+            options |= 1 << 2;
+        }
+        if self.ko_option_one_mod {
+            options |= 1 << 3;
+        }
+        if self.ko_option_no_reregister_trigger {
+            options |= 1 << 4;
+        }
+        if self.ko_option_no_unregister_on_other_key_down {
+            options |= 1 << 5;
+        }
+        if self.ko_enabled {
+            options |= 1 << 7;
+        }
+        options
+    }
+
     pub fn from_strings(
         index: u8,
         keys: Vec<&str>,
@@ -380,28 +406,6 @@ pub fn set_key_override(
     device: &HidDevice,
     keyoverride: &KeyOverride,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut options = 0u8;
-    if keyoverride.ko_option_activation_trigger_down {
-        options |= 1;
-    }
-    if keyoverride.ko_option_activation_required_mod_down {
-        options |= 1 << 1;
-    }
-    if keyoverride.ko_option_activation_negative_mod_up {
-        options |= 1 << 2;
-    }
-    if keyoverride.ko_option_one_mod {
-        options |= 1 << 3;
-    }
-    if keyoverride.ko_option_no_reregister_trigger {
-        options |= 1 << 4;
-    }
-    if keyoverride.ko_option_no_unregister_on_other_key_down {
-        options |= 1 << 5;
-    }
-    if keyoverride.ko_enabled {
-        options |= 1 << 7;
-    }
     match send(
         &device,
         &[
@@ -418,10 +422,27 @@ pub fn set_key_override(
             keyoverride.trigger_mods,
             keyoverride.negative_mod_mask,
             keyoverride.suppressed_mods,
-            options,
+            keyoverride.options(),
         ],
     ) {
         Ok(_) => Ok(()),
         Err(e) => Err(ProtocolError::HidError(e).into()),
     }
+}
+pub fn key_overrides_to_json(
+    key_overrides: &Vec<KeyOverride>,
+) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for key_override in key_overrides {
+        result.push(json!({
+            "trigger": keycodes::qid_to_name(key_override.trigger),
+            "replacement": keycodes::qid_to_name(key_override.replacement),
+            "layers": key_override.layers,
+            "trigger_mods": key_override.trigger_mods,
+            "negative_mod_mask": key_override.negative_mod_mask,
+            "suppressed_mods": key_override.suppressed_mods,
+            "options": key_override.options(),
+        }))
+    }
+    Ok(result)
 }

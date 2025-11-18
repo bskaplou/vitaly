@@ -9,29 +9,34 @@ use crate::keycodes;
 
 pub mod key_override;
 pub use crate::protocol::key_override::{
-    load_key_overrides, load_key_overrides_from_json, set_key_override, KeyOverride,
+    key_overrides_to_json, load_key_overrides, load_key_overrides_from_json, set_key_override,
+    KeyOverride,
 };
 
 pub mod alt_repeat;
 pub use crate::protocol::alt_repeat::{
-    load_alt_repeats, load_alt_repeats_from_json, set_alt_repeat, AltRepeat,
+    alt_repeats_to_json, load_alt_repeats, load_alt_repeats_from_json, set_alt_repeat, AltRepeat,
 };
 
 pub mod tap_dance;
 pub use crate::protocol::tap_dance::{
-    load_tap_dances, load_tap_dances_from_json, set_tap_dance, TapDance,
+    load_tap_dances, load_tap_dances_from_json, set_tap_dance, tap_dances_to_json, TapDance,
 };
 
 pub mod combo;
-pub use crate::protocol::combo::{load_combos, load_combos_from_json, set_combo, Combo};
+pub use crate::protocol::combo::{
+    combos_to_json, load_combos, load_combos_from_json, set_combo, Combo,
+};
 
 pub mod r#macro;
-pub use crate::protocol::r#macro::{load_macros, load_macros_from_json, set_macros, Macro};
+pub use crate::protocol::r#macro::{
+    load_macros, load_macros_from_json, macros_to_json, set_macros, Macro,
+};
 
 pub mod qmk_settings;
 pub use crate::protocol::qmk_settings::{
-    get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings_from_json,
-    reset_qmk_values, set_qmk_value, QmkValue,
+    get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings,
+    load_qmk_settings_from_json, qmk_settings_to_json, reset_qmk_values, set_qmk_value, QmkValue,
 };
 
 pub const USAGE_PAGE: u16 = 0xFF60;

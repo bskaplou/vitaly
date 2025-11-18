@@ -4,7 +4,7 @@ use crate::protocol::{
     DYNAMIC_VIAL_ALT_REPEAT_KEY_GET, DYNAMIC_VIAL_ALT_REPEAT_KEY_SET, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt;
 
 #[derive(Debug)]
@@ -20,6 +20,23 @@ pub struct AltRepeat {
 }
 
 impl AltRepeat {
+    pub fn options(&self) -> u8 {
+        let mut options = 0u8;
+        if self.arep_option_default_to_this_alt_key {
+            options |= 1;
+        }
+        if self.arep_option_bidirectional {
+            options |= 1 << 1;
+        }
+        if self.arep_option_ignore_mod_handedness {
+            options |= 1 << 2;
+        }
+        if self.arep_enabled {
+            options |= 1 << 3;
+        }
+        options
+    }
+
     pub fn from_strings(
         index: u8,
         keys: Vec<&str>,
@@ -265,19 +282,6 @@ pub fn set_alt_repeat(
     device: &HidDevice,
     altrepeat: &AltRepeat,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut options = 0u8;
-    if altrepeat.arep_option_default_to_this_alt_key {
-        options |= 1;
-    }
-    if altrepeat.arep_option_bidirectional {
-        options |= 1 << 1;
-    }
-    if altrepeat.arep_option_ignore_mod_handedness {
-        options |= 1 << 2;
-    }
-    if altrepeat.arep_enabled {
-        options |= 1 << 3;
-    }
     match send(
         &device,
         &[
@@ -290,10 +294,25 @@ pub fn set_alt_repeat(
             (altrepeat.alt_keycode & 0xFF) as u8,
             ((altrepeat.alt_keycode >> 8) & 0xFF) as u8,
             altrepeat.allowed_mods,
-            options,
+            altrepeat.options(),
         ],
     ) {
         Ok(_) => Ok(()),
         Err(e) => Err(ProtocolError::HidError(e).into()),
     }
+}
+
+pub fn alt_repeats_to_json(
+    alt_repeats: &Vec<AltRepeat>,
+) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for alt_repeat in alt_repeats {
+        result.push(json!({
+            "keycode": keycodes::qid_to_name(alt_repeat.keycode),
+            "alt_keycode": keycodes::qid_to_name(alt_repeat.alt_keycode),
+            "allowed_mods": alt_repeat.allowed_mods,
+            "options": alt_repeat.options(),
+        }))
+    }
+    Ok(result)
 }

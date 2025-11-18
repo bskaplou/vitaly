@@ -4,7 +4,7 @@ use crate::protocol::{
     DYNAMIC_VIAL_TAP_DANCE_GET, DYNAMIC_VIAL_TAP_DANCE_SET, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt;
 use thiserror::Error;
 
@@ -205,4 +205,20 @@ pub fn set_tap_dance(
         Ok(_) => Ok(()),
         Err(e) => Err(ProtocolError::HidError(e).into()),
     }
+}
+
+pub fn tap_dances_to_json(
+    tap_dances: &Vec<TapDance>,
+) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for tap_dance in tap_dances {
+        result.push(json!([
+            keycodes::qid_to_name(tap_dance.tap),
+            keycodes::qid_to_name(tap_dance.hold),
+            keycodes::qid_to_name(tap_dance.double_tap),
+            keycodes::qid_to_name(tap_dance.tap_hold),
+            tap_dance.tapping_term,
+        ]))
+    }
+    Ok(result)
 }

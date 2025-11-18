@@ -1121,7 +1121,7 @@ fn run_load(
                 let mut header_shown = false;
                 for field in group["fields"]
                     .as_array()
-                    .ok_or("fields shoulbe a an array")?
+                    .ok_or("fields should be a an array")?
                 {
                     let title = field["title"].as_str().ok_or("title should be a string")?;
                     let qsid = field["qsid"].as_u64().ok_or("qsid should be a number")? as u16;
@@ -1209,12 +1209,69 @@ fn run_save(
         _ => protocol::load_alt_repeats(&dev, capabilities.alt_repeat_key_count)?,
     };
 
-    let result = json!({
-        "uid": uid
+    let qmk_settings = if capabilities.vial_version >= protocol::VIAL_PROTOCOL_QMK_SETTINGS {
+        protocol::load_qmk_settings(&dev)?
+    } else {
+        HashMap::new()
+    };
+
+    let mut result = json!({
+        "version": 1,
+        "via_protocol": capabilities.via_version,
+        "uid": uid,
     });
 
-    println!("{}", result);
+    if capabilities.vial_version > 0 {
+        result.as_object_mut().ok_or("broken root")?.insert(
+            "vial_protocol".to_string(),
+            capabilities.vial_version.into(),
+        );
+    }
 
+    if alt_repeats.len() > 0 {
+        result.as_object_mut().ok_or("broken root")?.insert(
+            "alt_repeat_key".to_string(),
+            Value::Array(protocol::alt_repeats_to_json(&alt_repeats)?),
+        );
+    }
+
+    if key_overrides.len() > 0 {
+        result.as_object_mut().ok_or("broken root")?.insert(
+            "key_override".to_string(),
+            Value::Array(protocol::key_overrides_to_json(&key_overrides)?),
+        );
+    }
+
+    if combos.len() > 0 {
+        result.as_object_mut().ok_or("broken root")?.insert(
+            "combo".to_string(),
+            Value::Array(protocol::combos_to_json(&combos)?),
+        );
+    }
+
+    if tap_dances.len() > 0 {
+        result.as_object_mut().ok_or("broken root")?.insert(
+            "tap_dance".to_string(),
+            Value::Array(protocol::tap_dances_to_json(&tap_dances)?),
+        );
+    }
+
+    if macros.len() > 0 {
+        result.as_object_mut().ok_or("broken root")?.insert(
+            "macro".to_string(),
+            Value::Array(protocol::macros_to_json(&macros)?),
+        );
+    }
+
+    if qmk_settings.len() > 0 {
+        result.as_object_mut().ok_or("broken root")?.insert(
+            "settings".to_string(),
+            protocol::qmk_settings_to_json(&qmk_settings)?,
+        );
+    }
+    // println!("{}", result.to_string());
+
+    fs::write(file, result.to_string())?;
     Ok(())
 }
 

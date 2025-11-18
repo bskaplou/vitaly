@@ -4,7 +4,7 @@ use crate::protocol::{
     CMD_VIA_MACRO_SET_BUFFER, MESSAGE_LENGTH, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::cmp::min;
 use std::fmt;
 use thiserror::Error;
@@ -517,4 +517,22 @@ mod tests {
         ];
         assert_eq!(b1, serialize(deserialize(b1.to_vec()).unwrap()));
     }
+}
+
+pub fn macros_to_json(macros: &Vec<Macro>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for m in macros {
+        let mut step_json = Vec::new();
+        for step in &m.steps {
+            match step {
+                MacroStep::Tap(v) => step_json.push(json!(["tap", keycodes::qid_to_name(*v)])),
+                MacroStep::Down(v) => step_json.push(json!(["down", keycodes::qid_to_name(*v)])),
+                MacroStep::Up(v) => step_json.push(json!(["up", keycodes::qid_to_name(*v)])),
+                MacroStep::Delay(v) => step_json.push(json!(["delay", v])),
+                MacroStep::Text(v) => step_json.push(json!(["text", v])),
+            }
+        }
+        result.push(serde_json::Value::Array(step_json));
+    }
+    Ok(result)
 }

@@ -4,7 +4,7 @@ use crate::protocol::{
     DYNAMIC_VIAL_COMBO_GET, DYNAMIC_VIAL_COMBO_SET, VIA_UNHANDLED,
 };
 use hidapi::HidDevice;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt;
 use thiserror::Error;
 
@@ -182,4 +182,18 @@ pub fn set_combo(device: &HidDevice, combo: &Combo) -> Result<(), Box<dyn std::e
         Ok(_) => Ok(()),
         Err(e) => Err(ProtocolError::HidError(e).into()),
     }
+}
+
+pub fn combos_to_json(combos: &Vec<Combo>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for combo in combos {
+        result.push(json!([
+            keycodes::qid_to_name(combo.key1),
+            keycodes::qid_to_name(combo.key2),
+            keycodes::qid_to_name(combo.key3),
+            keycodes::qid_to_name(combo.key4),
+            keycodes::qid_to_name(combo.output),
+        ]))
+    }
+    Ok(result)
 }
