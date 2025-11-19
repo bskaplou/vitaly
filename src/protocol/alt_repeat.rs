@@ -37,10 +37,10 @@ impl AltRepeat {
         options
     }
 
-    pub fn from_strings(
-        index: u8,
-        keys: Vec<&str>,
-    ) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &String) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+        let cleaned = value.replace(" ", "");
+        let keys: Vec<_> = cleaned.split(";").filter(|k| k.len() > 0).collect();
+
         let mut keycode = 0u16;
         let mut alt_keycode = 0u16;
         let mut allowed_mods = 0u8;
@@ -315,4 +315,155 @@ pub fn alt_repeats_to_json(
         }))
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_from_string_two_buttons() {
+        let altrepeat = AltRepeat::from_string(
+            3,
+            &"keycode = KC_3; alt_keycode= KC_5; options= arep_enabled;".to_string(),
+        )
+        .unwrap();
+        assert_eq!(altrepeat.index, 3);
+        assert_eq!(keycodes::qid_to_name(altrepeat.keycode), "KC_3");
+        assert_eq!(keycodes::qid_to_name(altrepeat.alt_keycode), "KC_5");
+        assert_eq!(altrepeat.allowed_mods, 0);
+        assert_eq!(altrepeat.arep_enabled, true);
+    }
+
+    #[test]
+    fn test_from_string_full() {
+        let ar = AltRepeat::from_string(
+            0,
+            &"k=KC_A; a=KC_B; m=LCTL; o=enabled|bidirectional".to_string(),
+        )
+        .unwrap();
+        assert_eq!(keycodes::qid_to_name(ar.keycode), "KC_A");
+        assert_eq!(keycodes::qid_to_name(ar.alt_keycode), "KC_B");
+        assert_eq!(ar.allowed_mods, 0b00000001); // MOD_LCTL
+        assert!(ar.arep_enabled);
+        assert!(ar.arep_option_bidirectional);
+        assert!(!ar.arep_option_ignore_mod_handedness);
+    }
+
+    #[test]
+    fn test_from_string_errors() {
+        assert!(
+            AltRepeat::from_string(0, &"k=KC_A; a".to_string()).is_err(),
+            "Missing ="
+        );
+        assert!(
+            AltRepeat::from_string(0, &"foo=bar".to_string()).is_err(),
+            "Unknown key"
+        );
+        assert!(
+            AltRepeat::from_string(0, &"o=invalid_option".to_string()).is_err(),
+            "Unknown option"
+        );
+        assert!(
+            AltRepeat::from_string(0, &"k=INVALID".to_string()).is_err(),
+            "Invalid keycode"
+        );
+    }
+
+    #[test]
+    fn test_from_json_valid() {
+        let json = json!({
+            "keycode": "KC_A",
+            "alt_keycode": "KC_B",
+            "allowed_mods": 1,
+            "options": 10
+        });
+        let ar = AltRepeat::from_json(0, &json).unwrap();
+        assert_eq!(keycodes::qid_to_name(ar.keycode), "KC_A");
+        assert_eq!(keycodes::qid_to_name(ar.alt_keycode), "KC_B");
+        assert_eq!(ar.allowed_mods, 1);
+        assert!(!ar.arep_option_default_to_this_alt_key);
+        assert!(ar.arep_option_bidirectional);
+        assert!(!ar.arep_option_ignore_mod_handedness);
+        assert!(ar.arep_enabled);
+    }
+
+    #[test]
+    fn test_from_json_errors() {
+        assert!(AltRepeat::from_json(0, &json!("not an object")).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"keycode": 123})).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"allowed_mods": "string"})).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"options": "string"})).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"unknown_key": "KC_A"})).is_err());
+    }
+
+    #[test]
+    fn test_options_bitmask() {
+        let mut ar = AltRepeat::empty(0);
+        assert_eq!(ar.options(), 0);
+        ar.arep_enabled = true;
+        assert_eq!(ar.options(), 8); // 1 << 3
+        ar.arep_option_bidirectional = true;
+        assert_eq!(ar.options(), 10); // 8 | 2
+        ar.arep_option_ignore_mod_handedness = true;
+        assert_eq!(ar.options(), 14); // 10 | 4
+        ar.arep_option_default_to_this_alt_key = true;
+        assert_eq!(ar.options(), 15); // 14 | 1
+    }
+
+    #[test]
+    fn test_empty_and_is_empty() {
+        let empty_ar = AltRepeat::empty(0);
+        assert!(empty_ar.is_empty());
+
+        let mut non_empty = AltRepeat::empty(1);
+        non_empty.keycode = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
+        assert!(!non_empty.is_empty());
+
+        let mut non_empty2 = AltRepeat::empty(2);
+        non_empty2.arep_enabled = true;
+        assert!(!non_empty2.is_empty());
+    }
+
+    #[test]
+    fn test_display() {
+        let empty_ar = AltRepeat::empty(0);
+        assert_eq!(format!("{}", empty_ar), "0) EMPTY");
+
+        let mut ar = AltRepeat::empty(1);
+        ar.keycode = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
+        ar.alt_keycode = keycodes::name_to_qid(&"KC_B".to_string()).unwrap();
+        ar.arep_enabled = true;
+        let display_str = format!("{}", ar);
+        assert!(display_str.contains("keycode = KC_A;"));
+        assert!(display_str.contains("alt_keycode = KC_B;"));
+        assert!(display_str.contains("\n\tarep_enabled = true"));
+    }
+
+    #[test]
+    fn test_json_round_trip() {
+        let mut ar1 = AltRepeat::empty(0);
+        ar1.keycode = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
+        ar1.arep_enabled = true;
+        ar1.arep_option_bidirectional = true;
+
+        let mut ar2 = AltRepeat::empty(1);
+        ar2.keycode = keycodes::name_to_qid(&"KC_X".to_string()).unwrap();
+        ar2.alt_keycode = keycodes::name_to_qid(&"KC_Y".to_string()).unwrap();
+        ar2.allowed_mods = 1; // LCTL
+
+        let alt_repeats = vec![ar1, ar2];
+
+        let json_val = alt_repeats_to_json(&alt_repeats).unwrap();
+        let loaded_ars = load_alt_repeats_from_json(&Value::Array(json_val)).unwrap();
+
+        assert_eq!(alt_repeats.len(), loaded_ars.len());
+        assert_eq!(alt_repeats[0].keycode, loaded_ars[0].keycode);
+        assert_eq!(alt_repeats[0].options(), loaded_ars[0].options());
+        assert_eq!(alt_repeats[1].keycode, loaded_ars[1].keycode);
+        assert_eq!(alt_repeats[1].alt_keycode, loaded_ars[1].alt_keycode);
+        assert_eq!(alt_repeats[1].allowed_mods, loaded_ars[1].allowed_mods);
+        assert_eq!(alt_repeats[1].options(), loaded_ars[1].options());
+    }
 }

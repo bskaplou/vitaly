@@ -23,11 +23,11 @@ pub struct Combo {
 }
 
 impl Combo {
-    pub fn from_strings(
-        index: u8,
-        keys: Vec<&str>,
-        output: &str,
-    ) -> Result<Combo, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &String) -> Result<Combo, Box<dyn std::error::Error>> {
+        let (keys_all, output) = value
+            .split_once("=")
+            .ok_or("resulting action should be declared after =")?;
+        let keys: Vec<_> = keys_all.split("+").collect();
         let mut ks: [u16; 4] = [0x0; 4];
         let out = keycodes::name_to_qid(&output.to_string())?;
         for (idx, kn) in keys.iter().enumerate() {
@@ -196,4 +196,177 @@ pub fn combos_to_json(combos: &Vec<Combo>) -> Result<Vec<Value>, Box<dyn std::er
         ]))
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_string_two_buttons() {
+        let combo = Combo::from_string(0, &"KC_V + KC_B = KC_Z".to_string()).unwrap();
+        assert_eq!(combo.index, 0);
+        assert_eq!(keycodes::qid_to_name(combo.key1), "KC_V");
+        assert_eq!(keycodes::qid_to_name(combo.key2), "KC_B");
+        assert_eq!(combo.key3, 0);
+        assert_eq!(combo.key4, 0);
+        assert_eq!(keycodes::qid_to_name(combo.output), "KC_Z");
+    }
+
+    #[test]
+    fn test_from_string_one_button() {
+        let combo = Combo::from_string(0, &"KC_A = KC_B".to_string()).unwrap();
+        assert_eq!(keycodes::qid_to_name(combo.key1), "KC_A");
+        assert_eq!(combo.key2, 0);
+        assert_eq!(keycodes::qid_to_name(combo.output), "KC_B");
+    }
+
+    #[test]
+    fn test_from_string_three_buttons() {
+        let combo = Combo::from_string(0, &"KC_A + KC_B + KC_C = KC_D".to_string()).unwrap();
+        assert_eq!(keycodes::qid_to_name(combo.key1), "KC_A");
+        assert_eq!(keycodes::qid_to_name(combo.key2), "KC_B");
+        assert_eq!(keycodes::qid_to_name(combo.key3), "KC_C");
+        assert_eq!(combo.key4, 0);
+        assert_eq!(keycodes::qid_to_name(combo.output), "KC_D");
+    }
+
+    #[test]
+    fn test_from_string_four_buttons() {
+        let combo = Combo::from_string(0, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string()).unwrap();
+        assert_eq!(keycodes::qid_to_name(combo.key1), "KC_A");
+        assert_eq!(keycodes::qid_to_name(combo.key2), "KC_B");
+        assert_eq!(keycodes::qid_to_name(combo.key3), "KC_C");
+        assert_eq!(keycodes::qid_to_name(combo.key4), "KC_D");
+        assert_eq!(keycodes::qid_to_name(combo.output), "KC_E");
+    }
+
+    #[test]
+    fn test_from_string_invalid_format() {
+        let result = Combo::from_string(0, &"KC_A + KC_B KC_Z".to_string());
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "resulting action should be declared after ="
+        );
+    }
+
+    #[test]
+    fn test_from_string_invalid_keycode() {
+        let result = Combo::from_string(0, &"KC_A + INVALID_KEY = KC_Z".to_string());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_empty_combo() {
+        let combo = Combo::empty(5);
+        assert_eq!(combo.index, 5);
+        assert_eq!(combo.key1, 0);
+        assert_eq!(combo.key2, 0);
+        assert_eq!(combo.key3, 0);
+        assert_eq!(combo.key4, 0);
+        assert_eq!(combo.output, 0);
+        assert!(combo.is_empty());
+    }
+
+    #[test]
+    fn test_is_empty() {
+        let empty_combo = Combo::empty(0);
+        assert!(empty_combo.is_empty());
+
+        let non_empty_combo = Combo::from_string(0, &"KC_A = KC_B".to_string()).unwrap();
+        assert!(!non_empty_combo.is_empty());
+    }
+
+    #[test]
+    fn test_from_json_valid() {
+        let combo_json = json!(["KC_A", "KC_B", "KC_C", "KC_D", "KC_E"]);
+        let combo = Combo::from_json(0, &combo_json).unwrap();
+        assert_eq!(keycodes::qid_to_name(combo.key1), "KC_A");
+        assert_eq!(keycodes::qid_to_name(combo.key2), "KC_B");
+        assert_eq!(keycodes::qid_to_name(combo.key3), "KC_C");
+        assert_eq!(keycodes::qid_to_name(combo.key4), "KC_D");
+        assert_eq!(keycodes::qid_to_name(combo.output), "KC_E");
+
+        let combo_json_less_keys = json!(["KC_A", "KC_NO", "KC_NO", "KC_NO", "KC_B"]);
+        let combo_less = Combo::from_json(0, &combo_json_less_keys).unwrap();
+        assert_eq!(keycodes::qid_to_name(combo_less.key1), "KC_A");
+        assert_eq!(keycodes::qid_to_name(combo_less.output), "KC_B");
+    }
+
+    #[test]
+    fn test_from_json_invalid_length_too_long() {
+        let combo_json = json!(["KC_A", "KC_B", "KC_C", "KC_D", "KC_E", "KC_F"]); // 6 elements
+        let result = Combo::from_json(0, &combo_json);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "combo array should be strictly 5 elements long"
+        );
+    }
+
+    #[test]
+    fn test_from_json_non_string_elements() {
+        let combo_json = json!(["KC_A", 123, "KC_C", "KC_D", "KC_E"]);
+        let result = Combo::from_json(0, &combo_json);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Combo elements should be strings"
+        );
+    }
+
+    #[test]
+    fn test_display_empty_combo() {
+        let combo = Combo::empty(0);
+        assert_eq!(format!("{}", combo), "0) EMPTY");
+    }
+
+    #[test]
+    fn test_display_one_key() {
+        let combo = Combo::from_string(1, &"KC_A = KC_B".to_string()).unwrap();
+        assert_eq!(format!("{}", combo), "1) KC_A = KC_B");
+    }
+
+    #[test]
+    fn test_display_four_keys() {
+        let combo = Combo::from_string(2, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string()).unwrap();
+        assert_eq!(format!("{}", combo), "2) KC_A + KC_B + KC_C + KC_D = KC_E");
+    }
+
+    #[test]
+    fn test_combos_to_json_empty() {
+        let combos = vec![];
+        let json_values = combos_to_json(&combos).unwrap();
+        assert!(json_values.is_empty());
+    }
+
+    #[test]
+    fn test_combos_to_json_single_combo() {
+        let combo = Combo::from_string(0, &"KC_V = KC_Z".to_string()).unwrap();
+        let combos = vec![combo];
+        let json_values = combos_to_json(&combos).unwrap();
+        assert_eq!(json_values.len(), 1);
+        assert_eq!(
+            json_values[0],
+            json!(["KC_V", "KC_NO", "KC_NO", "KC_NO", "KC_Z"])
+        );
+    }
+
+    #[test]
+    fn test_combos_to_json_multiple_combos() {
+        let combo1 = Combo::from_string(0, &"KC_A = KC_B".to_string()).unwrap();
+        let combo2 = Combo::from_string(1, &"KC_C + KC_D = KC_E".to_string()).unwrap();
+        let combos = vec![combo1, combo2];
+        let json_values = combos_to_json(&combos).unwrap();
+        assert_eq!(json_values.len(), 2);
+        assert_eq!(
+            json_values[0],
+            json!(["KC_A", "KC_NO", "KC_NO", "KC_NO", "KC_B"])
+        );
+        assert_eq!(
+            json_values[1],
+            json!(["KC_C", "KC_D", "KC_NO", "KC_NO", "KC_E"])
+        );
+    }
 }

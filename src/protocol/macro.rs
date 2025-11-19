@@ -202,7 +202,8 @@ impl Macro {
         }
     }
 
-    pub fn from_strings(index: u8, steps: Vec<&str>) -> Result<Macro, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &String) -> Result<Macro, Box<dyn std::error::Error>> {
+        let steps: Vec<&str> = value.split(";").map(|s| s.trim()).collect();
         let mut parsed_steps = Vec::new();
         for step in steps {
             if step.len() > 0 {
@@ -499,26 +500,6 @@ pub fn set_macros(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_serde1() {
-        let b1: &[u8] = &[1, 2, 14, 1, 2, 206, 1, 3, 206, 116, 101, 115, 116, 0];
-        assert_eq!(b1, serialize(deserialize(b1.to_vec()).unwrap()));
-    }
-
-    #[test]
-    fn test_serde2() {
-        let b1: &[u8] = &[
-            1, 4, 6, 1, 1, 4, 236, 4, 0, 116, 101, 115, 116, 0, 1, 2, 30, 0, 1, 3, 30, 0, 1, 1, 30,
-            0, 84, 69, 83, 84, 1, 4, 101, 1, 0, 1, 5, 126, 255, 0,
-        ];
-        assert_eq!(b1, serialize(deserialize(b1.to_vec()).unwrap()));
-    }
-}
-
 pub fn macros_to_json(macros: &Vec<Macro>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for m in macros {
@@ -535,4 +516,177 @@ pub fn macros_to_json(macros: &Vec<Macro>) -> Result<Vec<Value>, Box<dyn std::er
         result.push(serde_json::Value::Array(step_json));
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::keycodes::name_to_qid;
+
+    #[test]
+    fn test_serde1() {
+        let b1: &[u8] = &[1, 2, 14, 1, 2, 206, 1, 3, 206, 116, 101, 115, 116, 0];
+        assert_eq!(b1, serialize(&deserialize(b1.to_vec()).unwrap()));
+    }
+
+    #[test]
+    fn test_serde2() {
+        let b1: &[u8] = &[
+            1, 4, 6, 1, 1, 4, 236, 4, 0, 116, 101, 115, 116, 0, 1, 2, 30, 0, 1, 3, 30, 0, 1, 1, 30,
+            0, 84, 69, 83, 84, 1, 4, 101, 1, 0, 1, 5, 126, 255, 0,
+        ];
+        assert_eq!(b1, serialize(&deserialize(b1.to_vec()).unwrap()));
+    }
+
+    #[test]
+    fn test_from_string() -> Result<(), Box<dyn std::error::Error>> {
+        let m = Macro::from_string(12, &"Text(example); Tap(KC_1)".to_string())?;
+        assert_eq!(12, m.index);
+        assert_eq!(2, m.steps.len());
+        Ok(())
+    }
+
+    fn step_round_trip(step: MacroStep) {
+        let m = Macro {
+            index: 0,
+            steps: vec![step],
+        };
+        let serialized = m.serialize();
+        let deserialized = deserialize_single(0, &serialized).unwrap();
+        assert_eq!(m.steps.len(), deserialized.steps.len());
+        // Can't do assert_eq! because of partialeq missing
+    }
+
+    #[test]
+    fn test_step_serde_round_trip() {
+        step_round_trip(MacroStep::Tap(name_to_qid(&"KC_A".to_string()).unwrap()));
+        step_round_trip(MacroStep::Down(name_to_qid(&"KC_B".to_string()).unwrap()));
+        step_round_trip(MacroStep::Up(name_to_qid(&"KC_C".to_string()).unwrap()));
+        step_round_trip(MacroStep::Tap(name_to_qid(&"KC_LCTL".to_string()).unwrap()));
+        step_round_trip(MacroStep::Tap(
+            name_to_qid(&"LCTL(KC_C)".to_string()).unwrap(),
+        ));
+        step_round_trip(MacroStep::Delay(100));
+        step_round_trip(MacroStep::Text("Hello".to_string()));
+    }
+
+    #[test]
+    fn test_macrostep_from_string_invalid() {
+        assert!(
+            MacroStep::from_string("Tap(KC_A").is_err(),
+            "Missing closing parenthesis"
+        );
+        assert!(
+            MacroStep::from_string("Unknown(KC_A)").is_err(),
+            "Unknown macro type"
+        );
+        assert!(
+            MacroStep::from_string("Delay(abc)").is_err(),
+            "Non-numeric delay"
+        );
+    }
+
+    #[test]
+    fn test_macrostep_from_json_invalid() {
+        assert!(MacroStep::from_json(&json!("tap")).is_err(), "Not an array");
+        assert!(
+            MacroStep::from_json(&json!(["tap"])).is_err(),
+            "Array too short"
+        );
+        assert!(
+            MacroStep::from_json(&json!([123, "KC_A"])).is_err(),
+            "Action not a string"
+        );
+        assert!(
+            MacroStep::from_json(&json!(["unknown", "KC_A"])).is_err(),
+            "Unknown action"
+        );
+        assert!(
+            MacroStep::from_json(&json!(["delay", "abc"])).is_err(),
+            "Delay arg not a number"
+        );
+        assert!(
+            MacroStep::from_json(&json!(["text", 123])).is_err(),
+            "Text arg not a string"
+        );
+        assert!(
+            MacroStep::from_json(&json!(["tap", "INVALID"])).is_err(),
+            "Invalid keycode"
+        );
+    }
+
+    #[test]
+    fn test_display_macro_step() {
+        assert_eq!(
+            format!(
+                "{}",
+                MacroStep::Tap(name_to_qid(&"KC_A".to_string()).unwrap())
+            ),
+            "Tap(KC_A)"
+        );
+        assert_eq!(format!("{}", MacroStep::Delay(100)), "Delay(100)");
+        assert_eq!(
+            format!("{}", MacroStep::Text("hello".to_string())),
+            "Text(hello)"
+        );
+    }
+
+    #[test]
+    fn test_display_macro() {
+        let m = Macro::from_string(0, &"Tap(KC_A); Delay(100)".to_string()).unwrap();
+        assert_eq!(format!("{}", m), "0) Tap(KC_A); Delay(100)");
+        let empty_m = Macro::empty(1);
+        assert_eq!(format!("{}", empty_m), "1) EMPTY");
+    }
+
+    #[test]
+    fn test_macro_from_string_round_trip() {
+        let macro_str = "Tap(KC_A); Down(KC_LEFT_CTRL); Text(hello); Up(KC_LEFT_CTRL)".to_string();
+        let m1 = Macro::from_string(0, &macro_str).unwrap();
+        let ser = serialize(&vec![m1]);
+        let m2 = deserialize(ser).unwrap();
+        assert_eq!(m2.len(), 1);
+        assert_eq!(format!("{}", m2[0]), format!("0) {}", macro_str));
+    }
+
+    #[test]
+    fn test_deserialize_edge_cases() {
+        assert!(deserialize(vec![]).unwrap().is_empty(), "Empty input");
+        assert!(deserialize(vec![0]).unwrap().is_empty(), "Single zero byte");
+        let m = deserialize(vec![1, 1, 4, 0, 1, 1, 5, 0]).unwrap();
+        assert_eq!(m.len(), 2, "Two macros");
+        assert_eq!(format!("{}", m[0]), "0) Tap(KC_A)");
+        assert_eq!(format!("{}", m[1]), "1) Tap(KC_B)");
+    }
+
+    #[test]
+    fn test_json_round_trip() -> Result<(), Box<dyn std::error::Error>> {
+        let original_macro =
+            Macro::from_string(0, &"Tap(KC_A); Delay(100); Text(test)".to_string())?;
+        let macros_vec = vec![original_macro];
+        let json_val = macros_to_json(&macros_vec)?;
+        let loaded_macros = load_macros_from_json(&serde_json::Value::Array(json_val))?;
+        assert_eq!(loaded_macros.len(), 1);
+        assert_eq!(
+            format!("{}", loaded_macros[0]),
+            format!("{}", macros_vec[0])
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_macros_from_json() {
+        let json = json!([
+            [["tap", "KC_A", "KC_B"], ["delay", 100], ["text", "hello"]],
+            [["down", "KC_LCTL"], ["tap", "KC_C"], ["up", "KC_LCTL"]]
+        ]);
+        let macros = load_macros_from_json(&json).unwrap();
+        assert_eq!(macros.len(), 2);
+        assert_eq!(macros[0].steps.len(), 4); // tap, tap, delay, text
+        assert_eq!(macros[1].steps.len(), 3);
+        assert_eq!(
+            format!("{}", macros[0]),
+            "0) Tap(KC_A); Tap(KC_B); Delay(100); Text(hello)"
+        );
+    }
 }

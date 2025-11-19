@@ -23,11 +23,13 @@ pub struct TapDance {
 }
 
 impl TapDance {
-    pub fn from_strings(
-        index: u8,
-        keys: Vec<&str>,
-        tapping_term: u16,
-    ) -> Result<TapDance, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &String) -> Result<TapDance, Box<dyn std::error::Error>> {
+        let (keys_string, output) = value
+            .split_once("~")
+            .ok_or("tapping term in ms should be passed after ~")?;
+        let tapping_term: u16 = output.replace(" ", "").parse()?;
+        let keys: Vec<_> = keys_string.split("+").collect();
+
         let mut ks: [u16; 4] = [0x0; 4];
         for (idx, kn) in keys.iter().enumerate() {
             ks[idx] = keycodes::name_to_qid(&kn.to_string())?;
@@ -221,4 +223,145 @@ pub fn tap_dances_to_json(
         ]))
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_tap_hold() {
+        let tapdance = TapDance::from_string(7, &"KC_V + KC_B ~ 50".to_string()).unwrap();
+        assert_eq!(tapdance.index, 7);
+        assert_eq!(keycodes::qid_to_name(tapdance.tap), "KC_V");
+        assert_eq!(keycodes::qid_to_name(tapdance.hold), "KC_B");
+        assert_eq!(tapdance.double_tap, 0);
+        assert_eq!(tapdance.tap_hold, 0);
+        assert_eq!(tapdance.tapping_term, 50);
+    }
+
+    #[test]
+    fn test_from_string_one_key() {
+        let td = TapDance::from_string(0, &"KC_A ~ 100".to_string()).unwrap();
+        assert_eq!(keycodes::qid_to_name(td.tap), "KC_A");
+        assert_eq!(td.hold, 0);
+        assert_eq!(td.tapping_term, 100);
+    }
+
+    #[test]
+    fn test_from_string_four_keys() {
+        let td = TapDance::from_string(1, &"KC_A+KC_B+KC_C+KC_D ~ 200".to_string()).unwrap();
+        assert_eq!(keycodes::qid_to_name(td.tap), "KC_A");
+        assert_eq!(keycodes::qid_to_name(td.hold), "KC_B");
+        assert_eq!(keycodes::qid_to_name(td.double_tap), "KC_C");
+        assert_eq!(keycodes::qid_to_name(td.tap_hold), "KC_D");
+        assert_eq!(td.tapping_term, 200);
+    }
+
+    #[test]
+    fn test_from_string_errors() {
+        assert!(
+            TapDance::from_string(0, &"KC_A".to_string()).is_err(),
+            "Missing ~"
+        );
+        assert!(
+            TapDance::from_string(0, &"KC_A ~ abc".to_string()).is_err(),
+            "Invalid tapping term"
+        );
+        assert!(
+            TapDance::from_string(0, &"INVALID ~ 100".to_string()).is_err(),
+            "Invalid keycode"
+        );
+    }
+
+    #[test]
+    fn test_from_json_valid() {
+        let json = json!(["KC_A", "KC_B", "KC_C", "KC_D", 250]);
+        let td = TapDance::from_json(0, &json).unwrap();
+        assert_eq!(keycodes::qid_to_name(td.tap), "KC_A");
+        assert_eq!(keycodes::qid_to_name(td.hold), "KC_B");
+        assert_eq!(keycodes::qid_to_name(td.double_tap), "KC_C");
+        assert_eq!(keycodes::qid_to_name(td.tap_hold), "KC_D");
+        assert_eq!(td.tapping_term, 250);
+    }
+
+    #[test]
+    fn test_from_json_errors() {
+        assert!(
+            TapDance::from_json(0, &json!("KC_A")).is_err(),
+            "Not an array"
+        );
+
+        // A short array is not an error, it just fills with KC_NO
+        let td = TapDance::from_json(0, &json!(["KC_A"])).unwrap();
+        assert_eq!(keycodes::qid_to_name(td.tap), "KC_A");
+        assert_eq!(td.hold, 0);
+
+        assert!(
+            TapDance::from_json(0, &json!(["KC_A", "KC_B", "KC_C", "KC_D", 200, "KC_E"])).is_err(),
+            "Array too long"
+        );
+        assert!(
+            TapDance::from_json(0, &json!(["KC_A", "KC_B", "KC_C", "KC_D", "KC_E"])).is_err(),
+            "Tapping term not a number"
+        );
+        assert!(
+            TapDance::from_json(0, &json!([1, 2, 3, 4, 100])).is_err(),
+            "Keycode not a string"
+        );
+        assert!(
+            TapDance::from_json(0, &json!(["INVALID", "KC_B", "KC_C", "KC_D", 100])).is_err(),
+            "Invalid keycode"
+        );
+    }
+
+    #[test]
+    fn test_empty_and_is_empty() {
+        let empty_td = TapDance::empty(0);
+        assert!(empty_td.is_empty());
+        assert_eq!(empty_td.tapping_term, 0);
+
+        let non_empty_td = TapDance::from_string(1, &"KC_A ~ 100".to_string()).unwrap();
+        assert!(!non_empty_td.is_empty());
+    }
+
+    #[test]
+    fn test_display() {
+        let empty_td = TapDance::empty(0);
+        assert_eq!(format!("{}", empty_td), "0) EMPTY");
+
+        let full_td =
+            TapDance::from_string(1, &"KC_A + KC_B + KC_C + KC_D ~ 200".to_string()).unwrap();
+        assert_eq!(
+            format!("{}", full_td),
+            "1) On tap: KC_A, On hold: KC_B, On double tap: KC_C, On tap + hold: KC_D, Tapping term (ms) = 200"
+        );
+
+        let partial_td = TapDance::from_string(2, &"KC_A + KC_NO ~ 150".to_string()).unwrap();
+        assert_eq!(
+            format!("{}", partial_td),
+            "2) On tap: KC_A, Tapping term (ms) = 150"
+        );
+    }
+
+    #[test]
+    fn test_json_round_trip() {
+        let td1 = TapDance::from_string(0, &"KC_A + KC_B ~ 100".to_string()).unwrap();
+        let td2 = TapDance::from_string(1, &"KC_C + KC_D + KC_E ~ 200".to_string()).unwrap();
+        let tap_dances = vec![td1, td2];
+
+        let json_val = tap_dances_to_json(&tap_dances).unwrap();
+        let loaded_tap_dances = load_tap_dances_from_json(&Value::Array(json_val)).unwrap();
+
+        assert_eq!(tap_dances.len(), loaded_tap_dances.len());
+        assert_eq!(
+            format!("{}", tap_dances[0]),
+            format!("{}", loaded_tap_dances[0])
+        );
+        assert_eq!(
+            format!("{}", tap_dances[1]),
+            format!("{}", loaded_tap_dances[1])
+        );
+    }
 }

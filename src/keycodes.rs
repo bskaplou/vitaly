@@ -689,22 +689,75 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_name_to_bitmod_raw() {
+    fn test_name_to_bitmod_lctrl() {
+        assert_eq!(name_to_bitmod("MOD_BIT_LCTRL").unwrap(), MOD_BIT_LCTRL);
         assert_eq!(name_to_bitmod("MOD_LCTL").unwrap(), MOD_BIT_LCTRL);
         assert_eq!(name_to_bitmod("LCTL").unwrap(), MOD_BIT_LCTRL);
-        assert_eq!(name_to_bitmod("CTL").unwrap(), MOD_BIT_LCTRL);
         assert_eq!(name_to_bitmod("LC").unwrap(), MOD_BIT_LCTRL);
+        assert_eq!(name_to_bitmod("CTL").unwrap(), MOD_BIT_LCTRL);
         assert_eq!(name_to_bitmod("C").unwrap(), MOD_BIT_LCTRL);
+    }
 
-        assert_eq!(name_to_bitmod("MOD_BIT_LCTRL").unwrap(), MOD_BIT_LCTRL);
+    #[test]
+    fn test_name_to_bitmod_lshift() {
         assert_eq!(name_to_bitmod("MOD_BIT_LSHIFT").unwrap(), MOD_BIT_LSHIFT);
-        assert_eq!(name_to_bitmod("MOD_BIT_LALT").unwrap(), MOD_BIT_LALT);
-        assert_eq!(name_to_bitmod("MOD_BIT_LGUI").unwrap(), MOD_BIT_LGUI);
+        assert_eq!(name_to_bitmod("MOD_LSFT").unwrap(), MOD_BIT_LSHIFT);
+        assert_eq!(name_to_bitmod("LSFT").unwrap(), MOD_BIT_LSHIFT);
+        assert_eq!(name_to_bitmod("LS").unwrap(), MOD_BIT_LSHIFT);
+        assert_eq!(name_to_bitmod("SFT").unwrap(), MOD_BIT_LSHIFT);
+        assert_eq!(name_to_bitmod("S").unwrap(), MOD_BIT_LSHIFT);
+    }
 
+    #[test]
+    fn test_name_to_bitmod_lalt() {
+        assert_eq!(name_to_bitmod("MOD_BIT_LALT").unwrap(), MOD_BIT_LALT);
+        assert_eq!(name_to_bitmod("MOD_LALT").unwrap(), MOD_BIT_LALT);
+        assert_eq!(name_to_bitmod("LALT").unwrap(), MOD_BIT_LALT);
+        assert_eq!(name_to_bitmod("LA").unwrap(), MOD_BIT_LALT);
+        assert_eq!(name_to_bitmod("ALT").unwrap(), MOD_BIT_LALT);
+        assert_eq!(name_to_bitmod("A").unwrap(), MOD_BIT_LALT);
+    }
+
+    #[test]
+    fn test_name_to_bitmod_lgui() {
+        assert_eq!(name_to_bitmod("MOD_BIT_LGUI").unwrap(), MOD_BIT_LGUI);
+        assert_eq!(name_to_bitmod("MOD_LGUI").unwrap(), MOD_BIT_LGUI);
+        assert_eq!(name_to_bitmod("LGUI").unwrap(), MOD_BIT_LGUI);
+        assert_eq!(name_to_bitmod("LG").unwrap(), MOD_BIT_LGUI);
+        assert_eq!(name_to_bitmod("GUI").unwrap(), MOD_BIT_LGUI);
+        assert_eq!(name_to_bitmod("G").unwrap(), MOD_BIT_LGUI);
+    }
+
+    #[test]
+    fn test_name_to_bitmod_rctrl() {
         assert_eq!(name_to_bitmod("MOD_BIT_RCTRL").unwrap(), MOD_BIT_RCTRL);
+        assert_eq!(name_to_bitmod("MOD_RCTL").unwrap(), MOD_BIT_RCTRL);
+        assert_eq!(name_to_bitmod("RCTL").unwrap(), MOD_BIT_RCTRL);
+        assert_eq!(name_to_bitmod("RC").unwrap(), MOD_BIT_RCTRL);
+    }
+
+    #[test]
+    fn test_name_to_bitmod_rshift() {
         assert_eq!(name_to_bitmod("MOD_BIT_RSHIFT").unwrap(), MOD_BIT_RSHIFT);
+        assert_eq!(name_to_bitmod("MOD_RSFT").unwrap(), MOD_BIT_RSHIFT);
+        assert_eq!(name_to_bitmod("RSFT").unwrap(), MOD_BIT_RSHIFT);
+        assert_eq!(name_to_bitmod("RS").unwrap(), MOD_BIT_RSHIFT);
+    }
+
+    #[test]
+    fn test_name_to_bitmod_ralt() {
         assert_eq!(name_to_bitmod("MOD_BIT_RALT").unwrap(), MOD_BIT_RALT);
+        assert_eq!(name_to_bitmod("MOD_RALT").unwrap(), MOD_BIT_RALT);
+        assert_eq!(name_to_bitmod("RALT").unwrap(), MOD_BIT_RALT);
+        assert_eq!(name_to_bitmod("RA").unwrap(), MOD_BIT_RALT);
+    }
+
+    #[test]
+    fn test_name_to_bitmod_rgui() {
         assert_eq!(name_to_bitmod("MOD_BIT_RGUI").unwrap(), MOD_BIT_RGUI);
+        assert_eq!(name_to_bitmod("MOD_RGUI").unwrap(), MOD_BIT_RGUI);
+        assert_eq!(name_to_bitmod("RGUI").unwrap(), MOD_BIT_RGUI);
+        assert_eq!(name_to_bitmod("RG").unwrap(), MOD_BIT_RGUI);
     }
 
     #[test]
@@ -862,6 +915,8 @@ mod tests {
             "HYPR(KC_NO)",
             "MEH(KC_D)",
             "LAG(KC_F)",
+            "MT(MOD_LCTL|MOD_LSFT,KC_C)",
+            "LT(1,KC_D)",
         ] {
             assert_eq!(qid_to_name(name_to_qid(&s.to_string()).unwrap()), s);
         }

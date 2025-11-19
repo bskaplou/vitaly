@@ -377,13 +377,7 @@ fn run_combos(
         Some(value) => {
             let combo = match value.len() {
                 0 => protocol::Combo::empty(n),
-                _ => {
-                    let (keys_all, output) = value
-                        .split_once("=")
-                        .ok_or("resulting action should be declared after =")?;
-                    let keys: Vec<_> = keys_all.split("+").collect();
-                    protocol::Combo::from_strings(n, keys, output)?
-                }
+                _ => protocol::Combo::from_string(n, value)?,
             };
             protocol::set_combo(&dev, &combo)?;
             println!("Combo {} saved", combo);
@@ -443,8 +437,7 @@ fn run_macros(
             }
         }
         Some(value) => {
-            let parts = value.split(";").map(|s| s.trim()).collect();
-            let m = protocol::Macro::from_strings(n, parts)?;
+            let m = protocol::Macro::from_string(n, value)?;
             if !m.is_empty() {
                 if (n as usize) < macros.len() {
                     macros[n as usize] = m;
@@ -538,14 +531,7 @@ fn run_tapdances(
         Some(value) => {
             let tapdance = match value.len() {
                 0 => protocol::TapDance::empty(n),
-                _ => {
-                    let (keys_all, output) = value
-                        .split_once("~")
-                        .ok_or("tapping term in ms should be passed after ~")?;
-                    let out: u16 = output.replace(" ", "").parse()?;
-                    let keys: Vec<_> = keys_all.split("+").collect();
-                    protocol::TapDance::from_strings(n, keys, out)?
-                }
+                _ => protocol::TapDance::from_string(n, value)?,
             };
             protocol::set_tap_dance(&dev, &tapdance)?;
             println!("TapDance {} saved", tapdance);
@@ -589,11 +575,7 @@ fn run_altrepeats(
         Some(value) => {
             let alt_repeat = match value.len() {
                 0 => protocol::AltRepeat::empty(n),
-                _ => {
-                    let cleaned = value.replace(" ", "");
-                    let parts: Vec<_> = cleaned.split(";").collect();
-                    protocol::AltRepeat::from_strings(n, parts)?
-                }
+                _ => protocol::AltRepeat::from_string(n, value)?,
             };
             protocol::set_alt_repeat(&dev, &alt_repeat)?;
             println!("AltRepeat {} saved", alt_repeat);
@@ -664,10 +646,7 @@ fn run_keyoverrides(
         Some(value) => {
             let ko = match value.len() {
                 0 => protocol::KeyOverride::empty(n),
-                _ => protocol::KeyOverride::from_strings(
-                    n,
-                    value.replace(" ", "").split(";").collect(),
-                )?,
+                _ => protocol::KeyOverride::from_string(n, value)?,
             };
             protocol::set_key_override(&dev, &ko)?;
             println!("KeyOverride {} saved", ko);

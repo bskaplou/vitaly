@@ -190,3 +190,99 @@ pub fn qmk_settings_to_json(
     }
     Ok(Value::Object(result))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_qmk_value_getters() {
+        let qv = QmkValue { value: 5 }; // 5 in binary is 0101
+        assert_eq!(qv.get(), 5);
+        assert!(qv.get_bool(0)); // 1st bit is set (0-indexed)
+        assert!(!qv.get_bool(1)); // 2nd bit is not set
+        assert!(qv.get_bool(2)); // 3rd bit is set
+        assert!(!qv.get_bool(3)); // 4th bit is not set
+
+        let qv_zero = QmkValue { value: 0 };
+        assert_eq!(qv_zero.get(), 0);
+        assert!(!qv_zero.get_bool(0));
+        assert!(!qv_zero.get_bool(31)); // Check highest bit for zero
+    }
+
+    #[test]
+    fn test_load_qmk_definitions_ok() {
+        // This test relies on qmk_settings.json being valid.
+        // If the file is malformed, the build would fail before tests run.
+        // So we only check for successful loading and basic structure.
+        let defs = load_qmk_definitions();
+        assert!(defs.is_ok(), "Failed to load qmk_definitions: {:?}", defs.err());
+        let defs_value = defs.unwrap();
+        assert!(defs_value.is_object(), "QMK definitions should be a JSON object");
+        assert!(defs_value.get("tabs").is_some(), "QMK definitions should contain a 'tabs' key");
+        assert!(defs_value["tabs"].is_array(), "'tabs' should be an array");
+    }
+
+    #[test]
+    fn test_load_qmk_settings_from_json_valid() {
+        let json_input = json!({
+            "100": 12345,
+            "200": 67890
+        });
+        let settings = load_qmk_settings_from_json(&json_input).unwrap();
+        assert_eq!(settings.len(), 2);
+        assert_eq!(settings.get(&100).unwrap().get(), 12345);
+        assert_eq!(settings.get(&200).unwrap().get(), 67890);
+
+        // Test with empty object
+        let empty_json = json!({});
+        let empty_settings = load_qmk_settings_from_json(&empty_json).unwrap();
+        assert!(empty_settings.is_empty());
+    }
+
+    #[test]
+    fn test_load_qmk_settings_from_json_invalid() {
+        // Invalid: not an object
+        let not_an_object = json!(["100", 12345]);
+        assert!(load_qmk_settings_from_json(&not_an_object).is_err(), "Should error for non-object input");
+
+        // Invalid: key not a number string
+        let invalid_key = json!({
+            "abc": 12345
+        });
+        assert!(load_qmk_settings_from_json(&invalid_key).is_err(), "Should error for non-numeric string key");
+
+        // Invalid: value not a u64
+        let invalid_value = json!({
+            "100": "not_a_number"
+        });
+        assert!(load_qmk_settings_from_json(&invalid_value).is_err(), "Should error for non-numeric value");
+
+        // Invalid: value is float
+        let invalid_float_value = json!({
+            "100": 123.45
+        });
+        assert!(load_qmk_settings_from_json(&invalid_float_value).is_err(), "Should error for float value");
+    }
+
+    #[test]
+    fn test_qmk_settings_to_json_valid() {
+        let mut input_map = HashMap::new();
+        input_map.insert(100, QmkValue { value: 12345 });
+        input_map.insert(200, QmkValue { value: 67890 });
+
+        let json_output = qmk_settings_to_json(&input_map).unwrap();
+        let expected_json = json!({
+            "100": 12345,
+            "200": 67890
+        });
+        assert_eq!(json_output, expected_json);
+
+        // Test with empty map
+        let empty_map = HashMap::new();
+        let empty_json_output = qmk_settings_to_json(&empty_map).unwrap();
+        assert_eq!(empty_json_output, json!({}));
+    }
+}
+
