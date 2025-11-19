@@ -491,11 +491,26 @@ mod tests {
 
     #[test]
     fn test_from_string_errors() {
-        assert!(KeyOverride::from_string(0, &"t=KC_A; r".to_string()).is_err(), "Missing =");
-        assert!(KeyOverride::from_string(0, &"foo=bar".to_string()).is_err(), "Unknown key");
-        assert!(KeyOverride::from_string(0, &"t=INVALID".to_string()).is_err(), "Invalid keycode");
-        assert!(KeyOverride::from_string(0, &"l=abc".to_string()).is_err(), "Invalid layer");
-        assert!(KeyOverride::from_string(0, &"o=invalid_option".to_string()).is_err(), "Unknown option");
+        assert!(
+            KeyOverride::from_string(0, &"t=KC_A; r".to_string()).is_err(),
+            "Missing ="
+        );
+        assert!(
+            KeyOverride::from_string(0, &"foo=bar".to_string()).is_err(),
+            "Unknown key"
+        );
+        assert!(
+            KeyOverride::from_string(0, &"t=INVALID".to_string()).is_err(),
+            "Invalid keycode"
+        );
+        assert!(
+            KeyOverride::from_string(0, &"l=abc".to_string()).is_err(),
+            "Invalid layer"
+        );
+        assert!(
+            KeyOverride::from_string(0, &"o=invalid_option".to_string()).is_err(),
+            "Unknown option"
+        );
     }
 
     #[test]
@@ -559,7 +574,8 @@ mod tests {
         let empty_ko = KeyOverride::empty(0);
         assert_eq!(format!("{}", empty_ko), "0) EMPTY");
 
-        let ko = KeyOverride::from_string(1, &"t=KC_A;r=KC_B;l=2|4;tm=LCTL;o=enabled".to_string()).unwrap();
+        let ko = KeyOverride::from_string(1, &"t=KC_A;r=KC_B;l=2|4;tm=LCTL;o=enabled".to_string())
+            .unwrap();
         let display_str = format!("{}", ko);
         assert!(display_str.contains("trigger = KC_A;"));
         assert!(display_str.contains("replacement = KC_B;"));

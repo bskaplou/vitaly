@@ -399,6 +399,22 @@ impl Keymap {
         })
     }
 
+    pub fn to_json(&self) -> Result<Value, Box<dyn std::error::Error>> {
+        let mut result = Vec::new();
+        for layer_num in 0..self.layers {
+            let mut layer = Vec::new();
+            for row_num in 0..self.rows {
+                let mut row = Vec::new();
+                for col_num in 0..self.cols {
+                    row.push(Value::String(self.get_long(layer_num, row_num, col_num)?));
+                }
+                layer.push(Value::Array(row));
+            }
+            result.push(Value::Array(layer));
+        }
+        Ok(Value::Array(result))
+    }
+
     pub fn get_short(
         &self,
         layer: u8,
@@ -421,6 +437,7 @@ impl Keymap {
             Ok(keycodes::qid_to_short(kk))
         }
     }
+
     pub fn get_long(
         &self,
         layer: u8,

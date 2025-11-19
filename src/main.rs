@@ -1198,6 +1198,7 @@ fn run_save(
         "version": 1,
         "via_protocol": capabilities.via_version,
         "uid": uid,
+        "layout": keys.to_json()?,
     });
 
     if capabilities.vial_version > 0 {

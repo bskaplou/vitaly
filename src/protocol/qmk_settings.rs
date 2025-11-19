@@ -217,10 +217,20 @@ mod tests {
         // If the file is malformed, the build would fail before tests run.
         // So we only check for successful loading and basic structure.
         let defs = load_qmk_definitions();
-        assert!(defs.is_ok(), "Failed to load qmk_definitions: {:?}", defs.err());
+        assert!(
+            defs.is_ok(),
+            "Failed to load qmk_definitions: {:?}",
+            defs.err()
+        );
         let defs_value = defs.unwrap();
-        assert!(defs_value.is_object(), "QMK definitions should be a JSON object");
-        assert!(defs_value.get("tabs").is_some(), "QMK definitions should contain a 'tabs' key");
+        assert!(
+            defs_value.is_object(),
+            "QMK definitions should be a JSON object"
+        );
+        assert!(
+            defs_value.get("tabs").is_some(),
+            "QMK definitions should contain a 'tabs' key"
+        );
         assert!(defs_value["tabs"].is_array(), "'tabs' should be an array");
     }
 
@@ -245,25 +255,37 @@ mod tests {
     fn test_load_qmk_settings_from_json_invalid() {
         // Invalid: not an object
         let not_an_object = json!(["100", 12345]);
-        assert!(load_qmk_settings_from_json(&not_an_object).is_err(), "Should error for non-object input");
+        assert!(
+            load_qmk_settings_from_json(&not_an_object).is_err(),
+            "Should error for non-object input"
+        );
 
         // Invalid: key not a number string
         let invalid_key = json!({
             "abc": 12345
         });
-        assert!(load_qmk_settings_from_json(&invalid_key).is_err(), "Should error for non-numeric string key");
+        assert!(
+            load_qmk_settings_from_json(&invalid_key).is_err(),
+            "Should error for non-numeric string key"
+        );
 
         // Invalid: value not a u64
         let invalid_value = json!({
             "100": "not_a_number"
         });
-        assert!(load_qmk_settings_from_json(&invalid_value).is_err(), "Should error for non-numeric value");
+        assert!(
+            load_qmk_settings_from_json(&invalid_value).is_err(),
+            "Should error for non-numeric value"
+        );
 
         // Invalid: value is float
         let invalid_float_value = json!({
             "100": 123.45
         });
-        assert!(load_qmk_settings_from_json(&invalid_float_value).is_err(), "Should error for float value");
+        assert!(
+            load_qmk_settings_from_json(&invalid_float_value).is_err(),
+            "Should error for float value"
+        );
     }
 
     #[test]
@@ -285,4 +307,3 @@ mod tests {
         assert_eq!(empty_json_output, json!({}));
     }
 }
-
