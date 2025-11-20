@@ -39,6 +39,7 @@ enum CommandEnum {
     AltRepeats(CommandAltRepeats),
     Load(CommandLoad),
     Save(CommandSave),
+    RGB(CommandRGB),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -207,6 +208,15 @@ struct CommandSave {
     /// path to layout file
     #[argh(option, short = 'f')]
     file: String,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// RGB lighting
+#[argh(subcommand, name = "rgb")]
+struct CommandRGB {
+    /// show info 
+    #[argh(switch, short = 'i')]
+    info: bool,
 }
 
 #[allow(dead_code)]
@@ -1031,7 +1041,9 @@ fn run_load(
         )?,
     };
 
-    if preview {
+    if !preview {
+        //
+    } else {
         for layer_number in 0..capabilities.layer_count {
             render_layer(&keys, &buttons, layer_number)?
         }
@@ -1255,6 +1267,17 @@ fn run_save(
     Ok(())
 }
 
+fn run_rgb(api: &HidApi, device: &DeviceInfo, info: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let device_path = device.path();
+    let dev = api.open_path(device_path)?;
+
+    let rgb_info = protocol::load_rgb_info(&dev)?;
+    if info {
+        println!("\n{}", rgb_info);
+    }
+    Ok(())
+}
+
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
     match HidApi::new() {
         Ok(api) => {
@@ -1309,6 +1332,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             run_load(&api, device, &ops.meta, &ops.file, ops.preview)
                         }
                         CommandEnum::Save(ops) => run_save(&api, device, &ops.meta, &ops.file),
+                        CommandEnum::RGB(ops) => run_rgb(&api, device, ops.info),
                     };
                     match result {
                         Ok(_) => {

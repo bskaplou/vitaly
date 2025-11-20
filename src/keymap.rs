@@ -125,7 +125,6 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                                 };
                                             } else {
                                                 //println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
-                                                /*
                                                 let teta = -r.to_radians();
                                                 let teta_sin = teta.sin();
                                                 let teta_cos = teta.cos();
@@ -141,8 +140,7 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                                     wire_x: xx,
                                                     wire_y: yy,
                                                 };
-                                                */
-                                                return Err(MetaParsingError.into());
+                                                //return Err(MetaParsingError.into());
                                             }
                                             buttons.push(but);
                                         } else {
