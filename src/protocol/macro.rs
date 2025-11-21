@@ -1,10 +1,10 @@
 use crate::keycodes;
 use crate::protocol::{
-    send_recv, Capabilities, ProtocolError, BUFFER_FETCH_CHUNK, CMD_VIA_MACRO_GET_BUFFER,
-    CMD_VIA_MACRO_SET_BUFFER, MESSAGE_LENGTH, VIA_UNHANDLED,
+    BUFFER_FETCH_CHUNK, CMD_VIA_MACRO_GET_BUFFER, CMD_VIA_MACRO_SET_BUFFER, Capabilities,
+    MESSAGE_LENGTH, ProtocolError, VIA_UNHANDLED, send_recv,
 };
 use hidapi::HidDevice;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::cmp::min;
 use std::fmt;
 use thiserror::Error;
@@ -95,7 +95,7 @@ impl MacroStep {
             _ => {
                 return Err(
                     MacroParsingError(format!("Unknown macro step {}", right).to_string()).into(),
-                )
+                );
             }
         }
     }
@@ -156,9 +156,10 @@ impl MacroStep {
                 Ok(result)
             }
             action => {
-                return Err(
-                    MacroParsingError(format!("Unknown macro step {}", action).to_string()).into(),
+                return Err(MacroParsingError(
+                    format!("Unknown macro step {}", action).to_string(),
                 )
+                .into());
             }
         }
     }
@@ -306,7 +307,7 @@ fn deserialize_single(index: u8, data: &[u8]) -> Result<Macro, Box<dyn std::erro
                             return Err(MacroParsingError(
                                 format!("Unknown command {}", cmd).to_string(),
                             )
-                            .into())
+                            .into());
                         }
                     };
                     steps.push(step);
@@ -330,7 +331,7 @@ fn deserialize_single(index: u8, data: &[u8]) -> Result<Macro, Box<dyn std::erro
                         return Err(MacroParsingError(
                             format!("Unknown command {}", cmd).to_string(),
                         )
-                        .into())
+                        .into());
                     }
                 };
                 steps.push(step);

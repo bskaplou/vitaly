@@ -2,7 +2,6 @@ use hidapi::{HidDevice, HidError, HidResult};
 use lzma::LzmaError;
 use serde_json::Value;
 use std::cmp::min;
-use std::fmt;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -10,35 +9,38 @@ use crate::keycodes;
 
 pub mod key_override;
 pub use crate::protocol::key_override::{
-    key_overrides_to_json, load_key_overrides, load_key_overrides_from_json, set_key_override,
-    KeyOverride,
+    KeyOverride, key_overrides_to_json, load_key_overrides, load_key_overrides_from_json,
+    set_key_override,
 };
 
 pub mod alt_repeat;
 pub use crate::protocol::alt_repeat::{
-    alt_repeats_to_json, load_alt_repeats, load_alt_repeats_from_json, set_alt_repeat, AltRepeat,
+    AltRepeat, alt_repeats_to_json, load_alt_repeats, load_alt_repeats_from_json, set_alt_repeat,
 };
 
 pub mod tap_dance;
 pub use crate::protocol::tap_dance::{
-    load_tap_dances, load_tap_dances_from_json, set_tap_dance, tap_dances_to_json, TapDance,
+    TapDance, load_tap_dances, load_tap_dances_from_json, set_tap_dance, tap_dances_to_json,
 };
 
 pub mod combo;
 pub use crate::protocol::combo::{
-    combos_to_json, load_combos, load_combos_from_json, set_combo, Combo,
+    Combo, combos_to_json, load_combos, load_combos_from_json, set_combo,
 };
 
 pub mod r#macro;
 pub use crate::protocol::r#macro::{
-    load_macros, load_macros_from_json, macros_to_json, set_macros, Macro,
+    Macro, load_macros, load_macros_from_json, macros_to_json, set_macros,
 };
 
 pub mod qmk_settings;
 pub use crate::protocol::qmk_settings::{
-    get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings,
-    load_qmk_settings_from_json, qmk_settings_to_json, reset_qmk_values, set_qmk_value, QmkValue,
+    QmkValue, get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings,
+    load_qmk_settings_from_json, qmk_settings_to_json, reset_qmk_values, set_qmk_value,
 };
+
+pub mod rgb;
+pub use crate::protocol::rgb::{RGBInfo, load_rgb_info, set_rgb_info};
 
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;
@@ -86,9 +88,18 @@ const CMD_VIAL_GET_UNLOCK_STATUS: u8 = 0x05;
 const CMD_VIAL_UNLOCK_START: u8 = 0x06;
 const CMD_VIAL_UNLOCK_POLL: u8 = 0x07;
 
+const CMD_VIA_LIGHTING_SET_VALUE: u8 = 0x07;
 const CMD_VIA_LIGHTING_GET_VALUE: u8 = 0x08;
 const VIALRGB_GET_INFO: u8 = 0x40;
+const VIALRGB_GET_MODE: u8 = 0x41;
+const VIALRGB_SET_MODE: u8 = 0x41;
 const VIALRGB_GET_SUPPORTED: u8 = 0x42;
+/*
+const QMK_RGBLIGHT_BRIGHTNESS: u8 = 0x80;
+const QMK_RGBLIGHT_EFFECT: u8 = 0x81;
+const QMK_RGBLIGHT_EFFECT_SPEED: u8 = 0x82;
+const QMK_RGBLIGHT_COLOR: u8 = 0x83;
+*/
 
 const BUFFER_FETCH_CHUNK: u8 = 28;
 
@@ -242,12 +253,12 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
 
     if vial_version < VIAL_PROTOCOL_DYNAMIC {
         return Ok(Capabilities {
-            via_version: via_version,
-            vial_version: vial_version,
-            companion_hid_version: companion_hid_version,
-            layer_count: layer_count,
-            macro_count: macro_count,
-            macro_buffer_size: macro_buffer_size,
+            via_version,
+            vial_version,
+            companion_hid_version,
+            layer_count,
+            macro_count,
+            macro_buffer_size,
             tap_dance_count: 0,
             combo_count: 0,
             key_override_count: 0,
@@ -268,12 +279,12 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
         Ok(buff) => {
             if buff[0] != VIA_UNHANDLED {
                 Ok(Capabilities {
-                    via_version: via_version,
-                    vial_version: vial_version,
-                    companion_hid_version: companion_hid_version,
-                    layer_count: layer_count,
-                    macro_count: macro_count,
-                    macro_buffer_size: macro_buffer_size,
+                    via_version,
+                    vial_version,
+                    companion_hid_version,
+                    layer_count,
+                    macro_count,
+                    macro_buffer_size,
                     tap_dance_count: buff[0],
                     combo_count: buff[1],
                     key_override_count: buff[2],
@@ -499,10 +510,10 @@ pub fn load_layers_keys(
     }
     // println!("llen {:?}, {:?}", keys.len(), size);
     Ok(Keymap {
-        layers: layers,
-        rows: rows,
-        cols: cols,
-        keys: keys,
+        layers,
+        rows,
+        cols,
+        keys,
     })
 }
 
@@ -584,126 +595,4 @@ pub fn load_uid(device: &HidDevice) -> Result<u64, Box<dyn std::error::Error>> {
         }
         Err(e) => Err(e.into()),
     }
-}
-
-#[derive(Debug)]
-pub struct RGBInfo {
-    pub version: u16,
-    pub max_brightness: u8,
-    pub effects: Vec<u16>,
-}
-
-impl RGBInfo {
-    pub fn effect_name(id: u16) -> Result<&'static str, Box<dyn std::error::Error>> {
-        match id {
-            0 => Ok("Disable"),
-            1 => Ok("Direct Control"),
-            2 => Ok("Solid Color"),
-            3 => Ok("Alphas Mods"),
-            4 => Ok("Gradient Up Down"),
-            5 => Ok("Gradient Left Right"),
-            6 => Ok("Breathing"),
-            7 => Ok("Band Sat"),
-            8 => Ok("Band Val"),
-            9 => Ok("Band Pinwheel Sat"),
-            10 => Ok("Band Pinwheel Val"),
-            11 => Ok("Band Spiral Sat"),
-            12 => Ok("Band Spiral Val"),
-            13 => Ok("Cycle All"),
-            14 => Ok("Cycle Left Right"),
-            15 => Ok("Cycle Up Down"),
-            16 => Ok("Rainbow Moving Chevron"),
-            17 => Ok("Cycle Out In"),
-            18 => Ok("Cycle Out In Dual"),
-            19 => Ok("Cycle Pinwheel"),
-            20 => Ok("Cycle Spiral"),
-            21 => Ok("Dual Beacon"),
-            22 => Ok("Rainbow Beacon"),
-            23 => Ok("Rainbow Pinwheels"),
-            24 => Ok("Raindrops"),
-            25 => Ok("Jellybean Raindrops"),
-            26 => Ok("Hue Breathing"),
-            27 => Ok("Hue Pendulum"),
-            28 => Ok("Hue Wave"),
-            29 => Ok("Typing Heatmap"),
-            30 => Ok("Digital Rain"),
-            31 => Ok("Solid Reactive Simple"),
-            32 => Ok("Solid Reactive"),
-            33 => Ok("Solid Reactive Wide"),
-            34 => Ok("Solid Reactive Multiwide"),
-            35 => Ok("Solid Reactive Cross"),
-            36 => Ok("Solid Reactive Multicross"),
-            37 => Ok("Solid Reactive Nexus"),
-            38 => Ok("Solid Reactive Multinexus"),
-            39 => Ok("Splash"),
-            40 => Ok("Multisplash"),
-            41 => Ok("Solid Splash"),
-            42 => Ok("Solid Multisplash"),
-            43 => Ok("Pixel Rain"),
-            44 => Ok("Pixel Fractal"),
-            _ => Err("no such effect".into()),
-        }
-    }
-}
-
-impl fmt::Display for RGBInfo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "RGB verions: {}, max_brightness: {}\n", self.version, self.max_brightness)?;
-        write!(f, "supported_effects:\n")?;
-        for effect in &self.effects {
-            match  RGBInfo::effect_name(*effect) {
-                 Ok(name) => {
-                     write!(f, "\t{}) {}\n", effect, name)?;
-                 }
-                 Err(_) => {}
-            };
-        }
-        Ok(())
-    }
-}
-
-
-pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::Error>> {
-    let version: u16;
-    let max_brightness: u8;
-    let mut effects: Vec<u16> = Vec::new();
-    effects.push(0);
-    match send_recv(&device, &[CMD_VIA_LIGHTING_GET_VALUE, VIALRGB_GET_INFO]) {
-        Ok(data) => {
-            if data[0] != VIA_UNHANDLED {
-                version = (data[2] as u16) + ((data[3] as u16) << 8);
-                max_brightness = data[4];
-                let mut effect: u16 = 0;
-                'top: loop {
-                    let e2 = (effect >> 8 & 0xFF) as u8;
-                    let e1 = (effect & 0xFF) as u8;
-
-                    match send_recv(
-                        &device,
-                        &[CMD_VIA_LIGHTING_GET_VALUE, VIALRGB_GET_SUPPORTED, e1, e2],
-                    ) {
-                        Ok(data) => {
-                            for i in 0..15 {
-                                effect = (data[i * 2 + 2] as u16) + ((data[i * 2 + 3] as u16) << 8);
-                                if effect == 0xFFFF {
-                                    break 'top;
-                                }
-                                effects.push(effect);
-                            }
-                        }
-                        Err(e) => return Err(e.into()),
-                    }
-                }
-            } else {
-                version = 0;
-                max_brightness = 0;
-            }
-        }
-        Err(e) => return Err(e.into()),
-    }
-    Ok(RGBInfo {
-        version,
-        max_brightness,
-        effects,
-    })
 }

@@ -1,10 +1,10 @@
 use crate::keycodes;
 use crate::protocol::{
-    send, send_recv, ProtocolError, CMD_VIAL_DYNAMIC_ENTRY_OP, CMD_VIA_VIAL_PREFIX,
-    DYNAMIC_VIAL_COMBO_GET, DYNAMIC_VIAL_COMBO_SET, VIA_UNHANDLED,
+    CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_COMBO_GET, DYNAMIC_VIAL_COMBO_SET,
+    ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
 use hidapi::HidDevice;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fmt;
 use thiserror::Error;
 
@@ -34,7 +34,7 @@ impl Combo {
             ks[idx] = keycodes::name_to_qid(&kn.to_string())?;
         }
         Ok(Combo {
-            index: index,
+            index,
             key1: ks[0],
             key2: ks[1],
             key3: ks[2],
@@ -77,7 +77,7 @@ impl Combo {
             }
         }
         Ok(Combo {
-            index: index,
+            index,
             key1: ks[0],
             key2: ks[1],
             key3: ks[2],

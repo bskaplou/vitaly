@@ -1,6 +1,7 @@
 use crate::protocol::{
-    send_recv, ProtocolError, CMD_VIAL_QMK_SETTINGS_GET, CMD_VIAL_QMK_SETTINGS_QUERY,
-    CMD_VIAL_QMK_SETTINGS_RESET, CMD_VIAL_QMK_SETTINGS_SET, CMD_VIA_VIAL_PREFIX, MESSAGE_LENGTH,
+    CMD_VIA_VIAL_PREFIX, CMD_VIAL_QMK_SETTINGS_GET, CMD_VIAL_QMK_SETTINGS_QUERY,
+    CMD_VIAL_QMK_SETTINGS_RESET, CMD_VIAL_QMK_SETTINGS_SET, MESSAGE_LENGTH, ProtocolError,
+    send_recv,
 };
 use hidapi::HidDevice;
 use serde_json::{Map, Value};
@@ -87,7 +88,7 @@ pub fn get_qmk_value(
                 }
                 _ => value = buff[1] as u32,
             }
-            Ok(QmkValue { value: value })
+            Ok(QmkValue { value })
         }
         Err(e) => Err(e.into()),
     }

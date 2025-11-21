@@ -19,7 +19,7 @@ const MOD_BIT_RGUI: u8 = 0b10000000;
 
 pub fn name_to_bitmod(mods: &str) -> Result<u8, KeyParsingError> {
     let mut m = 0x0u8;
-    for mp in mods.to_string().split("|") {
+    for mp in mods.split("|") {
         match mp {
             "MOD_BIT_LCTRL" | "MOD_LCTL" | "LCTL" | "LC" | "CTL" | "C" => m |= MOD_BIT_LCTRL,
             "MOD_BIT_LSHIFT" | "MOD_LSFT" | "LSFT" | "LS" | "SFT" | "S" => m |= MOD_BIT_LSHIFT,
@@ -32,7 +32,7 @@ pub fn name_to_bitmod(mods: &str) -> Result<u8, KeyParsingError> {
             &_ => {
                 return Err(KeyParsingError(
                     format!("can't parse mod {}", mp).to_string(),
-                ))
+                ));
             }
         }
     }
@@ -92,7 +92,7 @@ pub fn bitmod_to_name(modcode: u8) -> String {
     if dest.len() == 0 {
         dest.push_str("KC_NO");
     }
-    return dest;
+    dest
 }
 
 const MOD_LCTL: u8 = 0x01;
@@ -106,7 +106,7 @@ const MOD_RGUI: u8 = 0x18;
 
 fn name_to_mod(mods: &str) -> Result<u8, KeyParsingError> {
     let mut m = 0x0u8;
-    for mp in mods.to_string().split("|") {
+    for mp in mods.split("|") {
         match mp {
             "MOD_LCTL" | "LCTL" | "CTL" | "C" => m |= MOD_LCTL,
             "MOD_LSFT" | "LSFT" | "SFT" | "S" => m |= MOD_LSFT,
@@ -119,7 +119,7 @@ fn name_to_mod(mods: &str) -> Result<u8, KeyParsingError> {
             &_ => {
                 return Err(KeyParsingError(
                     format!("can't parse mod {}", mp).to_string(),
-                ))
+                ));
             }
         }
     }
@@ -175,7 +175,7 @@ pub fn mod_to_name(modcode: u8) -> String {
     if dest.len() == 0 {
         dest.push_str("KC_NO");
     }
-    return dest;
+    dest
 }
 
 fn parse_layer(layer: &String) -> Result<u16, KeyParsingError> {
@@ -290,7 +290,7 @@ pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
                         )
                         .to_string(),
                     )
-                    .into())
+                    .into());
                 }
                 Some((layer, mo)) => {
                     let l: u16 = parse_layer(&layer.to_string())?;
@@ -314,7 +314,7 @@ pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
                         )
                         .to_string(),
                     )
-                    .into())
+                    .into());
                 }
                 Some((layer, key)) => {
                     let l: u16 = parse_layer(&layer.to_string())?;
@@ -331,7 +331,7 @@ pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
                         )
                         .to_string(),
                     )
-                    .into())
+                    .into());
                 }
                 Some((mods, key)) => {
                     let m = name_to_mod(&mods.to_string())? as u16;
@@ -451,7 +451,7 @@ pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
             &_ => {
                 return Err(
                     KeyParsingError(format!("can't find macro {}", left).to_string()).into(),
-                )
+                );
             }
         }
         Ok(keycode)

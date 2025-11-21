@@ -2,7 +2,7 @@ extern crate hidapi;
 
 use argh::FromArgs;
 use hidapi::{DeviceInfo, HidApi, HidDevice};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::{thread, time};
@@ -214,9 +214,25 @@ struct CommandSave {
 /// RGB lighting
 #[argh(subcommand, name = "rgb")]
 struct CommandRGB {
-    /// show info 
+    /// show info
     #[argh(switch, short = 'i')]
     info: bool,
+
+    /// set effect
+    #[argh(option, short = 'e')]
+    effect: Option<u16>,
+
+    /// set effect speed
+    #[argh(option, short = 's')]
+    speed: Option<u8>,
+
+    /// set brightness
+    #[argh(option, short = 'b')]
+    brightness: Option<u8>,
+
+    /// set color
+    #[argh(option, short = 'c')]
+    color: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -1173,7 +1189,6 @@ fn run_save(
     let rows = meta["matrix"]["rows"]
         .as_u64()
         .ok_or("matrix/rows not found in meta")? as u8;
-    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
 
     let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
     let combos = match capabilities.combo_count {
@@ -1267,11 +1282,39 @@ fn run_save(
     Ok(())
 }
 
-fn run_rgb(api: &HidApi, device: &DeviceInfo, info: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn run_rgb(
+    api: &HidApi,
+    device: &DeviceInfo,
+    info: bool,
+    effect: &Option<u16>,
+    speed: &Option<u8>,
+    color: &Option<String>,
+    brightness: &Option<u8>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
 
-    let rgb_info = protocol::load_rgb_info(&dev)?;
+    let mut rgb_info = protocol::load_rgb_info(&dev)?;
+    let mut update = false;
+    if let Some(s) = speed {
+        rgb_info.effect_speed = *s;
+        update = true;
+    }
+    if let Some(e) = effect {
+        rgb_info.effect = *e;
+        update = true;
+    }
+    if let Some(b) = brightness {
+        if *b > rgb_info.max_brightness {
+            rgb_info.color_v = rgb_info.max_brightness;
+        } else {
+            rgb_info.color_v = *b;
+        }
+        update = true;
+    }
+    if update {
+        protocol::set_rgb_info(&dev, &rgb_info)?;
+    }
     if info {
         println!("\n{}", rgb_info);
     }
@@ -1332,7 +1375,15 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             run_load(&api, device, &ops.meta, &ops.file, ops.preview)
                         }
                         CommandEnum::Save(ops) => run_save(&api, device, &ops.meta, &ops.file),
-                        CommandEnum::RGB(ops) => run_rgb(&api, device, ops.info),
+                        CommandEnum::RGB(ops) => run_rgb(
+                            &api,
+                            device,
+                            ops.info,
+                            &ops.effect,
+                            &ops.speed,
+                            &ops.color,
+                            &ops.brightness,
+                        ),
                     };
                     match result {
                         Ok(_) => {

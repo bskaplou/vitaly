@@ -1,10 +1,10 @@
 use crate::keycodes;
 use crate::protocol::{
-    send, send_recv, ProtocolError, CMD_VIAL_DYNAMIC_ENTRY_OP, CMD_VIA_VIAL_PREFIX,
-    DYNAMIC_VIAL_KEY_OVERRIDE_GET, DYNAMIC_VIAL_KEY_OVERRIDE_SET, VIA_UNHANDLED,
+    CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_KEY_OVERRIDE_GET,
+    DYNAMIC_VIAL_KEY_OVERRIDE_SET, ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
 use hidapi::HidDevice;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fmt;
 
 #[derive(Debug)]
@@ -145,20 +145,20 @@ impl KeyOverride {
             }
         }
         Ok(KeyOverride {
-            index: index,
-            trigger: trigger,
-            replacement: replacement,
-            layers: layers,
-            trigger_mods: trigger_mods,
-            negative_mod_mask: negative_mod_mask,
-            suppressed_mods: suppressed_mods,
-            ko_option_activation_trigger_down: ko_option_activation_trigger_down,
-            ko_option_activation_required_mod_down: ko_option_activation_required_mod_down,
-            ko_option_activation_negative_mod_up: ko_option_activation_negative_mod_up,
-            ko_option_one_mod: ko_option_one_mod,
-            ko_option_no_reregister_trigger: ko_option_no_reregister_trigger,
-            ko_option_no_unregister_on_other_key_down: ko_option_no_unregister_on_other_key_down,
-            ko_enabled: ko_enabled,
+            index,
+            trigger,
+            replacement,
+            layers,
+            trigger_mods,
+            negative_mod_mask,
+            suppressed_mods,
+            ko_option_activation_trigger_down,
+            ko_option_activation_required_mod_down,
+            ko_option_activation_negative_mod_up,
+            ko_option_one_mod,
+            ko_option_no_reregister_trigger,
+            ko_option_no_unregister_on_other_key_down,
+            ko_enabled,
         })
     }
 
@@ -242,20 +242,20 @@ impl KeyOverride {
         }
 
         Ok(KeyOverride {
-            index: index,
-            trigger: trigger,
-            replacement: replacement,
-            layers: layers,
-            trigger_mods: trigger_mods,
-            negative_mod_mask: negative_mod_mask,
-            suppressed_mods: suppressed_mods,
-            ko_option_activation_trigger_down: ko_option_activation_trigger_down,
-            ko_option_activation_required_mod_down: ko_option_activation_required_mod_down,
-            ko_option_activation_negative_mod_up: ko_option_activation_negative_mod_up,
-            ko_option_one_mod: ko_option_one_mod,
-            ko_option_no_reregister_trigger: ko_option_no_reregister_trigger,
-            ko_option_no_unregister_on_other_key_down: ko_option_no_unregister_on_other_key_down,
-            ko_enabled: ko_enabled,
+            index,
+            trigger,
+            replacement,
+            layers,
+            trigger_mods,
+            negative_mod_mask,
+            suppressed_mods,
+            ko_option_activation_trigger_down,
+            ko_option_activation_required_mod_down,
+            ko_option_activation_negative_mod_up,
+            ko_option_one_mod,
+            ko_option_no_reregister_trigger,
+            ko_option_no_unregister_on_other_key_down,
+            ko_enabled,
         })
     }
 

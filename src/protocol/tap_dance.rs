@@ -1,10 +1,10 @@
 use crate::keycodes;
 use crate::protocol::{
-    send, send_recv, ProtocolError, CMD_VIAL_DYNAMIC_ENTRY_OP, CMD_VIA_VIAL_PREFIX,
-    DYNAMIC_VIAL_TAP_DANCE_GET, DYNAMIC_VIAL_TAP_DANCE_SET, VIA_UNHANDLED,
+    CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_TAP_DANCE_GET,
+    DYNAMIC_VIAL_TAP_DANCE_SET, ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
 use hidapi::HidDevice;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fmt;
 use thiserror::Error;
 
@@ -35,12 +35,12 @@ impl TapDance {
             ks[idx] = keycodes::name_to_qid(&kn.to_string())?;
         }
         Ok(TapDance {
-            index: index,
+            index,
             tap: ks[0],
             hold: ks[1],
             double_tap: ks[2],
             tap_hold: ks[3],
-            tapping_term: tapping_term,
+            tapping_term,
         })
     }
 
@@ -76,7 +76,7 @@ impl TapDance {
             }
         }
         Ok(TapDance {
-            index: index,
+            index,
             tap: ks[0],
             hold: ks[1],
             double_tap: ks[2],
@@ -91,7 +91,7 @@ impl TapDance {
 
     pub fn empty(index: u8) -> TapDance {
         TapDance {
-            index: index,
+            index,
             tap: 0,
             hold: 0,
             double_tap: 0,

@@ -1,10 +1,10 @@
 use crate::keycodes;
 use crate::protocol::{
-    send, send_recv, ProtocolError, CMD_VIAL_DYNAMIC_ENTRY_OP, CMD_VIA_VIAL_PREFIX,
-    DYNAMIC_VIAL_ALT_REPEAT_KEY_GET, DYNAMIC_VIAL_ALT_REPEAT_KEY_SET, VIA_UNHANDLED,
+    CMD_VIA_VIAL_PREFIX, CMD_VIAL_DYNAMIC_ENTRY_OP, DYNAMIC_VIAL_ALT_REPEAT_KEY_GET,
+    DYNAMIC_VIAL_ALT_REPEAT_KEY_SET, ProtocolError, VIA_UNHANDLED, send, send_recv,
 };
 use hidapi::HidDevice;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fmt;
 
 #[derive(Debug)]
@@ -94,14 +94,14 @@ impl AltRepeat {
             }
         }
         Ok(AltRepeat {
-            index: index,
-            keycode: keycode,
-            alt_keycode: alt_keycode,
-            allowed_mods: allowed_mods,
-            arep_option_default_to_this_alt_key: arep_option_default_to_this_alt_key,
-            arep_option_bidirectional: arep_option_bidirectional,
-            arep_option_ignore_mod_handedness: arep_option_ignore_mod_handedness,
-            arep_enabled: arep_enabled,
+            index,
+            keycode,
+            alt_keycode,
+            allowed_mods,
+            arep_option_default_to_this_alt_key,
+            arep_option_bidirectional,
+            arep_option_ignore_mod_handedness,
+            arep_enabled,
         })
     }
 
@@ -161,14 +161,14 @@ impl AltRepeat {
         }
 
         Ok(AltRepeat {
-            index: index,
-            keycode: keycode,
-            alt_keycode: alt_keycode,
-            allowed_mods: allowed_mods,
-            arep_option_default_to_this_alt_key: arep_option_default_to_this_alt_key,
-            arep_option_bidirectional: arep_option_bidirectional,
-            arep_option_ignore_mod_handedness: arep_option_ignore_mod_handedness,
-            arep_enabled: arep_enabled,
+            index,
+            keycode,
+            alt_keycode,
+            allowed_mods,
+            arep_option_default_to_this_alt_key,
+            arep_option_bidirectional,
+            arep_option_ignore_mod_handedness,
+            arep_enabled,
         })
     }
 
