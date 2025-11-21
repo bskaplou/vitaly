@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::{thread, time};
 use thiserror::Error;
+use palette::{Srgb, Hsv};
+use palette::FromColor;
 
 pub mod keycodes;
 pub mod keymap;
@@ -1299,6 +1301,19 @@ fn run_rgb(
         rgb_info.effect = *e;
         update = true;
     }
+    if let Some(c) = color {
+        let rgb: Srgb<u8> = c.parse()?;
+        let ru8: Srgb = Srgb::from(rgb);
+        let hsv: Hsv = Hsv::from_color(ru8);
+        let hu8: Hsv<_, u8> = hsv.into_format::<u8>();
+        let (h, s, v) = hu8.into_components();
+        let normal_brightness = ((v as f64) * (rgb_info.max_brightness as f64) / 255.0) as u8;
+        rgb_info.color_h = h.into_inner();
+        rgb_info.color_s = s;
+        rgb_info.color_v = normal_brightness;
+        update = true;
+    }
+    // brightness applied after color, because it overwrites it hsv
     if let Some(b) = brightness {
         if *b > rgb_info.max_brightness {
             rgb_info.color_v = rgb_info.max_brightness;
