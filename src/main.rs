@@ -220,19 +220,19 @@ struct CommandRgb {
     #[argh(switch, short = 'i')]
     info: bool,
 
-    /// set effect
+    /// set effect - effect id from supported list
     #[argh(option, short = 'e')]
     effect: Option<u16>,
 
-    /// set effect speed
+    /// set effect speed 0-255
     #[argh(option, short = 's')]
     speed: Option<u8>,
 
-    /// set brightness
+    /// set brightness 0-to max_brightness
     #[argh(option, short = 'b')]
     brightness: Option<u8>,
 
-    /// set color
+    /// set color for example #ffffff
     #[argh(option, short = 'c')]
     color: Option<String>,
 
