@@ -2,13 +2,13 @@ extern crate hidapi;
 
 use argh::FromArgs;
 use hidapi::{DeviceInfo, HidApi, HidDevice};
+use palette::FromColor;
+use palette::{Hsv, Srgb};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::{thread, time};
 use thiserror::Error;
-use palette::{Srgb, Hsv};
-use palette::FromColor;
 
 pub mod keycodes;
 pub mod keymap;
@@ -200,7 +200,7 @@ struct CommandLoad {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Load layout from file
+/// Save layout into file
 #[argh(subcommand, name = "save")]
 struct CommandSave {
     /// meta file (to use instead of vial meta)
@@ -235,6 +235,10 @@ struct CommandRgb {
     /// set color
     #[argh(option, short = 'c')]
     color: Option<String>,
+
+    /// persist rgb config to keep settings after restart
+    #[argh(switch, short = 'p')]
+    persist: bool,
 }
 
 #[allow(dead_code)]
@@ -1287,6 +1291,7 @@ fn run_rgb(
     speed: &Option<u8>,
     color: &Option<String>,
     brightness: &Option<u8>,
+    persist: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
@@ -1322,11 +1327,16 @@ fn run_rgb(
         }
         update = true;
     }
-    if update {
-        protocol::set_rgb_info(&dev, &rgb_info)?;
-    }
     if info {
         println!("\n{}", rgb_info);
+    }
+    if update {
+        protocol::set_rgb_info(&dev, &rgb_info)?;
+        println!("RGB settings updated...");
+    }
+    if persist {
+        protocol::persist_rgb(&dev)?;
+        println!("RGB settings persisted...");
     }
     Ok(())
 }
@@ -1393,6 +1403,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             &ops.speed,
                             &ops.color,
                             &ops.brightness,
+                            ops.persist,
                         ),
                     };
                     match result {

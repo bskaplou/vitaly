@@ -1,8 +1,8 @@
 use std::fmt;
 
 use crate::protocol::{
-    CMD_VIA_LIGHTING_GET_VALUE, CMD_VIA_LIGHTING_SET_VALUE, VIA_UNHANDLED, VIALRGB_GET_INFO,
-    VIALRGB_GET_MODE, VIALRGB_GET_SUPPORTED, VIALRGB_SET_MODE, send_recv,
+    CMD_VIA_LIGHTING_GET_VALUE, CMD_VIA_LIGHTING_SAVE, CMD_VIA_LIGHTING_SET_VALUE, VIA_UNHANDLED,
+    VIALRGB_GET_INFO, VIALRGB_GET_MODE, VIALRGB_GET_SUPPORTED, VIALRGB_SET_MODE, send_recv,
 };
 use hidapi::HidDevice;
 
@@ -188,6 +188,15 @@ pub fn set_rgb_info(
             rgb_info.color_v,
         ],
     ) {
+        Ok(_) => {}
+        Err(e) => return Err(e),
+    }
+
+    Ok(())
+}
+
+pub fn persist_rgb(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
+    match send_recv(device, &[CMD_VIA_LIGHTING_SAVE]) {
         Ok(_) => {}
         Err(e) => return Err(e),
     }

@@ -1,6 +1,24 @@
-# Vail CLI tool
+# Vial CLI tool
 
 Vial CLI tool allows to configure keyboard through VIA/Vial protocol with command line interface.
+It supports QMK keycodes notation together with aliases.
+
+Keys, combos, macros, tap dances, key overrides and alt repeat keys are supported.
+RGB lighting control is supported too.
+
+Encoders, layout options and non-colored underglow are not supported for now because there is no devices with such features around me for now.
+
+Layouts with no rotation are supproted and displays well. Layouts with rotated buttons might have problems in rendering of layers.
+
+Tool support --help for tool as a whole and for all subcommands.
+
+## Development
+
+Just edit files and run following command to run tool in debug mode
+
+```
+cargo run -- <your_options>
+```
 
 ## Global options
 
@@ -652,4 +670,143 @@ Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"
 Saving altrepeat 0) EMPTY
+```
+
+### RGB subcommand
+
+RGB subcommand allows to control RGB effects.
+
+Show info on abilities and current settings
+
+```
+❯ vitaly -i 4 rgb -i
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972286"
+
+RGB verions: 1, max_brightness: 120
+supported_effects:
+	0) Disable
+	1) Direct Control
+	2) Solid Color
+	3) Alphas Mods
+	4) Gradient Up Down
+	5) Gradient Left Right
+	6) Breathing
+	7) Band Sat
+	8) Band Val
+	9) Band Pinwheel Sat
+	10) Band Pinwheel Val
+	11) Band Spiral Sat
+	12) Band Spiral Val
+	13) Cycle All
+	14) Cycle Left Right
+	15) Cycle Up Down
+	16) Rainbow Moving Chevron
+	17) Cycle Out In
+	18) Cycle Out In Dual
+	19) Cycle Pinwheel
+	20) Cycle Spiral
+	21) Dual Beacon
+	22) Rainbow Beacon
+	23) Rainbow Pinwheels
+	24) Raindrops
+	25) Jellybean Raindrops
+	26) Hue Breathing
+	27) Hue Pendulum
+	28) Hue Wave
+	29) Typing Heatmap
+	30) Digital Rain
+	31) Solid Reactive Simple
+	32) Solid Reactive
+	33) Solid Reactive Wide
+	34) Solid Reactive Multiwide
+	35) Solid Reactive Cross
+	36) Solid Reactive Multicross
+	37) Solid Reactive Nexus
+	38) Solid Reactive Multinexus
+	39) Splash
+	40) Multisplash
+	41) Solid Splash
+	42) Solid Multisplash
+	43) Pixel Rain
+	44) Pixel Fractal
+
+current settings:
+	effect: 37 - Solid Reactive Nexus
+	effect_speed: 200
+	color_hsv: (h=23, s=204, v=60)
+```
+
+Set effect
+
+```
+❯ cargo run -- -i 4 rgb -e 25 -i
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972286"
+
+RGB verions: 1, max_brightness: 120
+...
+current settings:
+	effect: 25 - Jellybean Raindrops
+	effect_speed: 200
+	color_hsv: (h=23, s=204, v=60)
+
+RGB settings updated...
+```
+
+Set effect speed
+
+```
+❯ vitaly -i 4 rgb -s 120 -i
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972286"
+
+RGB verions: 1, max_brightness: 120
+...
+
+current settings:
+	effect: 25 - Jellybean Raindrops
+	effect_speed: 120
+	color_hsv: (h=23, s=204, v=60)
+
+RGB settings updated...
+```
+
+Set effect color
+
+```
+❯ vitaly -i 4 rgb -i -c '#ffa033'
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972286"
+
+RGB verions: 1, max_brightness: 120
+...
+current settings:
+	effect: 33 - Solid Reactive Wide
+	effect_speed: 120
+	color_hsv: (h=23, s=204, v=120)
+
+RGB settings updated...
+```
+
+Persist current settings apon restarts
+
+```
+❯ cargo run -- -i 4 rgb -i -p
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972286"
+
+RGB verions: 1, max_brightness: 120
+...
+current settings:
+	effect: 33 - Solid Reactive Wide
+	effect_speed: 120
+	color_hsv: (h=23, s=204, v=120)
+
+RGB settings persisted...
 ```

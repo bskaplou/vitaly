@@ -40,7 +40,7 @@ pub use crate::protocol::qmk_settings::{
 };
 
 pub mod rgb;
-pub use crate::protocol::rgb::{RGBInfo, load_rgb_info, set_rgb_info};
+pub use crate::protocol::rgb::{RGBInfo, load_rgb_info, persist_rgb, set_rgb_info};
 
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;
@@ -90,6 +90,7 @@ const CMD_VIAL_UNLOCK_POLL: u8 = 0x07;
 
 const CMD_VIA_LIGHTING_SET_VALUE: u8 = 0x07;
 const CMD_VIA_LIGHTING_GET_VALUE: u8 = 0x08;
+const CMD_VIA_LIGHTING_SAVE: u8 = 0x09;
 const VIALRGB_GET_INFO: u8 = 0x40;
 const VIALRGB_GET_MODE: u8 = 0x41;
 const VIALRGB_SET_MODE: u8 = 0x41;
