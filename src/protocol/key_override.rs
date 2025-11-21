@@ -52,12 +52,9 @@ impl KeyOverride {
         options
     }
 
-    pub fn from_string(
-        index: u8,
-        value: &String,
-    ) -> Result<KeyOverride, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str) -> Result<KeyOverride, Box<dyn std::error::Error>> {
         let spaceless = value.replace(" ", "");
-        let keys: Vec<&str> = spaceless.split(";").filter(|k| k.len() > 0).collect();
+        let keys: Vec<&str> = spaceless.split(";").filter(|k| !k.is_empty()).collect();
 
         let mut trigger = 0u16;
         let mut replacement = 0u16;
@@ -73,28 +70,26 @@ impl KeyOverride {
         let mut ko_option_no_unregister_on_other_key_down = false;
         let mut ko_enabled = false;
 
-        if keys.len() > 0 {
+        if !keys.is_empty() {
             for part in keys {
                 let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
                 match left {
                     "trigger" | "t" => {
-                        trigger = keycodes::name_to_qid(&right.to_string())?;
+                        trigger = keycodes::name_to_qid(right)?;
                     }
-                    "replacement" | "r" => replacement = keycodes::name_to_qid(&right.to_string())?,
+                    "replacement" | "r" => replacement = keycodes::name_to_qid(right)?,
                     "layers" | "l" => {
                         for l in right.split("|") {
                             let layer: u8 = l.parse()?;
                             layers |= 1 << layer;
                         }
                     }
-                    "trigger_mods" | "tm" | "m" => {
-                        trigger_mods = keycodes::name_to_bitmod(&right.to_string())?
-                    }
+                    "trigger_mods" | "tm" | "m" => trigger_mods = keycodes::name_to_bitmod(right)?,
                     "negative_mod_mask" | "nmm" | "n" => {
-                        negative_mod_mask = keycodes::name_to_bitmod(&right.to_string())?
+                        negative_mod_mask = keycodes::name_to_bitmod(right)?
                     }
                     "suppressed_mods" | "sm" | "s" => {
-                        suppressed_mods = keycodes::name_to_bitmod(&right.to_string())?
+                        suppressed_mods = keycodes::name_to_bitmod(right)?
                     }
                     "options" | "option" | "opt" | "o" => {
                         for o in right.split("|") {
@@ -187,18 +182,12 @@ impl KeyOverride {
             match key.as_str() {
                 "trigger" => {
                     trigger = keycodes::name_to_qid(
-                        &value
-                            .as_str()
-                            .ok_or("trigger value should be string")?
-                            .to_string(),
+                        value.as_str().ok_or("trigger value should be string")?,
                     )?;
                 }
                 "replacement" => {
                     replacement = keycodes::name_to_qid(
-                        &value
-                            .as_str()
-                            .ok_or("replacement value should be string")?
-                            .to_string(),
+                        value.as_str().ok_or("replacement value should be string")?,
                     )?;
                 }
                 "layers" => {
@@ -299,7 +288,7 @@ impl fmt::Display for KeyOverride {
             let mut lne = false;
             for l in 0..16 {
                 if self.layers & (1 << l) != 0 {
-                    if lne == true {
+                    if lne {
                         write!(f, "|")?;
                     }
                     write!(f, "{}", l)?;
@@ -361,7 +350,7 @@ pub fn load_key_overrides_from_json(
         .ok_or("key_override should be an array")?;
     let mut result = Vec::new();
     for (i, key_override) in key_overrides.iter().enumerate() {
-        result.push(KeyOverride::from_json(i as u8, &key_override)?);
+        result.push(KeyOverride::from_json(i as u8, key_override)?);
     }
     Ok(result)
 }
@@ -373,7 +362,7 @@ pub fn load_key_overrides(
     let mut keyoverrides: Vec<KeyOverride> = vec![];
     for idx in 0..count {
         match send_recv(
-            &device,
+            device,
             &[
                 CMD_VIA_VIAL_PREFIX,
                 CMD_VIAL_DYNAMIC_ENTRY_OP,
@@ -404,7 +393,7 @@ pub fn load_key_overrides(
                     return Err(ProtocolError::ViaUnhandledError.into());
                 }
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     }
     Ok(keyoverrides)
@@ -415,7 +404,7 @@ pub fn set_key_override(
     keyoverride: &KeyOverride,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match send(
-        &device,
+        device,
         &[
             CMD_VIA_VIAL_PREFIX,
             CMD_VIAL_DYNAMIC_ENTRY_OP,

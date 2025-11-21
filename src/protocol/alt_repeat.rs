@@ -37,9 +37,9 @@ impl AltRepeat {
         options
     }
 
-    pub fn from_string(index: u8, value: &String) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str) -> Result<AltRepeat, Box<dyn std::error::Error>> {
         let cleaned = value.replace(" ", "");
-        let keys: Vec<_> = cleaned.split(";").filter(|k| k.len() > 0).collect();
+        let keys: Vec<_> = cleaned.split(";").filter(|k| !k.is_empty()).collect();
 
         let mut keycode = 0u16;
         let mut alt_keycode = 0u16;
@@ -49,15 +49,13 @@ impl AltRepeat {
         let mut arep_option_ignore_mod_handedness = false;
         let mut arep_enabled = false;
 
-        if keys.len() > 0 {
+        if !keys.is_empty() {
             for part in keys {
                 let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
                 match left {
-                    "keycode" | "k" => keycode = keycodes::name_to_qid(&right.to_string())?,
-                    "alt_keycode" | "a" => alt_keycode = keycodes::name_to_qid(&right.to_string())?,
-                    "allowed_mods" | "m" => {
-                        allowed_mods = keycodes::name_to_bitmod(&right.to_string())?
-                    }
+                    "keycode" | "k" => keycode = keycodes::name_to_qid(right)?,
+                    "alt_keycode" | "a" => alt_keycode = keycodes::name_to_qid(right)?,
+                    "allowed_mods" | "m" => allowed_mods = keycodes::name_to_bitmod(right)?,
                     "options" | "option" | "opt" | "o" => {
                         for o in right.split("|") {
                             match o {
@@ -124,18 +122,12 @@ impl AltRepeat {
             match key.as_str() {
                 "keycode" => {
                     keycode = keycodes::name_to_qid(
-                        &value
-                            .as_str()
-                            .ok_or("keycode value should be string")?
-                            .to_string(),
+                        value.as_str().ok_or("keycode value should be string")?,
                     )?;
                 }
                 "alt_keycode" => {
                     alt_keycode = keycodes::name_to_qid(
-                        &value
-                            .as_str()
-                            .ok_or("keycode value should be string")?
-                            .to_string(),
+                        value.as_str().ok_or("keycode value should be string")?,
                     )?;
                 }
                 "allowed_mods" => {
@@ -234,7 +226,7 @@ pub fn load_alt_repeats(
     let mut altrepeats: Vec<AltRepeat> = vec![];
     for idx in 0..count {
         match send_recv(
-            &device,
+            device,
             &[
                 CMD_VIA_VIAL_PREFIX,
                 CMD_VIAL_DYNAMIC_ENTRY_OP,
@@ -259,7 +251,7 @@ pub fn load_alt_repeats(
                     return Err(ProtocolError::ViaUnhandledError.into());
                 }
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     }
     Ok(altrepeats)
@@ -273,7 +265,7 @@ pub fn load_alt_repeats_from_json(
         .ok_or("alt_repeats_json should be an array")?;
     let mut result = Vec::new();
     for (i, alt_repeat) in alt_repeats.iter().enumerate() {
-        result.push(AltRepeat::from_json(i as u8, &alt_repeat)?);
+        result.push(AltRepeat::from_json(i as u8, alt_repeat)?);
     }
     Ok(result)
 }
@@ -283,7 +275,7 @@ pub fn set_alt_repeat(
     altrepeat: &AltRepeat,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match send(
-        &device,
+        device,
         &[
             CMD_VIA_VIAL_PREFIX,
             CMD_VIAL_DYNAMIC_ENTRY_OP,

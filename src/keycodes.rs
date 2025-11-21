@@ -42,54 +42,54 @@ pub fn name_to_bitmod(mods: &str) -> Result<u8, KeyParsingError> {
 pub fn bitmod_to_name(modcode: u8) -> String {
     let mut dest = String::new();
     if modcode & MOD_BIT_RCTRL == MOD_BIT_RCTRL {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_RCTRL");
     }
     if modcode & MOD_BIT_LCTRL == MOD_BIT_LCTRL {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_LCTRL");
     }
     if modcode & MOD_BIT_RSHIFT == MOD_BIT_RSHIFT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_RSHIFT");
     }
     if modcode & MOD_BIT_LSHIFT == MOD_BIT_LSHIFT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_LSHIFT");
     }
     if modcode & MOD_BIT_RALT == MOD_BIT_RALT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_RALT");
     }
     if modcode & MOD_BIT_LALT == MOD_BIT_LALT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_LALT");
     }
     if modcode & MOD_BIT_RGUI == MOD_BIT_RGUI {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_RGUI");
     }
     if modcode & MOD_BIT_LGUI == MOD_BIT_LGUI {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_BIT_LGUI");
     }
-    if dest.len() == 0 {
+    if dest.is_empty() {
         dest.push_str("KC_NO");
     }
     dest
@@ -129,50 +129,50 @@ fn name_to_mod(mods: &str) -> Result<u8, KeyParsingError> {
 pub fn mod_to_name(modcode: u8) -> String {
     let mut dest = String::new();
     if modcode & MOD_RCTL == MOD_RCTL {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_RCTL");
     } else if modcode & MOD_LCTL == MOD_LCTL {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_LCTL");
     }
     if modcode & MOD_RSFT == MOD_RSFT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_RSFT");
     } else if modcode & MOD_LSFT == MOD_LSFT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_LSFT");
     }
     if modcode & MOD_RALT == MOD_RALT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_RALT");
     } else if modcode & MOD_LALT == MOD_LALT {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_LALT");
     }
     if modcode & MOD_RGUI == MOD_RGUI {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_RGUI");
     } else if modcode & MOD_LGUI == MOD_LGUI {
-        if dest.len() > 0 {
+        if !dest.is_empty() {
             dest.push('|');
         }
         dest.push_str("MOD_LGUI");
     }
-    if dest.len() == 0 {
+    if dest.is_empty() {
         dest.push_str("KC_NO");
     }
     dest
@@ -198,7 +198,7 @@ fn parse_num(num: &String) -> Result<u16, KeyParsingError> {
     }
 }
 
-pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
+pub fn name_to_qid(name: &str) -> Result<u16, Box<dyn std::error::Error>> {
     let n = name.replace(" ", "");
     if let Some((left, right_str)) = n.split_once('(') {
         let keycode;
@@ -318,7 +318,7 @@ pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
                 }
                 Some((layer, key)) => {
                     let l: u16 = parse_layer(&layer.to_string())?;
-                    let k = name_to_qid(&key.to_string())?;
+                    let k = name_to_qid(key)?;
                     keycode = 0x4000 | ((l & 0x0F) << 8) | (k & 0xFF);
                 }
             },
@@ -334,8 +334,8 @@ pub fn name_to_qid(name: &String) -> Result<u16, Box<dyn std::error::Error>> {
                     .into());
                 }
                 Some((mods, key)) => {
-                    let m = name_to_mod(&mods.to_string())? as u16;
-                    let k = name_to_qid(&key.to_string())?;
+                    let m = name_to_mod(mods)? as u16;
+                    let k = name_to_qid(key)?;
                     keycode = 0x2000 | ((m & 0x1F) << 8) | (k & 0xFF);
                 }
             },
@@ -488,7 +488,7 @@ pub fn qid_to_short(keycode: u16) -> String {
         }
         _ => match code_to_name::SHORTNAMES.get(&keycode) {
             Some(name) => {
-                dest.push_str(*name);
+                dest.push_str(name);
             }
             None => return qid_to_name(keycode),
         },
@@ -502,178 +502,178 @@ pub fn qid_to_name(keycode: u16) -> String {
         0x0100..=0x01FF => {
             dest.push_str("LCTL(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x0200..=0x02FF => {
             dest.push_str("LSFT(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x0400..=0x04FF => {
             dest.push_str("LALT(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x0800..=0x08FF => {
             dest.push_str("LGUI(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x1100..=0x11FF => {
             dest.push_str("RCTL(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x1200..=0x12FF => {
             dest.push_str("RSFT(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x1400..=0x14FF => {
             dest.push_str("RALT(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x1800..=0x18FF => {
             dest.push_str("RGUI(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         //HYPR 0x0f00
         0x0F00..=0x0FFF => {
             dest.push_str("HYPR(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         //MEH 0x0700
         0x0700..=0x07FF => {
             dest.push_str("MEH(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // LCAG 0x0d00
         0x0D00..=0x0DFF => {
             dest.push_str("LCAG(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // LSG 0x0a00
         0x0A00..=0x0AFF => {
             dest.push_str("LSG(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // LAG 0x0c00
         0x0C00..=0x0CFF => {
             dest.push_str("LAG(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // RSG 0x1a00
         0x1A00..=0x1AFF => {
             dest.push_str("RSG(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // RAG 0x1c00
         0x1C00..=0x1CFF => {
             dest.push_str("RAG(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // LCA 0x0500
         0x0500..=0x05FF => {
             dest.push_str("LCA(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // LSA 0x0600
         0x0600..=0x06FF => {
             dest.push_str("LSA(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // RSA 0x1600
         0x1600..=0x16FF => {
             dest.push_str("RSA(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         // RCS 0x1300
         0x1300..=0x13FF => {
             dest.push_str("RCS(");
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x5200..=0x521F => {
             dest.push_str("TO(");
             dest.push_str((keycode & 0x1F).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x5220..=0x523F => {
             dest.push_str("MO(");
             dest.push_str((keycode & 0x1F).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x5240..=0x525F => {
             dest.push_str("DF(");
             dest.push_str((keycode & 0x1F).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x52E0..=0x52FF => {
             dest.push_str("PDF(");
             dest.push_str((keycode & 0x1F).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x5260..=0x527F => {
             dest.push_str("TG(");
             dest.push_str((keycode & 0x1F).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x5280..=0x529F => {
             dest.push_str("OSL(");
             dest.push_str((keycode & 0x1F).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x5000..=0x51FF => {
             dest.push_str("LM(");
             dest.push_str(((keycode >> 5) & 0xF).to_string().as_str());
-            dest.push_str(",");
+            dest.push(',');
             dest.push_str(mod_to_name((keycode & 0x1F) as u8).as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x52A0..=0x52BF => {
             dest.push_str("OSM(");
             dest.push_str(mod_to_name((keycode & 0x1F) as u8).as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x52C0..=0x52DF => {
             dest.push_str("TT(");
             dest.push_str((keycode & 0x1F).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         0x4000..=0x4FFF => {
             dest.push_str("LT(");
             dest.push_str(((keycode >> 8) & 0x0F).to_string().as_str());
-            dest.push_str(",");
+            dest.push(',');
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x2000..=0x3FFF => {
             dest.push_str("MT(");
             dest.push_str(mod_to_name(((keycode >> 8) & 0x1F) as u8).as_str());
-            dest.push_str(",");
+            dest.push(',');
             dest.push_str(&qid_to_name(keycode & 0xFF));
-            dest.push_str(")");
+            dest.push(')');
         }
         0x5700..=0x57FF => {
             dest.push_str("TD(");
             dest.push_str((keycode & 0xFF).to_string().as_str());
-            dest.push_str(")");
+            dest.push(')');
         }
         _ => match code_to_name::FULLNAMES.get(&keycode) {
             Some(name) => {
-                dest.push_str(*name);
+                dest.push_str(name);
             }
             None => {
                 println!("fixme {:#04x}", keycode);

@@ -3,6 +3,12 @@ pub struct Buffer {
     b: Vec<Vec<char>>,
 }
 
+impl Default for Buffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Buffer {
     pub fn new() -> Buffer {
         Buffer {
@@ -23,7 +29,7 @@ impl Buffer {
 
     pub fn dump(&self) {
         for line in self.b.iter() {
-            let s: String = line.into_iter().collect();
+            let s: String = line.iter().collect();
             println!("{}", s);
         }
     }

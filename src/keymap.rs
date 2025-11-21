@@ -100,7 +100,7 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                             let mut s = value.split('\n');
                                             loop {
                                                 value = s.next().ok_or("incorrect button value")?;
-                                                if value.len() > 0 {
+                                                if !value.is_empty() {
                                                     // println!("value {:?}", value);
                                                     break;
                                                 }
@@ -109,20 +109,19 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                         if let Some((xxx, yyy)) = value.split_once(',') {
                                             let xx: u8 = xxx.parse()?;
                                             let yy: u8 = yyy.parse()?;
-                                            let but;
-                                            if r == 0.0 && rx == 0.0 && ry == 0.0 {
+                                            let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {
                                                 let bx = x_pos + x_mod;
                                                 let by = y_pos + y_mod;
                                                 let bw = w;
                                                 let bh = h;
-                                                but = Button {
+                                                Button {
                                                     x: bx,
                                                     y: by,
                                                     w: bw,
                                                     h: bh,
                                                     wire_x: xx,
                                                     wire_y: yy,
-                                                };
+                                                }
                                             } else {
                                                 //println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
                                                 let teta = -r.to_radians();
@@ -132,16 +131,16 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                                 let by = -x * teta_sin + y * teta_cos + ry;
                                                 let bw = 1.0;
                                                 let bh = 1.0;
-                                                but = Button {
+                                                Button {
                                                     x: bx,
                                                     y: by,
                                                     w: bw,
                                                     h: bh,
                                                     wire_x: xx,
                                                     wire_y: yy,
-                                                };
+                                                }
                                                 //return Err(MetaParsingError.into());
-                                            }
+                                            };
                                             buttons.push(but);
                                         } else {
                                             return Err(MetaParsingError.into());
@@ -206,7 +205,7 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                     // FIXME comma treatment is too ugly :( but works
                     let mut we_got_comma = false;
                     for (line, chunk) in label.split(',').enumerate() {
-                        if chunk.len() == 0 {
+                        if chunk.is_empty() {
                             if !we_got_comma {
                                 buff.put(lu.0 + 1 + line, lu.1 + 1, ',');
                                 we_got_comma = true;

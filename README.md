@@ -273,8 +273,6 @@ Layer command accepts --number option which specifies layer number to dump
 
 ```
 ❯ vitaly -i 4626 layers -n 2
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.03s
-     Running `target/debug/vial_cli -i 4626 layers -n 2`
 Product name: "silakka54" id: 4626,
 Manufacturer name: "Squalius-cephalus", id: 65261,
 Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4316856206"

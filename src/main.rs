@@ -39,7 +39,7 @@ enum CommandEnum {
     AltRepeats(CommandAltRepeats),
     Load(CommandLoad),
     Save(CommandSave),
-    RGB(CommandRGB),
+    Rgb(CommandRgb),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -213,7 +213,7 @@ struct CommandSave {
 #[derive(FromArgs, PartialEq, Debug)]
 /// RGB lighting
 #[argh(subcommand, name = "rgb")]
-struct CommandRGB {
+struct CommandRgb {
     /// show info
     #[argh(switch, short = 'i')]
     info: bool,
@@ -268,7 +268,7 @@ fn run_devices(
         println!("\tcaps_word: {}", capabilities.caps_word);
         println!("\tlayer_lock: {}", capabilities.layer_lock);
     }
-    println!("");
+    println!();
     Ok(())
 }
 
@@ -285,11 +285,13 @@ fn load_meta(
         None => {
             if capabilities.vial_version == 0 {
                 return Err(CommandError(
-                    format!("device doesn't support vial protocol").to_string(),
+                    "device doesn't support vial protocol"
+                        .to_string()
+                        .to_string(),
                 )
                 .into());
             }
-            let meta_data = match protocol::load_vial_meta(&dev) {
+            let meta_data = match protocol::load_vial_meta(dev) {
                 Ok(meta_data) => meta_data,
                 Err(e) => {
                     return Err(CommandError(
@@ -375,7 +377,7 @@ fn run_combos(
     match value {
         None => {
             let combos = protocol::load_combos(&dev, capabilities.combo_count)?;
-            if matches!(number, None) {
+            if number.is_none() {
                 let combo_count = combos.len();
                 let mut first_empty = capabilities.combo_count;
                 for idxm in 1..=combo_count {
@@ -447,19 +449,15 @@ fn run_macros(
     )?;
     match value {
         None => {
-            if matches!(number, None) {
+            if number.is_none() {
                 println!("Macros list:");
                 for m in macros {
                     println!("{}", m)
                 }
+            } else if macros.len() > n.into() {
+                println!("{}", macros[n as usize])
             } else {
-                if macros.len() > n.into() {
-                    println!("{}", macros[n as usize])
-                } else {
-                    return Err(
-                        CommandError(format!("Macro {} is not defined", n).to_string()).into(),
-                    );
-                }
+                return Err(CommandError(format!("Macro {} is not defined", n).to_string()).into());
             }
         }
         Some(value) => {
@@ -470,15 +468,13 @@ fn run_macros(
                 } else {
                     macros.push(m);
                 }
+            } else if (n as usize) < macros.len() {
+                macros.remove(n as usize);
             } else {
-                if (n as usize) < macros.len() {
-                    macros.remove(n as usize);
-                } else {
-                    return Err(CommandError(
-                        format!("Can't delete undefined macro {}", n).to_string(),
-                    )
-                    .into());
-                }
+                return Err(CommandError(
+                    format!("Can't delete undefined macro {}", n).to_string(),
+                )
+                .into());
             }
             println!("Updated macros list:");
             for m in &macros {
@@ -529,7 +525,7 @@ fn run_tapdances(
     match value {
         None => {
             let tapdances = protocol::load_tap_dances(&dev, capabilities.tap_dance_count)?;
-            if matches!(number, None) {
+            if number.is_none() {
                 let tapdance_count = tapdances.len();
                 let mut first_empty = capabilities.tap_dance_count;
                 for idxm in 1..=tapdance_count {
@@ -608,7 +604,7 @@ fn run_altrepeats(
         }
         None => {
             let altrepeats = protocol::load_alt_repeats(&dev, capabilities.alt_repeat_key_count)?;
-            if matches!(number, None) {
+            if number.is_none() {
                 let altrepeat_count = altrepeats.len();
                 let mut first_empty = capabilities.alt_repeat_key_count;
                 for idxm in 1..=altrepeat_count {
@@ -679,7 +675,7 @@ fn run_keyoverrides(
         }
         None => {
             let keyoverrides = protocol::load_key_overrides(&dev, capabilities.key_override_count)?;
-            if matches!(number, None) {
+            if number.is_none() {
                 let keyoverride_count = keyoverrides.len();
                 let mut first_empty = capabilities.key_override_count;
                 for idxm in 1..=keyoverride_count {
@@ -742,11 +738,11 @@ fn render_layer(
         }
     }
     println!("Layer: {}", layer_number);
-    keymap::render_and_dump(&buttons, Some(button_labels));
+    keymap::render_and_dump(buttons, Some(button_labels));
     for (idx, fat) in fat_labels.into_iter().enumerate() {
         println!("*{} - {}", idx + 1, fat);
     }
-    println!("");
+    println!();
     Ok(())
 }
 
@@ -760,15 +756,12 @@ fn run_layers(
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
-    let meta = load_meta(&dev, &capabilities, &meta_file)?;
+    let meta = load_meta(&dev, &capabilities, meta_file)?;
     let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
-    if positions == true {
+    if positions {
         keymap::render_and_dump(&buttons, None);
     } else {
-        let layer_number: u8 = match number {
-            Some(n) => n,
-            None => 0,
-        };
+        let layer_number: u8 = number.unwrap_or_default();
         let cols = meta["matrix"]["cols"]
             .as_u64()
             .ok_or("matrix/cols not found in meta")? as u8;
@@ -786,13 +779,13 @@ fn run_keys(
     device: &DeviceInfo,
     meta_file: &Option<String>,
     layer: u8,
-    position: &String,
+    position: &str,
     value: &Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
     let capabilities = protocol::scan_capabilities(&dev)?;
-    let meta = load_meta(&dev, &capabilities, &meta_file)?;
+    let meta = load_meta(&dev, &capabilities, meta_file)?;
     let cols = meta["matrix"]["cols"]
         .as_u64()
         .ok_or("matrix/cols not found in meta")? as u8;
@@ -850,7 +843,7 @@ fn run_settings(
         return Err(CommandError("Qmk settings are not supported".to_string()).into());
     }
     if reset {
-        if !matches!(qsid, None) || !matches!(value, None) {
+        if qsid.is_some() || value.is_some() {
             return Err(CommandError(
                 "Values can be reset only all at once, no qsid nor value should be passed"
                     .to_string(),
@@ -893,7 +886,7 @@ fn run_settings(
                         field["type"].as_str().ok_or("type should be string")? == "boolean";
                     let with_bits = !matches!(field["bit"], Value::Null);
                     if qsid == tsid
-                        && (with_bits == false
+                        && (!with_bits
                             || (field["bit"].as_u64().ok_or("bit should be number")? as u8) == tbit)
                     {
                         match value {
@@ -964,11 +957,13 @@ fn run_settings(
                     let qsid = field["qsid"].as_u64().ok_or("title should be a number")? as u16;
                     if qsids.contains(&qsid) {
                         let value;
-                        if values_cache.contains_key(&qsid) {
-                            value = *values_cache.get(&qsid).ok_or("cache broken")?;
-                        } else {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            values_cache.entry(qsid)
+                        {
                             value = protocol::get_qmk_value(&dev, qsid, width)?;
-                            values_cache.insert(qsid, value);
+                            e.insert(value);
+                        } else {
+                            value = *values_cache.get(&qsid).ok_or("cache broken")?;
                         }
                         match field["type"].as_str().ok_or("type should be a string")? {
                             "boolean" => match field["bit"].as_number() {
@@ -1064,54 +1059,54 @@ fn run_load(
             render_layer(&keys, &buttons, layer_number)?
         }
 
-        if combos.len() > 0 {
+        if !combos.is_empty() {
             println!("Combos:");
             for combo in &combos {
                 if !combo.is_empty() {
                     println!("{}", &combo);
                 }
             }
-            println!("");
+            println!();
         }
 
-        if macros.len() > 0 {
+        if !macros.is_empty() {
             println!("Macros:");
             for m in &macros {
                 if !m.is_empty() {
                     println!("{}", &m);
                 }
             }
-            println!("");
+            println!();
         }
 
-        if tap_dances.len() > 0 {
+        if !tap_dances.is_empty() {
             println!("TapDances:");
             for tap_dance in &tap_dances {
                 if !tap_dance.is_empty() {
                     println!("{}", &tap_dance);
                 }
             }
-            println!("");
+            println!();
         }
 
-        if key_overrides.len() > 0 {
+        if !key_overrides.is_empty() {
             println!("KeyOverrides:");
             for key_override in &key_overrides {
                 if !key_override.is_empty() {
                     println!("{}", &key_override);
                 }
             }
-            println!("");
+            println!();
         }
 
-        if alt_repeats.len() > 0 {
+        if !alt_repeats.is_empty() {
             println!("AltRepeatKeys:");
             for alt_repeat in &alt_repeats {
                 if !alt_repeat.is_empty() {
                     println!("{}", &alt_repeat);
                 }
             }
-            println!("");
+            println!();
         }
 
         if capabilities.vial_version >= protocol::VIAL_PROTOCOL_QMK_SETTINGS {
@@ -1163,7 +1158,7 @@ fn run_load(
                     }
                 }
                 if header_shown {
-                    println!("");
+                    println!();
                 }
             }
         }
@@ -1235,42 +1230,42 @@ fn run_save(
         );
     }
 
-    if alt_repeats.len() > 0 {
+    if !alt_repeats.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "alt_repeat_key".to_string(),
             Value::Array(protocol::alt_repeats_to_json(&alt_repeats)?),
         );
     }
 
-    if key_overrides.len() > 0 {
+    if !key_overrides.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "key_override".to_string(),
             Value::Array(protocol::key_overrides_to_json(&key_overrides)?),
         );
     }
 
-    if combos.len() > 0 {
+    if !combos.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "combo".to_string(),
             Value::Array(protocol::combos_to_json(&combos)?),
         );
     }
 
-    if tap_dances.len() > 0 {
+    if !tap_dances.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "tap_dance".to_string(),
             Value::Array(protocol::tap_dances_to_json(&tap_dances)?),
         );
     }
 
-    if macros.len() > 0 {
+    if !macros.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "macro".to_string(),
             Value::Array(protocol::macros_to_json(&macros)?),
         );
     }
 
-    if qmk_settings.len() > 0 {
+    if !qmk_settings.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "settings".to_string(),
             protocol::qmk_settings_to_json(&qmk_settings)?,
@@ -1327,7 +1322,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
             for device in api.device_list() {
                 if device.usage_page() == protocol::USAGE_PAGE
                     && device.usage() == protocol::USAGE_ID
-                    && (!matches!(id, Some(_)) || id.unwrap() == device.product_id())
+                    && (id.is_none() || id.unwrap() == device.product_id())
                 {
                     println!(
                         "Product name: {:?} id: {:?},\nManufacturer name: {:?}, id: {:?},\nRelease: {:?}, Serial: {:?}, Path: {:?}",
@@ -1375,7 +1370,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             run_load(&api, device, &ops.meta, &ops.file, ops.preview)
                         }
                         CommandEnum::Save(ops) => run_save(&api, device, &ops.meta, &ops.file),
-                        CommandEnum::RGB(ops) => run_rgb(
+                        CommandEnum::Rgb(ops) => run_rgb(
                             &api,
                             device,
                             ops.info,

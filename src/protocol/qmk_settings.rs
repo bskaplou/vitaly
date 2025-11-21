@@ -19,7 +19,7 @@ pub fn load_qmk_qsids(device: &HidDevice) -> Result<Vec<u16>, Box<dyn std::error
     let mut qsids = Vec::new();
     'o: loop {
         match send_recv(
-            &device,
+            device,
             &[
                 CMD_VIA_VIAL_PREFIX,
                 CMD_VIAL_QMK_SETTINGS_QUERY,
@@ -37,7 +37,7 @@ pub fn load_qmk_qsids(device: &HidDevice) -> Result<Vec<u16>, Box<dyn std::error
                     qsids.push(qsid);
                 }
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     }
     Ok(qsids)
@@ -64,7 +64,7 @@ pub fn get_qmk_value(
     width: u8,
 ) -> Result<QmkValue, Box<dyn std::error::Error>> {
     match send_recv(
-        &device,
+        device,
         &[
             CMD_VIA_VIAL_PREFIX,
             CMD_VIAL_QMK_SETTINGS_GET,
@@ -76,21 +76,20 @@ pub fn get_qmk_value(
             if buff[0] != 0 {
                 return Err(ProtocolError::ViaUnhandledError.into());
             }
-            let value;
-            match width {
-                1 => value = buff[1] as u32,
-                2 => value = (buff[1] as u32) + ((buff[2] as u32) << 8),
+            let value = match width {
+                1 => buff[1] as u32,
+                2 => (buff[1] as u32) + ((buff[2] as u32) << 8),
                 4 => {
-                    value = (buff[1] as u32)
+                    (buff[1] as u32)
                         + ((buff[2] as u32) << 8)
                         + ((buff[3] as u32) << 16)
                         + ((buff[3] as u32) << 24)
                 }
-                _ => value = buff[1] as u32,
-            }
+                _ => buff[1] as u32,
+            };
             Ok(QmkValue { value })
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(e),
     }
 }
 
@@ -109,7 +108,7 @@ pub fn set_qmk_value(
         ((value >> 16) & 0xFF) as u8,
         ((value >> 24) & 0xFF) as u8,
     ];
-    match send_recv(&device, &buff) {
+    match send_recv(device, &buff) {
         Ok(buff) => {
             if buff[0] != 0 {
                 return Err(ProtocolError::GeneralError(
@@ -143,7 +142,7 @@ pub fn load_qmk_settings(
                     Value::Number(n) => n.as_u64().ok_or("width shoulbe a number")? as u8,
                     _ => 1,
                 };
-                let value = get_qmk_value(&device, qsid, width)?;
+                let value = get_qmk_value(device, qsid, width)?;
                 result.insert(qsid, value);
             }
         }
@@ -153,7 +152,7 @@ pub fn load_qmk_settings(
 
 pub fn reset_qmk_values(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
     let buff: [u8; 2] = [CMD_VIA_VIAL_PREFIX, CMD_VIAL_QMK_SETTINGS_RESET];
-    match send_recv(&device, &buff) {
+    match send_recv(device, &buff) {
         Ok(buff) => {
             if buff[0] != 0 {
                 return Err(ProtocolError::GeneralError(
@@ -163,7 +162,7 @@ pub fn reset_qmk_values(device: &HidDevice) -> Result<(), Box<dyn std::error::Er
             }
             Ok(())
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(e),
     }
 }
 

@@ -121,9 +121,7 @@ pub enum ProtocolError {
 
 pub fn send(device: &HidDevice, data: &[u8]) -> HidResult<usize> {
     let mut buff: [u8; MESSAGE_LENGTH + 1] = [0u8; MESSAGE_LENGTH + 1];
-    for i in 0..data.len() {
-        buff[i + 1] = data[i];
-    }
+    buff[1..(data.len() + 1)].copy_from_slice(data);
     device.write(&buff)
 }
 
@@ -141,7 +139,7 @@ pub fn send_recv(
 ) -> Result<[u8; MESSAGE_LENGTH], Box<dyn std::error::Error>> {
     let mut attempts = 5;
     loop {
-        match send(&device, &data_out) {
+        match send(device, data_out) {
             Ok(_) => {
                 // nothing here
             }
@@ -150,7 +148,7 @@ pub fn send_recv(
                 return Err(e.into());
             }
         }
-        match recv(&device) {
+        match recv(device) {
             Ok(data) => {
                 return Ok(data);
             }
@@ -183,15 +181,14 @@ pub struct Capabilities {
 }
 
 pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std::error::Error>> {
-    let via_version;
     let vial_version;
     let companion_hid_version;
     let layer_count;
     let macro_count;
     let macro_buffer_size;
 
-    via_version = send_recv(&device, &[CMD_VIA_GET_PROTOCOL_VERSION])?[2];
-    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_KEYBOARD_ID]) {
+    let via_version = send_recv(device, &[CMD_VIA_GET_PROTOCOL_VERSION])?[2];
+    match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_KEYBOARD_ID]) {
         Ok(buff) => {
             if buff[0] != VIA_UNHANDLED {
                 vial_version = ((buff[3] as u32) << 24)
@@ -204,7 +201,7 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
         }
         Err(e) => return Err(e),
     }
-    match send_recv(&device, &[HID_LAYERS_IN, GET_VERSION]) {
+    match send_recv(device, &[HID_LAYERS_IN, GET_VERSION]) {
         Ok(buff) => {
             if buff[0] == HID_LAYERS_OUT_VERSION {
                 companion_hid_version = buff[1]
@@ -217,7 +214,7 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
     if via_version == 0 {
         layer_count = 0;
     } else {
-        match send_recv(&device, &[CMD_VIA_GET_LAYER_COUNT]) {
+        match send_recv(device, &[CMD_VIA_GET_LAYER_COUNT]) {
             Ok(buff) => {
                 if buff[0] != VIA_UNHANDLED {
                     layer_count = buff[1]
@@ -229,7 +226,7 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
         }
     }
 
-    match send_recv(&device, &[CMD_VIA_MACRO_GET_COUNT]) {
+    match send_recv(device, &[CMD_VIA_MACRO_GET_COUNT]) {
         Ok(buff) => {
             if buff[0] != VIA_UNHANDLED {
                 macro_count = buff[1]
@@ -240,7 +237,7 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
         Err(e) => return Err(e),
     }
 
-    match send_recv(&device, &[CMD_VIA_MACRO_GET_BUFFER_SIZE]) {
+    match send_recv(device, &[CMD_VIA_MACRO_GET_BUFFER_SIZE]) {
         Ok(buff) => {
             if buff[0] != VIA_UNHANDLED {
                 macro_buffer_size = ((buff[1] as u16) << 8) + (buff[2] as u16);
@@ -269,7 +266,7 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
     }
 
     match send_recv(
-        &device,
+        device,
         &[
             CMD_VIA_VIAL_PREFIX,
             CMD_VIAL_DYNAMIC_ENTRY_OP,
@@ -304,7 +301,7 @@ pub fn load_vial_meta(device: &HidDevice) -> Result<Value, Box<dyn std::error::E
     let meta_size: u32;
     let mut block: u32;
     let mut remaining_size: i64;
-    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_SIZE]) {
+    match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_SIZE]) {
         Ok(buff) => {
             if buff[0] != VIA_UNHANDLED {
                 meta_size = ((buff[3] as u32) << 24)
@@ -315,7 +312,7 @@ pub fn load_vial_meta(device: &HidDevice) -> Result<Value, Box<dyn std::error::E
                 return Err(ProtocolError::ViaUnhandledError.into());
             }
         }
-        Err(e) => return Err(e.into()),
+        Err(e) => return Err(e),
     }
     remaining_size = meta_size as i64;
     block = 0;
@@ -326,7 +323,7 @@ pub fn load_vial_meta(device: &HidDevice) -> Result<Value, Box<dyn std::error::E
         let block3 = (block >> 8 & 0xFF) as u8;
         let block4 = (block & 0xFF) as u8;
         match send_recv(
-            &device,
+            device,
             &[
                 CMD_VIA_VIAL_PREFIX,
                 CMD_VIAL_GET_DEFINITION,
@@ -339,7 +336,7 @@ pub fn load_vial_meta(device: &HidDevice) -> Result<Value, Box<dyn std::error::E
             Ok(buff) => {
                 if remaining_size >= MESSAGE_LENGTH as i64 {
                     raw_meta.extend_from_slice(&buff);
-                    remaining_size = remaining_size - MESSAGE_LENGTH as i64;
+                    remaining_size -= MESSAGE_LENGTH as i64;
                 } else {
                     raw_meta.extend_from_slice(&buff[0..remaining_size as usize]);
                     remaining_size = 0;
@@ -347,7 +344,7 @@ pub fn load_vial_meta(device: &HidDevice) -> Result<Value, Box<dyn std::error::E
             }
             Err(e) => return Err(e),
         }
-        block = block + 1;
+        block += 1;
     }
     let meta_str = String::from_utf8(lzma::decompress(&raw_meta)?)?;
     //println!("{}", meta_str);
@@ -393,7 +390,7 @@ impl Keymap {
                                     value.split_once("x").ok_or("Incorrect hex encoding")?;
                                 u16::from_str_radix(hex, 16)?
                             } else {
-                                keycodes::name_to_qid(&value)?
+                                keycodes::name_to_qid(value)?
                             }
                         }
                         _ => {
@@ -493,7 +490,7 @@ pub fn load_layers_keys(
         let offset1 = ((offset >> 8) & 0xFF) as u8;
         let offset2 = (offset & 0xFF) as u8;
         match send_recv(
-            &device,
+            device,
             &[CMD_VIA_KEYMAP_GET_BUFFER, offset1, offset2, read_size],
         ) {
             Ok(buff) => {
@@ -504,7 +501,7 @@ pub fn load_layers_keys(
                     println!("UNHANDLED");
                 }
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
         offset += read_size as u16;
     }
@@ -526,7 +523,7 @@ pub fn set_keycode(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let kk1 = ((keycode >> 8) & 0xFF) as u8;
     let kk2 = (keycode & 0xFF) as u8;
-    match send(&device, &[CMD_VIA_SET_KEYCODE, layer, row, col, kk1, kk2]) {
+    match send(device, &[CMD_VIA_SET_KEYCODE, layer, row, col, kk1, kk2]) {
         Ok(_) => Ok(()),
         Err(e) => Err(ProtocolError::HidError(e).into()),
     }
@@ -540,7 +537,7 @@ pub struct LockedStatus {
 }
 
 pub fn get_locked_status(device: &HidDevice) -> Result<LockedStatus, Box<dyn std::error::Error>> {
-    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_UNLOCK_STATUS]) {
+    match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_GET_UNLOCK_STATUS]) {
         Ok(data) => {
             // println!("{:?}", data);
             let mut unlock_buttons = Vec::new();
@@ -559,40 +556,40 @@ pub fn get_locked_status(device: &HidDevice) -> Result<LockedStatus, Box<dyn std
                 unlock_buttons,
             })
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(e),
     }
 }
 
 pub fn start_unlock(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
-    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_START]) {
+    match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_START]) {
         Ok(_) => {
             //println!("start_unlock {:?}", data);
             Ok(())
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(e),
     }
 }
 
 pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8), Box<dyn std::error::Error>> {
-    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_POLL]) {
+    match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_UNLOCK_POLL]) {
         Ok(data) => {
             //println!("unlock poll{:?}", data);
             let unlocked = data[0] == 1;
             let seconds_remaining = data[2];
             Ok((unlocked, seconds_remaining))
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(e),
     }
 }
 
 pub fn load_uid(device: &HidDevice) -> Result<u64, Box<dyn std::error::Error>> {
-    match send_recv(&device, &[CMD_VIA_VIAL_PREFIX]) {
+    match send_recv(device, &[CMD_VIA_VIAL_PREFIX]) {
         Ok(data) => {
             let mut uid_bytes: [u8; 8] = [0; 8];
             uid_bytes.copy_from_slice(&data[4..12]);
             let uid: u64 = u64::from_le_bytes(uid_bytes);
             Ok(uid)
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(e),
     }
 }

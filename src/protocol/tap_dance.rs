@@ -23,7 +23,7 @@ pub struct TapDance {
 }
 
 impl TapDance {
-    pub fn from_string(index: u8, value: &String) -> Result<TapDance, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str) -> Result<TapDance, Box<dyn std::error::Error>> {
         let (keys_string, output) = value
             .split_once("~")
             .ok_or("tapping term in ms should be passed after ~")?;
@@ -32,7 +32,7 @@ impl TapDance {
 
         let mut ks: [u16; 4] = [0x0; 4];
         for (idx, kn) in keys.iter().enumerate() {
-            ks[idx] = keycodes::name_to_qid(&kn.to_string())?;
+            ks[idx] = keycodes::name_to_qid(kn)?;
         }
         Ok(TapDance {
             index,
@@ -54,11 +54,11 @@ impl TapDance {
             .ok_or("TapDances should be encoded into array")?;
         for (pos, val) in values.iter().enumerate() {
             match pos {
-                0 | 1 | 2 | 3 => {
+                0..=3 => {
                     let value_string = val
                         .as_str()
                         .ok_or("TapDance elements 0-3 should be strings")?;
-                    let qid = keycodes::name_to_qid(&value_string.to_string())?;
+                    let qid = keycodes::name_to_qid(value_string)?;
                     ks[pos] = qid
                 }
                 4 => {
@@ -139,7 +139,7 @@ pub fn load_tap_dances(
     let mut tapdances: Vec<TapDance> = vec![];
     for idx in 0..count {
         match send_recv(
-            &device,
+            device,
             &[
                 CMD_VIA_VIAL_PREFIX,
                 CMD_VIAL_DYNAMIC_ENTRY_OP,
@@ -162,7 +162,7 @@ pub fn load_tap_dances(
                     return Err(ProtocolError::ViaUnhandledError.into());
                 }
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     }
     Ok(tapdances)
@@ -186,7 +186,7 @@ pub fn set_tap_dance(
     tapdance: &TapDance,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match send(
-        &device,
+        device,
         &[
             CMD_VIA_VIAL_PREFIX,
             CMD_VIAL_DYNAMIC_ENTRY_OP,

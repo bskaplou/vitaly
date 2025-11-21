@@ -73,31 +73,25 @@ impl RGBInfo {
 
 impl fmt::Display for RGBInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
+        writeln!(
             f,
-            "RGB verions: {}, max_brightness: {}\n",
+            "RGB verions: {}, max_brightness: {}",
             self.version, self.max_brightness
         )?;
-        write!(f, "supported_effects:\n")?;
+        writeln!(f, "supported_effects:")?;
         for effect in &self.effects {
-            match RGBInfo::effect_name(*effect) {
-                Ok(name) => {
-                    write!(f, "\t{}) {}\n", effect, name)?;
-                }
-                Err(_) => {}
+            if let Ok(name) = RGBInfo::effect_name(*effect) {
+                writeln!(f, "\t{}) {}", effect, name)?;
             };
         }
         write!(f, "\ncurrent settings:\n")?;
-        match RGBInfo::effect_name(self.effect) {
-            Ok(name) => {
-                write!(f, "\teffect: {} - {}\n", self.effect, name)?;
-            }
-            Err(_) => {}
+        if let Ok(name) = RGBInfo::effect_name(self.effect) {
+            writeln!(f, "\teffect: {} - {}", self.effect, name)?;
         };
-        write!(f, "\teffect_speed: {}\n", self.effect_speed)?;
-        write!(
+        writeln!(f, "\teffect_speed: {}", self.effect_speed)?;
+        writeln!(
             f,
-            "\tcolor_hsv: (h={}, s={}, v={})\n",
+            "\tcolor_hsv: (h={}, s={}, v={})",
             self.color_h, self.color_s, self.color_v
         )?;
         Ok(())
@@ -116,7 +110,7 @@ pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::
     let mut effects: Vec<u16> = Vec::new();
     effects.push(0);
 
-    match send_recv(&device, &[CMD_VIA_LIGHTING_GET_VALUE, VIALRGB_GET_INFO]) {
+    match send_recv(device, &[CMD_VIA_LIGHTING_GET_VALUE, VIALRGB_GET_INFO]) {
         Ok(data) => {
             if data[0] != VIA_UNHANDLED {
                 version = (data[2] as u16) + ((data[3] as u16) << 8);
@@ -127,7 +121,7 @@ pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::
                     let e1 = (effect & 0xFF) as u8;
 
                     match send_recv(
-                        &device,
+                        device,
                         &[CMD_VIA_LIGHTING_GET_VALUE, VIALRGB_GET_SUPPORTED, e1, e2],
                     ) {
                         Ok(data) => {
@@ -139,7 +133,7 @@ pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::
                                 effects.push(effect);
                             }
                         }
-                        Err(e) => return Err(e.into()),
+                        Err(e) => return Err(e),
                     }
                 }
             } else {
@@ -147,11 +141,11 @@ pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::
                 max_brightness = 0;
             }
         }
-        Err(e) => return Err(e.into()),
+        Err(e) => return Err(e),
     }
 
     if version == 1 {
-        match send_recv(&device, &[CMD_VIA_LIGHTING_GET_VALUE, VIALRGB_GET_MODE]) {
+        match send_recv(device, &[CMD_VIA_LIGHTING_GET_VALUE, VIALRGB_GET_MODE]) {
             Ok(data) => {
                 effect = (data[2] as u16) + ((data[3] as u16) << 8);
                 effect_speed = data[4];
@@ -159,7 +153,7 @@ pub fn load_rgb_info(device: &HidDevice) -> Result<RGBInfo, Box<dyn std::error::
                 color_s = data[6];
                 color_v = data[7];
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     }
 
@@ -182,7 +176,7 @@ pub fn set_rgb_info(
     let e1 = (rgb_info.effect & 0xFF) as u8;
     let e2 = ((rgb_info.effect >> 8) & 0xFF) as u8;
     match send_recv(
-        &device,
+        device,
         &[
             CMD_VIA_LIGHTING_SET_VALUE,
             VIALRGB_SET_MODE,
@@ -195,7 +189,7 @@ pub fn set_rgb_info(
         ],
     ) {
         Ok(_) => {}
-        Err(e) => return Err(e.into()),
+        Err(e) => return Err(e),
     }
 
     Ok(())

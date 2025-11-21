@@ -23,15 +23,15 @@ pub struct Combo {
 }
 
 impl Combo {
-    pub fn from_string(index: u8, value: &String) -> Result<Combo, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str) -> Result<Combo, Box<dyn std::error::Error>> {
         let (keys_all, output) = value
             .split_once("=")
             .ok_or("resulting action should be declared after =")?;
         let keys: Vec<_> = keys_all.split("+").collect();
         let mut ks: [u16; 4] = [0x0; 4];
-        let out = keycodes::name_to_qid(&output.to_string())?;
+        let out = keycodes::name_to_qid(output)?;
         for (idx, kn) in keys.iter().enumerate() {
-            ks[idx] = keycodes::name_to_qid(&kn.to_string())?;
+            ks[idx] = keycodes::name_to_qid(kn)?;
         }
         Ok(Combo {
             index,
@@ -65,9 +65,9 @@ impl Combo {
             .ok_or("Combo should be encoded into array")?;
         for (pos, val) in values.iter().enumerate() {
             let value_string = val.as_str().ok_or("Combo elements should be strings")?;
-            let qid = keycodes::name_to_qid(&value_string.to_string())?;
+            let qid = keycodes::name_to_qid(value_string)?;
             match pos {
-                0 | 1 | 2 | 3 | 4 => ks[pos] = qid,
+                0..=4 => ks[pos] = qid,
                 _ => {
                     return Err(ComboFormatError(
                         "combo array should be strictly 5 elements long".to_string(),
@@ -117,7 +117,7 @@ pub fn load_combos(
     let mut combos: Vec<Combo> = vec![];
     for idx in 0..count {
         match send_recv(
-            &device,
+            device,
             &[
                 CMD_VIA_VIAL_PREFIX,
                 CMD_VIAL_DYNAMIC_ENTRY_OP,
@@ -140,7 +140,7 @@ pub fn load_combos(
                     return Err(ProtocolError::ViaUnhandledError.into());
                 }
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     }
     Ok(combos)
@@ -154,14 +154,14 @@ pub fn load_combos_from_json(
         .as_array()
         .ok_or("Combos should be encoded as array of arrays")?;
     for (i, combo) in combos.iter().enumerate() {
-        result.push(Combo::from_json(i as u8, &combo)?)
+        result.push(Combo::from_json(i as u8, combo)?)
     }
     Ok(result)
 }
 
 pub fn set_combo(device: &HidDevice, combo: &Combo) -> Result<(), Box<dyn std::error::Error>> {
     match send(
-        &device,
+        device,
         &[
             CMD_VIA_VIAL_PREFIX,
             CMD_VIAL_DYNAMIC_ENTRY_OP,

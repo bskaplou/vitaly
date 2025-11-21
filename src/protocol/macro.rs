@@ -69,12 +69,11 @@ impl MacroStep {
                         _ => 42,
                     };
                     result.push(cmd);
-                    let c;
-                    if kc % 256 == 0 {
-                        c = 0xFF00 | (kc >> 8);
+                    let c = if kc % 256 == 0 {
+                        0xFF00 | (kc >> 8)
                     } else {
-                        c = *kc;
-                    }
+                        *kc
+                    };
                     result.push((c & 0xFF) as u8);
                     result.push(((c >> 8) & 0xFF) as u8);
                 }
@@ -92,11 +91,7 @@ impl MacroStep {
             "Tap" => Ok(MacroStep::Tap(keycodes::name_to_qid(&right)?)),
             "Down" => Ok(MacroStep::Down(keycodes::name_to_qid(&right)?)),
             "Up" => Ok(MacroStep::Up(keycodes::name_to_qid(&right)?)),
-            _ => {
-                return Err(
-                    MacroParsingError(format!("Unknown macro step {}", right).to_string()).into(),
-                );
-            }
+            _ => Err(MacroParsingError(format!("Unknown macro step {}", right).to_string()).into()),
         }
     }
 
@@ -131,35 +126,26 @@ impl MacroStep {
             "tap" => {
                 for arg in &step[1..] {
                     let text_arg = arg.as_str().ok_or("text argument should be string");
-                    result.push(MacroStep::Tap(keycodes::name_to_qid(
-                        &text_arg?.to_string(),
-                    )?));
+                    result.push(MacroStep::Tap(keycodes::name_to_qid(text_arg?)?));
                 }
                 Ok(result)
             }
             "down" => {
                 for arg in &step[1..] {
                     let text_arg = arg.as_str().ok_or("text argument should be string");
-                    result.push(MacroStep::Down(keycodes::name_to_qid(
-                        &text_arg?.to_string(),
-                    )?));
+                    result.push(MacroStep::Down(keycodes::name_to_qid(text_arg?)?));
                 }
                 Ok(result)
             }
             "up" => {
                 for arg in &step[1..] {
                     let text_arg = arg.as_str().ok_or("text argument should be string");
-                    result.push(MacroStep::Up(keycodes::name_to_qid(
-                        &text_arg?.to_string(),
-                    )?));
+                    result.push(MacroStep::Up(keycodes::name_to_qid(text_arg?)?));
                 }
                 Ok(result)
             }
             action => {
-                return Err(MacroParsingError(
-                    format!("Unknown macro step {}", action).to_string(),
-                )
-                .into());
+                Err(MacroParsingError(format!("Unknown macro step {}", action).to_string()).into())
             }
         }
     }
@@ -203,11 +189,11 @@ impl Macro {
         }
     }
 
-    pub fn from_string(index: u8, value: &String) -> Result<Macro, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str) -> Result<Macro, Box<dyn std::error::Error>> {
         let steps: Vec<&str> = value.split(";").map(|s| s.trim()).collect();
         let mut parsed_steps = Vec::new();
         for step in steps {
-            if step.len() > 0 {
+            if !step.is_empty() {
                 parsed_steps.push(MacroStep::from_string(step)?)
             }
         }
@@ -244,7 +230,7 @@ impl fmt::Display for Macro {
                 }
                 write!(f, "{}", step)?
             }
-            return Ok(());
+            Ok(())
         }
     }
 }
@@ -356,7 +342,7 @@ pub fn deserialize(data: Vec<u8>) -> Result<Vec<Macro>, Box<dyn std::error::Erro
     let mut start = 0;
     let mut pos = 0;
     let mut macroses = Vec::new();
-    if data.len() != 0 && !(data.len() == 1 && data[0] == 0) {
+    if !(data.is_empty() || data.len() == 1 && data[0] == 0) {
         for i in 0..data.len() {
             if data[i] == 0 {
                 let macro_bytes = data.get(start..i).ok_or("fatal deserialization error")?;
@@ -397,7 +383,7 @@ pub fn load_macros(
             break 'load;
         }
 
-        match send_recv(&device, &[CMD_VIA_MACRO_GET_BUFFER, l1, l2, read_size]) {
+        match send_recv(device, &[CMD_VIA_MACRO_GET_BUFFER, l1, l2, read_size]) {
             Ok(buff) => {
                 if buff[0] != VIA_UNHANDLED {
                     for i in 4..(read_size + 4) {
@@ -422,10 +408,10 @@ pub fn load_macros(
                     return Err(ProtocolError::ViaUnhandledError.into());
                 }
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     }
-    Ok(deserialize(macro_buffer)?)
+    deserialize(macro_buffer)
     /*
     let d = deserialize(macro_buffer.clone())?;
     let dd = deserialize(macro_buffer.clone())?;
@@ -487,14 +473,14 @@ pub fn set_macros(
             offset, to_send, msg
         );
         */
-        match send_recv(&device, &msg) {
+        match send_recv(device, &msg) {
             Ok(buff) => {
                 if buff[0] == VIA_UNHANDLED {
                     return Err(ProtocolError::ViaUnhandledError.into());
                 }
                 // Fine!
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
         offset += to_send as u16;
     }
