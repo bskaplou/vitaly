@@ -1,6 +1,7 @@
 use palette::FromColor;
 use palette::{Hsv, Srgb};
 use std::fmt;
+use std::cmp::min;
 
 use crate::protocol::{
     CMD_VIA_LIGHTING_GET_VALUE, CMD_VIA_LIGHTING_SAVE, CMD_VIA_LIGHTING_SET_VALUE, MESSAGE_LENGTH,
@@ -243,6 +244,8 @@ pub fn persist_rgb(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
+const LEDS_PER_REQ: u16 = 8;
+
 fn set_leds_range(
     device: &HidDevice,
     from: u16,
@@ -250,6 +253,14 @@ fn set_leds_range(
     color: &str,
     max_brightness: u8,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if to - from > LEDS_PER_REQ {
+        let mut current_from = from;
+        while current_from < to {
+            set_leds_range(&device, current_from, min(to, current_from + LEDS_PER_REQ), color, max_brightness)?;
+            current_from += LEDS_PER_REQ + 1;
+        }
+        return Ok(());
+    }
     let (h, s, v) = rgb_to_hsv(color, max_brightness)?;
     let mut buff: [u8; MESSAGE_LENGTH] = [0u8; MESSAGE_LENGTH];
     buff[0] = CMD_VIA_LIGHTING_SET_VALUE;
