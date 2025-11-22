@@ -2,8 +2,6 @@ extern crate hidapi;
 
 use argh::FromArgs;
 use hidapi::{DeviceInfo, HidApi, HidDevice};
-use palette::FromColor;
-use palette::{Hsv, Srgb};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
@@ -228,7 +226,7 @@ struct CommandRgb {
     #[argh(option, short = 's')]
     speed: Option<u8>,
 
-    /// set brightness 0-to max_brightness
+    /// set brightness 0-max_brightness
     #[argh(option, short = 'b')]
     brightness: Option<u8>,
 
@@ -239,6 +237,14 @@ struct CommandRgb {
     /// persist rgb config to keep settings after restart
     #[argh(switch, short = 'p')]
     persist: bool,
+
+    /// list supported effects
+    #[argh(switch, short = 'l')]
+    list: bool,
+
+    /// direct led control, NB works only if effect = 1, example value 0-5=#ffffff;6=#0000ff
+    #[argh(option, short = 'd')]
+    direct: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -1286,57 +1292,50 @@ fn run_save(
 fn run_rgb(
     api: &HidApi,
     device: &DeviceInfo,
-    info: bool,
-    effect: &Option<u16>,
-    speed: &Option<u8>,
-    color: &Option<String>,
-    brightness: &Option<u8>,
-    persist: bool,
+    cmd: &CommandRgb,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
 
     let mut rgb_info = protocol::load_rgb_info(&dev)?;
     let mut update = false;
-    if let Some(s) = speed {
-        rgb_info.effect_speed = *s;
+    if let Some(s) = cmd.speed {
+        rgb_info.effect_speed = s;
         update = true;
     }
-    if let Some(e) = effect {
-        rgb_info.effect = *e;
+    if let Some(e) = cmd.effect {
+        rgb_info.effect = e;
         update = true;
     }
-    if let Some(c) = color {
-        let rgb: Srgb<u8> = c.parse()?;
-        let ru8: Srgb = Srgb::from(rgb);
-        let hsv: Hsv = Hsv::from_color(ru8);
-        let hu8: Hsv<_, u8> = hsv.into_format::<u8>();
-        let (h, s, v) = hu8.into_components();
-        let normal_brightness = ((v as f64) * (rgb_info.max_brightness as f64) / 255.0) as u8;
-        rgb_info.color_h = h.into_inner();
-        rgb_info.color_s = s;
-        rgb_info.color_v = normal_brightness;
+    if let Some(c) = &cmd.color {
+        rgb_info.set_color(c)?;
         update = true;
     }
     // brightness applied after color, because it overwrites it hsv
-    if let Some(b) = brightness {
-        if *b > rgb_info.max_brightness {
+    if let Some(b) = cmd.brightness {
+        if b > rgb_info.max_brightness {
             rgb_info.color_v = rgb_info.max_brightness;
         } else {
-            rgb_info.color_v = *b;
+            rgb_info.color_v = b;
         }
         update = true;
     }
-    if info {
+    if cmd.list {
+        rgb_info.dump_supported_effects();
+    }
+    if cmd.info {
         println!("\n{}", rgb_info);
     }
     if update {
-        protocol::set_rgb_info(&dev, &rgb_info)?;
+        protocol::set_rgb_mode(&dev, &rgb_info)?;
         println!("RGB settings updated...");
     }
-    if persist {
+    if cmd.persist {
         protocol::persist_rgb(&dev)?;
         println!("RGB settings persisted...");
+    }
+    if let Some(command) = &cmd.direct {
+        protocol::set_leds_direct(&dev, &command, rgb_info.max_brightness)?;
     }
     Ok(())
 }
@@ -1395,16 +1394,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             run_load(&api, device, &ops.meta, &ops.file, ops.preview)
                         }
                         CommandEnum::Save(ops) => run_save(&api, device, &ops.meta, &ops.file),
-                        CommandEnum::Rgb(ops) => run_rgb(
-                            &api,
-                            device,
-                            ops.info,
-                            &ops.effect,
-                            &ops.speed,
-                            &ops.color,
-                            &ops.brightness,
-                            ops.persist,
-                        ),
+                        CommandEnum::Rgb(ops) => run_rgb(&api, device, ops),
                     };
                     match result {
                         Ok(_) => {
