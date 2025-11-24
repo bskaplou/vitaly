@@ -2,6 +2,14 @@
 name = "vitaly"
 version = "0.1.0"
 edition = "2024"
+description = "VIA/Vial API client and cli tool for guiless keyboard configuration."
+license = "MIT"
+homepage = "https://github.com/bskaplou/vitaly"
+documentation = "https://github.com/bskaplou/vitaly"
+repository = "https://github.com/bskaplou/vitaly"
+readme = "README.md"
+keywords = ["qmk", "via", "vial", "command-line-interface"]
+categories = ["command-line-utilities", "command-line-interface"]
 
 [dependencies]
 argh = "0.1.13"
