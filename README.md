@@ -810,3 +810,34 @@ current settings:
 
 RGB settings persisted...
 ```
+
+### Save subcommand
+
+Save subcommand dumps current configuration into a file.
+
+```
+❯ vitaly -i 4626 save -f silakka54.vil
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972096"
+
+Configutaion saved to file silakka54.vil
+```
+
+### Load subcommand
+
+Load subcommans loads keyboard configuration from file.
+
+```
+❯ vitaly -i 4626 load -f silakka54.vil
+Product name: "silakka54" id: 4626,
+Manufacturer name: "Squalius-cephalus", id: 65261,
+Release: 256, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4294972096"
+
+Macros restored
+Key overrides restored
+Alt repeat keys restored
+Combos restored
+TapDances restored
+Keys restored. All done!!!
+```

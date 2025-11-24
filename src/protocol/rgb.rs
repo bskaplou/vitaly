@@ -1,7 +1,7 @@
 use palette::FromColor;
 use palette::{Hsv, Srgb};
-use std::fmt;
 use std::cmp::min;
+use std::fmt;
 
 use crate::protocol::{
     CMD_VIA_LIGHTING_GET_VALUE, CMD_VIA_LIGHTING_SAVE, CMD_VIA_LIGHTING_SET_VALUE, MESSAGE_LENGTH,
@@ -256,7 +256,13 @@ fn set_leds_range(
     if to - from > LEDS_PER_REQ {
         let mut current_from = from;
         while current_from < to {
-            set_leds_range(&device, current_from, min(to, current_from + LEDS_PER_REQ), color, max_brightness)?;
+            set_leds_range(
+                device,
+                current_from,
+                min(to, current_from + LEDS_PER_REQ),
+                color,
+                max_brightness,
+            )?;
             current_from += LEDS_PER_REQ + 1;
         }
         return Ok(());
@@ -276,7 +282,7 @@ fn set_leds_range(
     }
     //println!("{:?}", buff);
     match send_recv(device, &buff) {
-        Ok(data) => {
+        Ok(_) => {
             //println!("{:?}", data);
         }
         Err(e) => return Err(e),

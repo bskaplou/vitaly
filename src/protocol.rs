@@ -479,6 +479,15 @@ impl Keymap {
             Ok(keycodes::qid_to_name(kk))
         }
     }
+
+    pub fn get(&self, layer: u8, row: u8, col: u8) -> u16 {
+        let offset = (layer as usize * self.rows as usize * self.cols as usize * 2)
+            + (row as usize * self.cols as usize * 2)
+            + (col as usize * 2);
+        let v1 = self.keys[offset];
+        let v2 = self.keys[offset + 1];
+        ((v1 as u16) << 8) + (v2 as u16)
+    }
 }
 
 pub fn load_layers_keys(
@@ -532,6 +541,18 @@ pub fn set_keycode(
         Ok(_) => Ok(()),
         Err(e) => Err(ProtocolError::HidError(e).into()),
     }
+}
+
+pub fn set_keymap(device: &HidDevice, keymap: &Keymap) -> Result<(), Box<dyn std::error::Error>> {
+    for layer_num in 0..keymap.layers {
+        for row_num in 0..keymap.rows {
+            for col_num in 0..keymap.cols {
+                let kk = keymap.get(layer_num, row_num, col_num);
+                set_keycode(device, layer_num, row_num, col_num, kk)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug)]

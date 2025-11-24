@@ -1047,7 +1047,6 @@ fn run_load(
         )?,
     };
     let macros = protocol::load_macros_from_json(root.get("macro").ok_or("macro is not defined")?)?;
-
     let key_overrides = match capabilities.key_override_count {
         0 => Vec::new(),
         _ => protocol::load_key_overrides_from_json(
@@ -1065,6 +1064,38 @@ fn run_load(
     };
 
     if !preview {
+        println!();
+        if !macros.is_empty() && capabilities.vial_version > 0 {
+            let status = protocol::get_locked_status(&dev)?;
+            if status.locked {
+                return Err(CommandError("Keyboard is locked, macroses can't be updated, keyboard might be unlocked with subcommand 'lock -u'".to_string()).into());
+            }
+        }
+        protocol::set_macros(&dev, &capabilities, &macros)?;
+        println!("Macros restored");
+
+        for ko in key_overrides {
+            protocol::set_key_override(&dev, &ko)?;
+        }
+        println!("Key overrides restored");
+
+        for ar in alt_repeats {
+            protocol::set_alt_repeat(&dev, &ar)?;
+        }
+        println!("Alt repeat keys restored");
+
+        for combo in combos {
+            protocol::set_combo(&dev, &combo)?;
+        }
+        println!("Combos restored");
+
+        for td in tap_dances {
+            protocol::set_tap_dance(&dev, &td)?;
+        }
+        println!("TapDances restored");
+
+        protocol::set_keymap(&dev, &keys)?;
+        println!("Keys restored. All done!!!");
         //
     } else {
         for layer_number in 0..capabilities.layer_count {
@@ -1283,9 +1314,9 @@ fn run_save(
             protocol::qmk_settings_to_json(&qmk_settings)?,
         );
     }
-    // println!("{}", result.to_string());
 
     fs::write(file, result.to_string())?;
+    println!("\nConfigutaion saved to file {}", file);
     Ok(())
 }
 
@@ -1335,7 +1366,7 @@ fn run_rgb(
         println!("RGB settings persisted...");
     }
     if let Some(command) = &cmd.direct {
-        protocol::set_leds_direct(&dev, &command, rgb_info.max_brightness)?;
+        protocol::set_leds_direct(&dev, command, rgb_info.max_brightness)?;
     }
     Ok(())
 }
