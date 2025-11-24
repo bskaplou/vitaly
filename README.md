@@ -12,6 +12,14 @@ Layouts with no rotation are supproted and displays well. Layouts with rotated b
 
 Tool support --help for tool as a whole and for all subcommands.
 
+## Installation
+
+vitaly might be installed with cargo
+
+```
+cargo install vitaly
+```
+
 ## Development
 
 Just edit files and run following command to run tool in debug mode
