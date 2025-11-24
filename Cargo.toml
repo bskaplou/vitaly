@@ -8,7 +8,7 @@ homepage = "https://github.com/bskaplou/vitaly"
 documentation = "https://github.com/bskaplou/vitaly"
 repository = "https://github.com/bskaplou/vitaly"
 readme = "README.md"
-keywords = ["qmk", "via", "vial", "command-line-interface"]
+keywords = ["qmk", "via", "vial", "cli"]
 categories = ["command-line-utilities", "command-line-interface"]
 
 [dependencies]
