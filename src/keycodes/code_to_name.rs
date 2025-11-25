@@ -267,6 +267,7 @@ pub static SHORTNAMES: LazyLock<HashMap<u16, &str>> = LazyLock::new(|| {
     m
 });
 
+/*
 pub static MODNAMES: LazyLock<HashMap<u8, &str>> = LazyLock::new(|| {
     let mut m = HashMap::new();
     m.insert(0x01, "MOD_LCTL");
@@ -279,6 +280,7 @@ pub static MODNAMES: LazyLock<HashMap<u8, &str>> = LazyLock::new(|| {
     m.insert(0x18, "MOD_RGUI");
     m
 });
+*/
 
 pub static FULLNAMES: LazyLock<HashMap<u16, &str>> = LazyLock::new(|| {
     let mut m = HashMap::new();

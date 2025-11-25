@@ -35,14 +35,12 @@ pub use crate::protocol::r#macro::{
 
 pub mod qmk_settings;
 pub use crate::protocol::qmk_settings::{
-    QmkValue, get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings,
+    get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings,
     load_qmk_settings_from_json, qmk_settings_to_json, reset_qmk_values, set_qmk_value,
 };
 
 pub mod rgb;
-pub use crate::protocol::rgb::{
-    RGBInfo, load_rgb_info, persist_rgb, set_leds_direct, set_rgb_mode,
-};
+pub use crate::protocol::rgb::{load_rgb_info, persist_rgb, set_leds_direct, set_rgb_mode};
 
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;
@@ -121,7 +119,7 @@ pub enum ProtocolError {
     #[error("JsonError {0}")]
     SerdeJsonError(#[from] serde_json::Error),
     #[error("Error {0}")]
-    GeneralError(String),
+    General(String),
 }
 
 pub fn send(device: &HidDevice, data: &[u8]) -> HidResult<usize> {

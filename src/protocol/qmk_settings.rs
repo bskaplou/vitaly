@@ -111,10 +111,9 @@ pub fn set_qmk_value(
     match send_recv(device, &buff) {
         Ok(buff) => {
             if buff[0] != 0 {
-                return Err(ProtocolError::GeneralError(
-                    "Unexpected protocol response".to_string(),
-                )
-                .into());
+                return Err(
+                    ProtocolError::General("Unexpected protocol response".to_string()).into(),
+                );
             }
             Ok(())
         }
@@ -155,10 +154,9 @@ pub fn reset_qmk_values(device: &HidDevice) -> Result<(), Box<dyn std::error::Er
     match send_recv(device, &buff) {
         Ok(buff) => {
             if buff[0] != 0 {
-                return Err(ProtocolError::GeneralError(
-                    "Unexpected protocol response".to_string(),
-                )
-                .into());
+                return Err(
+                    ProtocolError::General("Unexpected protocol response".to_string()).into(),
+                );
             }
             Ok(())
         }

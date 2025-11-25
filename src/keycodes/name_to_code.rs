@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+/*
 pub static MODNAMES: LazyLock<HashMap<&str, u8>> = LazyLock::new(|| {
     let mut m = HashMap::new();
     m.insert("MOD_LCTL", 0x01);
@@ -13,6 +14,7 @@ pub static MODNAMES: LazyLock<HashMap<&str, u8>> = LazyLock::new(|| {
     m.insert("MOD_RGUI", 0x18);
     m
 });
+*/
 
 pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
     let mut m = HashMap::new();
