@@ -281,14 +281,14 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             // nothing here
                         }
                         Err(e) => {
-                            println!("Error: {}", e)
+                            eprintln!("Error: {}", e)
                         }
                     }
                 }
             }
         }
         Err(e) => {
-            println!("Error: {:?}", e);
+            eprintln!("Error: {:?}", e);
         }
     }
 }
