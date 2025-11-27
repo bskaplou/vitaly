@@ -160,11 +160,11 @@ pub static SHORTNAMES: LazyLock<HashMap<u16, &str>> = LazyLock::new(|| {
     m.insert(0x00DA, "⚙↓");
     m.insert(0x00DB, "⚙←");
     m.insert(0x00DC, "⚙→");
-    m.insert(0x00E0, "L⎈");
+    m.insert(0x00E0, "L⌃");
     m.insert(0x00E1, "L⇧");
     m.insert(0x00E2, "L⌥");
     m.insert(0x00E3, "L⌘");
-    m.insert(0x00E4, "R⎈");
+    m.insert(0x00E4, "R⌃");
     m.insert(0x00E5, "R⇧");
     m.insert(0x00E6, "R⌥");
     m.insert(0x00E7, "R⌘");
