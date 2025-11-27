@@ -200,6 +200,10 @@ fn parse_num(num: &String) -> Result<u16, KeyParsingError> {
 
 pub fn name_to_qid(name: &str) -> Result<u16, Box<dyn std::error::Error>> {
     let n = name.replace(" ", "");
+    if n.starts_with("0x") {
+        let keycode = u16::from_str_radix(n.strip_prefix("0x").ok_or("bad hex prefix")?, 16)?;
+        return Ok(keycode);
+    }
     if let Some((left, right_str)) = n.split_once('(') {
         let keycode;
         let mut right_s = right_str.to_string();
@@ -676,8 +680,9 @@ pub fn qid_to_name(keycode: u16) -> String {
                 dest.push_str(name);
             }
             None => {
-                println!("fixme {:#04x}", keycode);
-                dest.push_str("UNKNOWN");
+                //println!("fixme {:#04x}", keycode);
+
+                dest.push_str(format!("{:#04x}", keycode).as_str());
             }
         },
     }
