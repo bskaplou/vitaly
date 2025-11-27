@@ -55,8 +55,8 @@ pub fn render_layer(
     let mut fat_labels = Vec::new();
     for button in buttons {
         let wkey = (button.wire_x, button.wire_y);
-        if !processed.contains_key(&wkey) {
-            processed.insert(wkey, true);
+        if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
+            e.insert(true);
             let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
             let mut slim_label = true;
             for (idx, part) in label.split(',').enumerate() {
