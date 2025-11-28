@@ -29,9 +29,13 @@ struct VialClient {
     #[argh(option, short = 'i')]
     id: Option<u16>,
 
+    /// show vitaly version
+    #[argh(switch, short = 'v')]
+    version: bool,
+
     /// command to run
     #[argh(subcommand)]
-    command: CommandEnum,
+    command: Option<CommandEnum>,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -295,5 +299,14 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
 
 fn main() {
     let options: VialClient = argh::from_env();
-    command_for_devices(options.id, &options.command);
+    if options.version {
+        println!("vitaly {}", env!("CARGO_PKG_VERSION"))
+    } else if let Some(command) = options.command {
+        command_for_devices(options.id, &command);
+    } else {
+        println!(
+            "vitaly {}\nRun vitaly --help for more information.",
+            env!("CARGO_PKG_VERSION")
+        )
+    }
 }
