@@ -305,8 +305,9 @@ fn main() {
         command_for_devices(options.id, &command);
     } else {
         println!(
-            "vitaly {}\nRun vitaly --help for more information.",
-            env!("CARGO_PKG_VERSION")
+            "{0} {1}\nRun {0} --help for more information.",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
         )
     }
 }
