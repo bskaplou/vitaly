@@ -42,6 +42,9 @@ pub use crate::protocol::qmk_settings::{
 pub mod rgb;
 pub use crate::protocol::rgb::{load_rgb_info, persist_rgb, set_leds_direct, set_rgb_mode};
 
+pub mod layout;
+pub use crate::protocol::layout::{LayoutOptions, load_layout_options};
+
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;
 
@@ -55,6 +58,8 @@ pub const VIAL_PROTOCOL_DYNAMIC: u32 = 4;
 pub const VIAL_PROTOCOL_QMK_SETTINGS: u32 = 4;
 
 const CMD_VIA_GET_PROTOCOL_VERSION: u8 = 0x01;
+const CMD_VIA_GET_KEYBOARD_VALUE: u8 = 0x02;
+const CMD_VIA_SET_KEYBOARD_VALUE: u8 = 0x03;
 const CMD_VIA_VIAL_PREFIX: u8 = 0xFE;
 const CMD_VIAL_GET_KEYBOARD_ID: u8 = 0x00;
 const CMD_VIAL_GET_SIZE: u8 = 0x01;
@@ -63,6 +68,7 @@ const CMD_VIA_SET_KEYCODE: u8 = 0x05;
 const CMD_VIA_GET_LAYER_COUNT: u8 = 0x11;
 const CMD_VIA_KEYMAP_GET_BUFFER: u8 = 0x12;
 const VIA_UNHANDLED: u8 = 0xFF;
+const VIA_LAYOUT_OPTIONS: u8 = 0x02;
 
 const CMD_VIAL_DYNAMIC_ENTRY_OP: u8 = 0x0D;
 const DYNAMIC_VIAL_GET_NUMBER_OF_ENTRIES: u8 = 0x00;

@@ -14,6 +14,7 @@ mod devices;
 mod keyoverrides;
 mod keys;
 mod layers;
+mod layout;
 mod load;
 mod lock;
 mod macros;
@@ -54,6 +55,7 @@ enum CommandEnum {
     Load(CommandLoad),
     Save(CommandSave),
     Rgb(rgb::CommandRgb),
+    Layout(CommandLayout),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -195,7 +197,7 @@ struct CommandSettings {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Load layout from file
+/// Load configuration from file
 #[argh(subcommand, name = "load")]
 struct CommandLoad {
     /// meta file (to use instead of vial meta)
@@ -212,7 +214,7 @@ struct CommandLoad {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Save layout into file
+/// Save configuration into file
 #[argh(subcommand, name = "save")]
 struct CommandSave {
     /// meta file (to use instead of vial meta)
@@ -222,6 +224,15 @@ struct CommandSave {
     /// path to layout file
     #[argh(option, short = 'f')]
     file: String,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// Layout options
+#[argh(subcommand, name = "layout")]
+struct CommandLayout {
+    /// meta file (to use instead of vial meta)
+    #[argh(option, short = 'm')]
+    meta: Option<String>,
 }
 
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
@@ -279,6 +290,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         }
                         CommandEnum::Save(ops) => save::run(&api, device, &ops.meta, &ops.file),
                         CommandEnum::Rgb(ops) => rgb::run(&api, device, ops),
+                        CommandEnum::Layout(ops) => layout::run(&api, device, &ops.meta),
                     };
                     match result {
                         Ok(_) => {
