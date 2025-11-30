@@ -620,15 +620,13 @@ mod tests {
         );
     }
 
-    /*
     #[test]
     fn test_display_macro() {
         let m = Macro::from_string(0, &"Tap(KC_A); Delay(100)".to_string()).unwrap();
         assert_eq!(format!("{}", m), "0) Tap(KC_A); Delay(100)");
-        let empty_m = Macro::empty(1);
-        assert_eq!(format!("{}", empty_m), "1) EMPTY");
+        //let empty_m = Macro::empty(1);
+        //assert_eq!(format!("{}", empty_m), "1) EMPTY");
     }
-    */
 
     #[test]
     fn test_macro_from_string_round_trip() {
