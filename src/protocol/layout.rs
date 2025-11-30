@@ -1,5 +1,6 @@
 use crate::protocol::{
-    CMD_VIA_GET_KEYBOARD_VALUE, ProtocolError, VIA_LAYOUT_OPTIONS, VIA_UNHANDLED, send_recv,
+    CMD_VIA_GET_KEYBOARD_VALUE, CMD_VIA_SET_KEYBOARD_VALUE, ProtocolError, VIA_LAYOUT_OPTIONS,
+    VIA_UNHANDLED, send_recv,
 };
 use hidapi::HidDevice;
 use serde_json::Value;
@@ -85,7 +86,9 @@ impl LayoutOptions<'_> {
             for (new_option, new_variant) in &options {
                 if option_idx as u8 == *new_option {
                     let ignore_high_bits = 33 - start_bit - variants.len() as u8;
-                    let mask = !((0xFFFFFFFF << ignore_high_bits) >> (start_bit + ignore_high_bits) << start_bit);
+                    let mask = !((0xFFFFFFFF << ignore_high_bits)
+                        >> (start_bit + ignore_high_bits)
+                        << start_bit);
                     let variant_bit = if *new_variant == 0 {
                         0
                     } else {
@@ -103,7 +106,7 @@ impl fmt::Display for LayoutOptions<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let options = self.via_options();
         for (option_idx, (name, variants, _)) in self.options.iter().enumerate() {
-            writeln!(f, "{}:", name)?;
+            writeln!(f, "{}) {}:", option_idx, name)?;
             for (variant_idx, variant) in variants.iter().enumerate() {
                 if options[option_idx] == (option_idx as u8, variant_idx as u8) {
                     writeln!(f, "\t{}) {} <= currently selected", variant_idx, variant)?;
@@ -133,6 +136,28 @@ pub fn load_layout_options(device: &HidDevice) -> Result<u32, Box<dyn std::error
     }
 }
 
-//put fn set_layout_options(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
-
-//}
+pub fn set_layout_options(
+    device: &HidDevice,
+    options: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match send_recv(
+        device,
+        &[
+            CMD_VIA_SET_KEYBOARD_VALUE,
+            VIA_LAYOUT_OPTIONS,
+            ((options >> 24) & 0xFF) as u8,
+            ((options >> 16) & 0xFF) as u8,
+            ((options >> 8) & 0xFF) as u8,
+            (options & 0xFF) as u8,
+        ],
+    ) {
+        Ok(data) => {
+            if data[0] != VIA_UNHANDLED {
+                Ok(())
+            } else {
+                Err(ProtocolError::ViaUnhandledError.into())
+            }
+        }
+        Err(e) => Err(e),
+    }
+}

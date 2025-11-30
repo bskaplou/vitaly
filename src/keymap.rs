@@ -95,18 +95,13 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                 Value::String(item) => {
                                     if !decal {
                                         // skip decals entirely
-                                        let mut value = item.as_str();
-                                        if value.contains('\n') {
-                                            let mut s = value.split('\n');
-                                            loop {
-                                                value = s.next().ok_or("incorrect button value")?;
-                                                if !value.is_empty() {
-                                                    // println!("value {:?}", value);
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        if let Some((xxx, yyy)) = value.split_once(',') {
+                                        let labels: Vec<_> = item.split("\n").collect();
+                                        let (wire, _option) = if labels.len() < 4 {
+                                            (labels[0], None)
+                                        } else {
+                                            (labels[0], Some(labels[3]))
+                                        };
+                                        if let Some((xxx, yyy)) = wire.split_once(',') {
                                             let xx: u8 = xxx.parse()?;
                                             let yy: u8 = yyy.parse()?;
                                             let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {

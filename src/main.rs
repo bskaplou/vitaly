@@ -233,6 +233,14 @@ struct CommandLayout {
     /// meta file (to use instead of vial meta)
     #[argh(option, short = 'm')]
     meta: Option<String>,
+
+    /// layout option id
+    #[argh(option, short = 'o')]
+    option: Option<u8>,
+
+    /// set layout option value
+    #[argh(option, short = 'v')]
+    value: Option<u8>,
 }
 
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
@@ -290,7 +298,9 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         }
                         CommandEnum::Save(ops) => save::run(&api, device, &ops.meta, &ops.file),
                         CommandEnum::Rgb(ops) => rgb::run(&api, device, ops),
-                        CommandEnum::Layout(ops) => layout::run(&api, device, &ops.meta),
+                        CommandEnum::Layout(ops) => {
+                            layout::run(&api, device, &ops.meta, &ops.option, &ops.value)
+                        }
                     };
                     match result {
                         Ok(_) => {

@@ -43,7 +43,7 @@ pub mod rgb;
 pub use crate::protocol::rgb::{load_rgb_info, persist_rgb, set_leds_direct, set_rgb_mode};
 
 pub mod layout;
-pub use crate::protocol::layout::{LayoutOptions, load_layout_options};
+pub use crate::protocol::layout::{LayoutOptions, load_layout_options, set_layout_options};
 
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;

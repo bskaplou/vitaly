@@ -6,6 +6,8 @@ pub fn run(
     api: &HidApi,
     device: &DeviceInfo,
     meta_file: &Option<String>,
+    option: &Option<u8>,
+    value: &Option<u8>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
@@ -14,12 +16,19 @@ pub fn run(
     let layout_options = &meta["layouts"]["labels"];
     let state = protocol::load_layout_options(&dev)?;
     let mut options = protocol::LayoutOptions::from_json(state, layout_options)?;
-    println!("{:?}", &options);
-    println!("{:?}", options.via_options());
-    println!("{}", &options);
-    options.set_via_options(vec!((1, 1), (2, 2)));
-    println!("{:?}", &options);
-    println!("{:?}", options.via_options());
-    println!("{}", &options);
+    match option {
+        Some(o) => match value {
+            Some(v) => {
+                options.set_via_options(vec![(*o, *v)])?;
+                protocol::set_layout_options(&dev, options.state)?;
+            }
+            None => {
+                println!("Current layout options\n{}", &options);
+            }
+        },
+        None => {
+            println!("Current layout options\n{}", &options);
+        }
+    }
     Ok(())
 }
