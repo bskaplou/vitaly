@@ -156,6 +156,10 @@ struct CommandLayers {
     /// layer number
     #[argh(option, short = 'n')]
     number: Option<u8>,
+
+    /// override layout options
+    #[argh(option, short = 'o')]
+    options: Option<String>,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -279,9 +283,14 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         CommandEnum::AltRepeats(ops) => {
                             altrepeats::run(&api, device, ops.number, &ops.value)
                         }
-                        CommandEnum::Layers(ops) => {
-                            layers::run(&api, device, &ops.meta, ops.positions, ops.number)
-                        }
+                        CommandEnum::Layers(ops) => layers::run(
+                            &api,
+                            device,
+                            &ops.meta,
+                            ops.positions,
+                            ops.number,
+                            &ops.options,
+                        ),
                         CommandEnum::Keys(ops) => keys::run(
                             &api,
                             device,

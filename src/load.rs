@@ -22,7 +22,10 @@ pub fn run(
     let rows = meta["matrix"]["rows"]
         .as_u64()
         .ok_or("matrix/rows not found in meta")? as u8;
-    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
+    let layout_options = &meta["layouts"]["labels"];
+    let state = protocol::load_layout_options(&dev)?;
+    let options = protocol::LayoutOptions::from_json(state, layout_options)?;
+    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], options)?;
 
     let layout_str = fs::read_to_string(file)?;
     let root_json: Value = serde_json::from_str(&layout_str)?;

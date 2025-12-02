@@ -1,8 +1,10 @@
 pub mod buffer;
 
+use crate::protocol;
 use buffer::Buffer;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -17,6 +19,8 @@ pub struct Button {
     pub w: f64,
     pub wire_x: u8,
     pub wire_y: u8,
+    pub layout_options: Option<(u8, u8)>,
+    pub encoder: bool,
 }
 
 impl Button {
@@ -28,11 +32,26 @@ impl Button {
             w: self.w * scale,
             wire_x: self.wire_x,
             wire_y: self.wire_y,
+            layout_options: self.layout_options,
+            encoder: self.encoder,
         }
     }
 }
 
-pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::error::Error>> {
+fn matches(options: &[(u8, u8)], option: Option<(u8, u8)>) -> bool {
+    //return true;
+    match option {
+        Some(o) => options[o.0 as usize].1 == o.1,
+        None => true,
+    }
+}
+
+pub fn keymap_to_buttons(
+    keymap: &Value,
+    current_options: protocol::LayoutOptions,
+) -> Result<Vec<Button>, Box<dyn std::error::Error>> {
+    let via_options = current_options.via_options();
+    let mut option_groups = HashMap::<u8, (f64, f64)>::new();
     let mut buttons = Vec::new();
     let mut x_pos = 0f64;
     let mut y_pos = 0f64;
@@ -96,14 +115,33 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                     if !decal {
                                         // skip decals entirely
                                         let labels: Vec<_> = item.split("\n").collect();
-                                        let (wire, _option) = if labels.len() < 4 {
-                                            (labels[0], None)
+                                        let (wire, option, encoder) = if labels.len() < 4 {
+                                            (labels[0], None, false)
+                                        } else if labels.len() < 10 {
+                                            (labels[0], Some(labels[3]), false)
                                         } else {
-                                            (labels[0], Some(labels[3]))
+                                            (labels[0], Some(labels[3]), labels[9].starts_with("e"))
                                         };
                                         if let Some((xxx, yyy)) = wire.split_once(',') {
                                             let xx: u8 = xxx.parse()?;
                                             let yy: u8 = yyy.parse()?;
+                                            let layout_options = match option {
+                                                Some(s) => {
+                                                    if let Some((l, r)) = s.split_once(',') {
+                                                        let (l, r) = (l.parse()?, r.parse()?);
+                                                        if r == 0 {
+                                                            option_groups.entry(l).or_insert((
+                                                                x_pos + x_mod,
+                                                                y_pos + y_mod,
+                                                            ));
+                                                        }
+                                                        Some((l, r))
+                                                    } else {
+                                                        None
+                                                    }
+                                                }
+                                                None => None,
+                                            };
                                             let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {
                                                 let bx = x_pos + x_mod;
                                                 let by = y_pos + y_mod;
@@ -116,14 +154,18 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                                     h: bh,
                                                     wire_x: xx,
                                                     wire_y: yy,
+                                                    layout_options,
+                                                    encoder,
                                                 }
                                             } else {
                                                 //println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
-                                                let teta = -r.to_radians();
-                                                let teta_sin = teta.sin();
-                                                let teta_cos = teta.cos();
-                                                let bx = x * teta_cos + y * teta_sin + rx;
-                                                let by = -x * teta_sin + y * teta_cos + ry;
+                                                let theta = -r.to_radians();
+                                                let theta_sin = theta.sin();
+                                                let theta_cos = theta.cos();
+                                                //let bx = x * theta_cos + y * theta_sin + rx;
+                                                //let by = -x * theta_sin + y * theta_cos + ry;
+                                                let bx = x * theta_cos + y * theta_sin + rx;
+                                                let by = -x * theta_sin + y * theta_cos + ry;
                                                 let bw = 1.0;
                                                 let bh = 1.0;
                                                 Button {
@@ -133,10 +175,16 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
                                                     h: bh,
                                                     wire_x: xx,
                                                     wire_y: yy,
+                                                    layout_options: None,
+                                                    encoder,
                                                 }
                                                 //return Err(MetaParsingError.into());
                                             };
-                                            buttons.push(but);
+                                            if matches(&via_options, layout_options) {
+                                                buttons.push(but);
+                                            } else {
+                                                //w = 0.0;
+                                            }
                                         } else {
                                             return Err(MetaParsingError.into());
                                         }
@@ -166,64 +214,136 @@ pub fn keymap_to_buttons(keymap: &Value) -> Result<Vec<Button>, Box<dyn std::err
         }
         None => return Err(MetaParsingError.into()),
     }
+
+    // this logic tries to follow via layout_options choices in a following way
+    // option_groups contains coordinates of first default (x, 0) button
+    // for first button code replaces current choice coordinates (x, current) with coordinates from
+    // option_groups then calculates and stores delta between default and current choice
+    // for following buttons it applies delta to current coordinates
+    let mut deltas = HashMap::new();
+    for button in &mut buttons {
+        match button.layout_options {
+            Some(option) => {
+                if matches(&via_options, Some(option)) {
+                    match deltas.entry(option.0) {
+                        Entry::Vacant(v) => {
+                            let (def_x, def_y) = option_groups.get(&option.0).unwrap();
+                            //println!("{:?} => {:?}", button, (def_x, def_y));
+                            let dx = button.x - *def_x;
+                            let dy = button.y - *def_y;
+                            button.x = *def_x;
+                            button.y = *def_y;
+                            v.insert_entry((dx, dy));
+                        }
+                        Entry::Occupied(o) => {
+                            let (dx, dy) = o.get();
+                            //println!("{:?}", (dx, dy));
+                            button.x -= dx;
+                            button.y -= dy;
+                        }
+                    }
+                }
+            }
+            None => {
+                //do nothing
+            }
+        }
+    }
     Ok(buttons)
 }
 
 pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), String>>) {
     let mut buff = Buffer::new();
     for button in buttons {
-        let b = button.scale(4.0);
+        let scale = 4.0;
+        let b = button.scale(scale);
         let lu = (b.x as usize, b.y as usize);
         let ru = ((b.x + b.w - 1.0) as usize, b.y as usize);
         let lb = (b.x as usize, (b.y + b.h - 1.0) as usize);
         let rb = ((b.x + b.w - 1.0) as usize, (b.y + b.h - 1.0) as usize);
-        buff.put(lu.0, lu.1, '╔');
-        for x in (lu.0 + 1)..ru.0 {
-            buff.put(x, lu.1, '═');
+        if !b.encoder {
+            buff.put(lu.0, lu.1, '╔');
+            for x in (lu.0 + 1)..ru.0 {
+                buff.put(x, lu.1, '═');
+            }
+            buff.put(ru.0, ru.1, '╗');
+            for y in (lu.1 + 1)..lb.1 {
+                buff.put(lu.0, y, '║');
+            }
+            for y in (ru.1 + 1)..rb.1 {
+                buff.put(ru.0, y, '║');
+            }
+            buff.put(lb.0, lb.1, '╚');
+            for x in (lb.0 + 1)..rb.0 {
+                buff.put(x, lb.1, '═');
+            }
+            buff.put(rb.0, rb.1, '╝');
+        } else {
+            buff.put(lu.0, lu.1, '╭');
+            for x in (lu.0 + 1)..ru.0 {
+                buff.put(x, lu.1, '─');
+            }
+            buff.put(ru.0, ru.1, '╮');
+            for y in (lu.1 + 1)..lb.1 {
+                buff.put(lu.0, y, '│');
+            }
+            for y in (ru.1 + 1)..rb.1 {
+                buff.put(ru.0, y, '│');
+            }
+            buff.put(lb.0, lb.1, '╰');
+            for x in (lb.0 + 1)..rb.0 {
+                buff.put(x, lb.1, '─');
+            }
+            buff.put(rb.0, rb.1, '╯');
+
         }
-        buff.put(ru.0, ru.1, '╗');
-        for y in (lu.1 + 1)..lb.1 {
-            buff.put(lu.0, y, '║');
-        }
-        for y in (ru.1 + 1)..rb.1 {
-            buff.put(ru.0, y, '║');
-        }
-        buff.put(lb.0, lb.1, '╚');
-        for x in (lb.0 + 1)..rb.0 {
-            buff.put(x, lb.1, '═');
-        }
-        buff.put(rb.0, rb.1, '╝');
+
+        let label_x_shift = if b.w < 3.0 { 1 } else { 0 };
+        let label_y_shift = if b.h < 3.0 { 1 } else { 0 };
 
         match labels {
-            Some(ref labels) => match labels.get(&(button.wire_x, button.wire_y)) {
-                Some(label) => {
-                    // FIXME comma treatment is too ugly :( but works
-                    let mut we_got_comma = false;
-                    for (line, chunk) in label.split(',').enumerate() {
-                        if chunk.is_empty() {
-                            if !we_got_comma {
-                                buff.put(lu.0 + 1 + line, lu.1 + 1, ',');
-                                we_got_comma = true;
-                            }
+            Some(ref labels) => {
+                match labels.get(&(button.wire_x, button.wire_y)) {
+                    Some(label) => {
+                        if button.encoder {
                         } else {
-                            for (i, c) in chunk.chars().enumerate() {
-                                buff.put(lu.0 + 1 + i, lu.1 + 1 + line, c);
+                            // FIXME comma treatment is too ugly :( but works
+                            let mut we_got_comma = false;
+                            for (line, chunk) in label.split(',').enumerate() {
+                                if chunk.is_empty() {
+                                    if !we_got_comma {
+                                        buff.put(
+                                            lu.0 + 1 - label_x_shift + line,
+                                            lu.1 - label_y_shift + 1,
+                                            ',',
+                                        );
+                                        we_got_comma = true;
+                                    }
+                                } else {
+                                    for (i, c) in chunk.chars().enumerate() {
+                                        buff.put(
+                                            lu.0 + 1 - label_x_shift + i,
+                                            lu.1 + 1 - label_y_shift + line,
+                                            c,
+                                        );
+                                    }
+                                }
                             }
                         }
                     }
+                    None => {
+                        // No label => empty button
+                    }
                 }
-                None => {
-                    // No label => empty button
-                }
-            },
+            }
             None => {
                 let xx = format!("{}", button.wire_x);
                 let yy = format!("{}", button.wire_y);
                 for (i, c) in xx.chars().enumerate() {
-                    buff.put(lu.0 + 1 + i, lu.1 + 1, c);
+                    buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
                 }
                 for (i, c) in yy.chars().enumerate() {
-                    buff.put(lu.0 + 1 + i, lu.1 + 2, c);
+                    buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 2, c);
                 }
             }
         }

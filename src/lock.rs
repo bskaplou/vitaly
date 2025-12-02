@@ -23,7 +23,10 @@ pub fn run(
         if status.locked && unlock {
             println!("Starting unlock process... ");
             println!("Push marked buttons and keep then pushed to unlock...");
-            let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"])?;
+            let layout_options = &meta["layouts"]["labels"];
+            let state = protocol::load_layout_options(&dev)?;
+            let options = protocol::LayoutOptions::from_json(state, layout_options)?;
+            let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], options)?;
             let mut button_labels = HashMap::new();
             for (row, col) in &status.unlock_buttons {
                 button_labels.insert((*row, *col), "☆☆,☆☆".to_string());
