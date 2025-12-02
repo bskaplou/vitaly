@@ -55,11 +55,17 @@ pub fn run(
         HashMap::new()
     };
 
+    let layout_options = match &meta["layouts"]["labels"] {
+        Value::Null => -1,
+        _ => protocol::load_layout_options(&dev)? as i64,
+    };
+
     let mut result = json!({
         "version": 1,
         "via_protocol": capabilities.via_version,
         "uid": uid,
         "layout": keys.to_json()?,
+        "layout_options": layout_options,
     });
 
     if capabilities.vial_version > 0 {
@@ -102,6 +108,11 @@ pub fn run(
             "macro".to_string(),
             Value::Array(protocol::macros_to_json(&macros)?),
         );
+    } else {
+        result
+            .as_object_mut()
+            .ok_or("broken root")?
+            .insert("macro".to_string(), Value::Array([].to_vec()));
     }
 
     if !qmk_settings.is_empty() {

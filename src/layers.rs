@@ -35,7 +35,7 @@ pub fn run(
         protocol::LayoutOptions::from_json(state, layout_options)?
     };
     //println!("{}", &options);
-    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], options)?;
+    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], &options)?;
     if positions {
         keymap::render_and_dump(&buttons, None);
     } else {

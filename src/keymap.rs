@@ -48,7 +48,7 @@ fn matches(options: &[(u8, u8)], option: Option<(u8, u8)>) -> bool {
 
 pub fn keymap_to_buttons(
     keymap: &Value,
-    current_options: protocol::LayoutOptions,
+    current_options: &protocol::LayoutOptions,
 ) -> Result<Vec<Button>, Box<dyn std::error::Error>> {
     let via_options = current_options.via_options();
     let mut option_groups = HashMap::<u8, (f64, f64)>::new();
@@ -295,7 +295,6 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                 buff.put(x, lb.1, '─');
             }
             buff.put(rb.0, rb.1, '╯');
-
         }
 
         let label_x_shift = if b.w < 3.0 { 1 } else { 0 };

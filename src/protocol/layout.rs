@@ -13,12 +13,26 @@ pub struct LayoutOptions<'a> {
 }
 
 impl LayoutOptions<'_> {
+    pub fn empty() -> LayoutOptions<'static> {
+        LayoutOptions {
+            state: 0,
+            options: Vec::new(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.options.len() == 0
+    }
+
     pub fn from_json(
         state: u32,
         labels: &Value,
     ) -> Result<LayoutOptions<'_>, Box<dyn std::error::Error>> {
         let mut options = Vec::new();
         let mut start_bit: u8 = 0;
+        if matches!(labels, Value::Null) {
+            return Ok(LayoutOptions::empty());
+        }
         for label in labels
             .as_array()
             .ok_or("layout/labels should be an array")?

@@ -26,7 +26,7 @@ pub fn run(
             let layout_options = &meta["layouts"]["labels"];
             let state = protocol::load_layout_options(&dev)?;
             let options = protocol::LayoutOptions::from_json(state, layout_options)?;
-            let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], options)?;
+            let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], &options)?;
             let mut button_labels = HashMap::new();
             for (row, col) in &status.unlock_buttons {
                 button_labels.insert((*row, *col), "☆☆,☆☆".to_string());

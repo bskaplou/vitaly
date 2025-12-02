@@ -22,16 +22,30 @@ pub fn run(
     let rows = meta["matrix"]["rows"]
         .as_u64()
         .ok_or("matrix/rows not found in meta")? as u8;
-    let layout_options = &meta["layouts"]["labels"];
-    let state = protocol::load_layout_options(&dev)?;
-    let options = protocol::LayoutOptions::from_json(state, layout_options)?;
-    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], options)?;
 
     let layout_str = fs::read_to_string(file)?;
     let root_json: Value = serde_json::from_str(&layout_str)?;
     let root = root_json
         .as_object()
-        .ok_or("config file root is not object")?;
+        .ok_or("config file root is not an object")?;
+
+    let layout_options = &meta["layouts"]["labels"];
+    let layout_state = match &root_json["layout_options"] {
+        Value::Null => 0,
+        Value::Number(num) => {
+            let n = num.as_i64().ok_or("layout_options should be a number")?;
+            if n == -1 { 0 } else { n as u32 }
+        }
+        _ => {
+            return Err(
+                common::CommandError("layout_option should be a number".to_string()).into(),
+            );
+        }
+    };
+    let options = protocol::LayoutOptions::from_json(layout_state, layout_options)?;
+
+    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], &options)?;
+
     let layers = root
         .get("layout")
         .ok_or("config file has no layout defined")?
@@ -74,6 +88,9 @@ pub fn run(
                 return Err(common::CommandError("Keyboard is locked, macroses can't be updated, keyboard might be unlocked with subcommand 'lock -u'".to_string()).into());
             }
         }
+
+        protocol::set_layout_options(&dev, layout_state)?;
+
         protocol::set_macros(&dev, &capabilities, &macros)?;
         println!("Macros restored");
 
@@ -101,6 +118,9 @@ pub fn run(
         println!("Keys restored. All done!!!");
         //
     } else {
+        if !options.is_empty() {
+            println!("Layout options:\n{}", options);
+        }
         for layer_number in 0..capabilities.layer_count {
             common::render_layer(&keys, &buttons, layer_number)?
         }

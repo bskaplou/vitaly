@@ -21,6 +21,7 @@ pub fn run(
             Some(v) => {
                 options.set_via_options(vec![(*o, *v)])?;
                 protocol::set_layout_options(&dev, options.state)?;
+                println!("Layout options has been updated");
             }
             None => {
                 println!("Current layout options\n{}", &options);
