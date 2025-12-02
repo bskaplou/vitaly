@@ -41,7 +41,7 @@ impl LayoutOptions<'_> {
         {
             match label {
                 Value::String(name) => {
-                    options.push((name.as_str(), vec!["true", "false"], start_bit));
+                    options.push((name.as_str(), vec!["false", "true"], start_bit));
                     start_bit += 1;
                 }
                 Value::Array(variants) => {
