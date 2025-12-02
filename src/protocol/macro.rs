@@ -182,14 +182,12 @@ impl Macro {
         self.steps.len() == 0
     }
 
-    /*
     pub fn empty(index: u8) -> Macro {
         Macro {
             index,
             steps: Vec::new(),
         }
     }
-    */
 
     pub fn from_string(index: u8, value: &str) -> Result<Macro, Box<dyn std::error::Error>> {
         let steps: Vec<&str> = value.split(";").map(|s| s.trim()).collect();
