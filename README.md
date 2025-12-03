@@ -6,7 +6,7 @@ It supports QMK keycodes notation together with aliases.
 Keys, combos, macros, tap dances, key overrides and alt repeat keys are supported.
 RGB lighting control is supported too.
 
-Encoders, layout options and non-colored underglow are not supported for now because there is no devices with such features around me for now.
+Encoders, non-colored underglow are not supported for now because there is no devices with such features around me for now.
 
 Layouts with no rotation are supproted and displays well. Layouts with rotated buttons might have problems in rendering of layers.
 
