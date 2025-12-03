@@ -302,10 +302,22 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
 
         match labels {
             Some(ref labels) => {
-                match labels.get(&(button.wire_x, button.wire_y)) {
-                    Some(label) => {
-                        if button.encoder {
-                        } else {
+                if button.encoder {
+                    let label = format!(
+                        "{}{}",
+                        button.wire_x,
+                        match button.wire_y {
+                            0 => '↺',
+                            1 => '↻',
+                            _ => 'x',
+                        }
+                    );
+                    for (i, c) in label.chars().enumerate() {
+                        buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
+                    }
+                } else {
+                    match labels.get(&(button.wire_x, button.wire_y)) {
+                        Some(label) => {
                             // FIXME comma treatment is too ugly :( but works
                             let mut we_got_comma = false;
                             for (line, chunk) in label.split(',').enumerate() {
@@ -329,9 +341,9 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                                 }
                             }
                         }
-                    }
-                    None => {
-                        // No label => empty button
+                        None => {
+                            // No label => empty button
+                        }
                     }
                 }
             }

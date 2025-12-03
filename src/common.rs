@@ -54,35 +54,38 @@ pub fn render_layer(
     let mut processed = HashMap::new();
     let mut fat_labels = Vec::new();
     for button in buttons {
-        let wkey = (button.wire_x, button.wire_y);
-        if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
-            e.insert(true);
-            let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
-            let mut slim_label = true;
-            for (idx, part) in label.split(',').enumerate() {
-                if part.chars().count() > 3 || idx > 1 {
-                    slim_label &= false;
-                }
-            }
-            if !slim_label {
-                match fat_labels.iter().position(|e| *e == label) {
-                    None => {
-                        fat_labels.push(label);
-                        button_labels.insert(
-                            (button.wire_x, button.wire_y),
-                            format!("*{}", fat_labels.len()),
-                        );
-                    }
-                    Some(pos) => {
-                        println!(
-                            "{:?} , {:?} at {} {}",
-                            fat_labels, label, button.wire_x, button.wire_y
-                        );
-                        button_labels.insert((button.wire_x, button.wire_y), format!("*{}", pos));
+        if !button.encoder {
+            let wkey = (button.wire_x, button.wire_y);
+            if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
+                e.insert(true);
+                let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
+                let mut slim_label = true;
+                for (idx, part) in label.split(',').enumerate() {
+                    if part.chars().count() > 3 || idx > 1 {
+                        slim_label &= false;
                     }
                 }
-            } else {
-                button_labels.insert((button.wire_x, button.wire_y), label);
+                if !slim_label {
+                    match fat_labels.iter().position(|e| *e == label) {
+                        None => {
+                            fat_labels.push(label);
+                            button_labels.insert(
+                                (button.wire_x, button.wire_y),
+                                format!("*{}", fat_labels.len()),
+                            );
+                        }
+                        Some(pos) => {
+                            println!(
+                                "{:?} , {:?} at {} {}",
+                                fat_labels, label, button.wire_x, button.wire_y
+                            );
+                            button_labels
+                                .insert((button.wire_x, button.wire_y), format!("*{}", pos));
+                        }
+                    }
+                } else {
+                    button_labels.insert((button.wire_x, button.wire_y), label);
+                }
             }
         }
     }
