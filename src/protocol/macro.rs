@@ -610,7 +610,7 @@ mod tests {
             "Text(hello)"
         );
     }
-    
+
     #[test]
     fn test_display_macro() {
         let m = Macro::from_string(0, &"Tap(KC_A); Delay(100)".to_string()).unwrap();
