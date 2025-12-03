@@ -3,6 +3,7 @@ use crate::keymap;
 use crate::protocol;
 use hidapi::{DeviceInfo, HidApi};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::fs;
 
 pub fn run(
@@ -122,7 +123,9 @@ pub fn run(
             println!("Layout options:\n{}", options);
         }
         for layer_number in 0..capabilities.layer_count {
-            common::render_layer(&keys, &buttons, layer_number)?
+            let encoders = HashMap::<u8, (u16, u16)>::new();
+            // TODO implement encoders load
+            common::render_layer(&keys, &encoders, &buttons, layer_number)?
         }
 
         if !combos.is_empty() {
