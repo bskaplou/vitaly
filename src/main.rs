@@ -14,6 +14,7 @@ mod devices;
 mod keyoverrides;
 mod keys;
 mod layers;
+mod layout;
 mod load;
 mod lock;
 mod macros;
@@ -54,6 +55,7 @@ enum CommandEnum {
     Load(CommandLoad),
     Save(CommandSave),
     Rgb(rgb::CommandRgb),
+    Layout(CommandLayout),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -154,6 +156,10 @@ struct CommandLayers {
     /// layer number
     #[argh(option, short = 'n')]
     number: Option<u8>,
+
+    /// override layout options
+    #[argh(option, short = 'o')]
+    options: Option<String>,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -195,7 +201,7 @@ struct CommandSettings {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Load layout from file
+/// Load configuration from file
 #[argh(subcommand, name = "load")]
 struct CommandLoad {
     /// meta file (to use instead of vial meta)
@@ -212,7 +218,7 @@ struct CommandLoad {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Save layout into file
+/// Save configuration into file
 #[argh(subcommand, name = "save")]
 struct CommandSave {
     /// meta file (to use instead of vial meta)
@@ -222,6 +228,23 @@ struct CommandSave {
     /// path to layout file
     #[argh(option, short = 'f')]
     file: String,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// Layout options
+#[argh(subcommand, name = "layout")]
+struct CommandLayout {
+    /// meta file (to use instead of vial meta)
+    #[argh(option, short = 'm')]
+    meta: Option<String>,
+
+    /// layout option id
+    #[argh(option, short = 'o')]
+    option: Option<u8>,
+
+    /// set layout option value
+    #[argh(option, short = 'v')]
+    value: Option<u8>,
 }
 
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
@@ -260,9 +283,14 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         CommandEnum::AltRepeats(ops) => {
                             altrepeats::run(&api, device, ops.number, &ops.value)
                         }
-                        CommandEnum::Layers(ops) => {
-                            layers::run(&api, device, &ops.meta, ops.positions, ops.number)
-                        }
+                        CommandEnum::Layers(ops) => layers::run(
+                            &api,
+                            device,
+                            &ops.meta,
+                            ops.positions,
+                            ops.number,
+                            &ops.options,
+                        ),
                         CommandEnum::Keys(ops) => keys::run(
                             &api,
                             device,
@@ -279,6 +307,9 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         }
                         CommandEnum::Save(ops) => save::run(&api, device, &ops.meta, &ops.file),
                         CommandEnum::Rgb(ops) => rgb::run(&api, device, ops),
+                        CommandEnum::Layout(ops) => {
+                            layout::run(&api, device, &ops.meta, &ops.option, &ops.value)
+                        }
                     };
                     match result {
                         Ok(_) => {
