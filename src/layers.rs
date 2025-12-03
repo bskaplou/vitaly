@@ -2,6 +2,7 @@ use crate::common;
 use crate::keymap;
 use crate::protocol;
 use hidapi::{DeviceInfo, HidApi};
+use std::collections::HashMap;
 
 pub fn run(
     api: &HidApi,
@@ -47,7 +48,14 @@ pub fn run(
             .as_u64()
             .ok_or("matrix/rows not found in meta")? as u8;
         let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
-        common::render_layer(&keys, &buttons, layer_number)?
+        let mut encoders = HashMap::<u8, protocol::Encoder>::new();
+        for button in &buttons {
+            if button.encoder {
+                let encoder_values = protocol::load_encoder(&dev, layer_number, button.wire_x)?;
+                encoders.insert(button.wire_x, encoder_values);
+            }
+        }
+        common::render_layer(&keys, &encoders, &buttons, layer_number)?
     }
     Ok(())
 }

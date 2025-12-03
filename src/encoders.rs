@@ -17,8 +17,6 @@ pub fn run(
         .ok_or("positons should be in format index,direction")?;
     let (index, direction): (u8, u8) = (index.parse()?, direction.parse()?);
 
-    let (ccw, cw) = protocol::load_encoder(&dev, layer, index)?;
-
     match value {
         Some(value) => {
             if direction > 1 {
@@ -35,9 +33,10 @@ pub fn run(
             );
         }
         None => {
+            let e = protocol::load_encoder(&dev, layer, index)?;
             let value = match direction {
-                0 => keycodes::qid_to_name(ccw),
-                1 => keycodes::qid_to_name(cw),
+                0 => keycodes::qid_to_name(e.ccw),
+                1 => keycodes::qid_to_name(e.cw),
                 _ => {
                     return Err(protocol::ProtocolError::General(
                         "direction should be 0 or 1".to_string(),

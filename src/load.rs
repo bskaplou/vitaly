@@ -54,6 +54,10 @@ pub fn run(
         .ok_or("layout should be an array")?;
 
     let keys = protocol::Keymap::from_json(rows, cols, capabilities.layer_count, layers)?;
+    let encoder_layout = match &root.get("encoder_layout") {
+        Some(value) => protocol::load_encoders_from_json(value)?,
+        None => Vec::new(),
+    };
     let combos = match capabilities.combo_count {
         0 => Vec::new(),
         _ => protocol::load_combos_from_json(root.get("combo").ok_or("combo is not defined")?)?,
@@ -115,17 +119,34 @@ pub fn run(
         }
         println!("TapDances restored");
 
+        for layer_number in 0..capabilities.layer_count {
+            let layer_encoders = if encoder_layout.len() > layer_number.into() {
+                &encoder_layout[layer_number as usize]
+            } else {
+                &HashMap::new()
+            };
+            for encoder in layer_encoders.values() {
+                protocol::set_encoder(&dev, layer_number, encoder.index, 0, encoder.ccw)?;
+                protocol::set_encoder(&dev, layer_number, encoder.index, 1, encoder.cw)?;
+            }
+        }
+        println!("Encoders restored");
+
         protocol::set_keymap(&dev, &keys)?;
         println!("Keys restored. All done!!!");
+
         //
     } else {
         if !options.is_empty() {
             println!("Layout options:\n{}", options);
         }
         for layer_number in 0..capabilities.layer_count {
-            let encoders = HashMap::<u8, (u16, u16)>::new();
-            // TODO implement encoders load
-            common::render_layer(&keys, &encoders, &buttons, layer_number)?
+            let encoders = if encoder_layout.len() > layer_number.into() {
+                &encoder_layout[layer_number as usize]
+            } else {
+                &HashMap::new()
+            };
+            common::render_layer(&keys, encoders, &buttons, layer_number)?
         }
 
         if !combos.is_empty() {
