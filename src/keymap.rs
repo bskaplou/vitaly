@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use thiserror::Error;
+use std::cmp::max;
 
 #[derive(Error, Debug)]
 #[error("MetaParsingError")]
@@ -44,6 +45,32 @@ fn matches(options: &[(u8, u8)], option: Option<(u8, u8)>) -> bool {
         Some(o) => options[o.0 as usize].1 == o.1,
         None => true,
     }
+}
+
+pub fn get_encoders_count(keymap: &Value) -> Result<u8, Box<dyn std::error::Error>> {
+    let mut result = 0;
+    if let Some(rows) = keymap.as_array() {
+        for row in rows.iter() {
+            if let Some(items) = row.as_array() {
+                for item in items {
+                    if let Value::String(label) = item {
+                        let parts: Vec<_> = label.split("\n").collect();
+                        if parts.len() > 9 {
+                            if parts[9].starts_with("e") {
+                                if let Some((index, direction)) = parts[0].split_once(",") {
+                                    if direction == "0" {
+                                        let index: u8 = index.parse()?;
+                                        result = max(result, index + 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(result)
 }
 
 pub fn keymap_to_buttons(

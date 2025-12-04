@@ -3,7 +3,6 @@ use crate::keymap;
 use crate::protocol;
 use hidapi::{DeviceInfo, HidApi};
 use serde_json::Value;
-use std::collections::HashMap;
 use std::fs;
 
 pub fn run(
@@ -123,9 +122,9 @@ pub fn run(
             let layer_encoders = if encoder_layout.len() > layer_number.into() {
                 &encoder_layout[layer_number as usize]
             } else {
-                &HashMap::new()
+                &Vec::new()
             };
-            for encoder in layer_encoders.values() {
+            for encoder in layer_encoders {
                 protocol::set_encoder(&dev, layer_number, encoder.index, 0, encoder.ccw)?;
                 protocol::set_encoder(&dev, layer_number, encoder.index, 1, encoder.cw)?;
             }
@@ -144,7 +143,7 @@ pub fn run(
             let encoders = if encoder_layout.len() > layer_number.into() {
                 &encoder_layout[layer_number as usize]
             } else {
-                &HashMap::new()
+                &Vec::new()
             };
             common::render_layer(&keys, encoders, &buttons, layer_number)?
         }

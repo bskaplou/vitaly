@@ -47,7 +47,7 @@ pub fn load_meta(
 
 pub fn render_layer(
     keys: &protocol::Keymap,
-    encoders: &HashMap<u8, protocol::Encoder>,
+    encoders: &Vec<protocol::Encoder>,
     buttons: &Vec<keymap::Button>,
     layer_number: u8,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -96,10 +96,10 @@ pub fn render_layer(
     for (idx, fat) in fat_labels.into_iter().enumerate() {
         println!("*{} - {}", idx + 1, fat);
     }
-    for (idx, e) in encoders {
+    for e in encoders {
         println!(
             "{0}↺ - {1}\n{0}↻ - {2}",
-            idx,
+            e.index,
             keycodes::qid_to_name(e.ccw),
             keycodes::qid_to_name(e.cw)
         );
