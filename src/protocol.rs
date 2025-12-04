@@ -46,7 +46,9 @@ pub mod layout;
 pub use crate::protocol::layout::{LayoutOptions, load_layout_options, set_layout_options};
 
 pub mod encoder;
-pub use crate::protocol::encoder::{Encoder, load_encoder, load_encoders_from_json, set_encoder, encoders_to_json};
+pub use crate::protocol::encoder::{
+    Encoder, encoders_to_json, load_encoder, load_encoders_from_json, set_encoder,
+};
 
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;

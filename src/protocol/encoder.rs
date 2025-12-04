@@ -89,31 +89,30 @@ pub fn load_encoders_from_json(
                 .as_str()
                 .ok_or("encoder value should be a string")?;
             let cw = keycodes::name_to_qid(cw)?;
-            layer_encoders.push(
-                Encoder {
-                    index: idx as u8,
-                    ccw,
-                    cw,
-                }
-            );
+            layer_encoders.push(Encoder {
+                index: idx as u8,
+                ccw,
+                cw,
+            });
         }
         result.push(layer_encoders);
     }
     Ok(result)
 }
 
-pub fn encoders_to_json(layers_encoders: &Vec<Vec<Encoder>>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+pub fn encoders_to_json(
+    layers_encoders: &Vec<Vec<Encoder>>,
+) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for layer_encoder in layers_encoders {
         let mut layer = Vec::new();
         for encoder in layer_encoder {
             layer.push(json!([
-                    keycodes::qid_to_name(encoder.ccw),
-                    keycodes::qid_to_name(encoder.cw),
+                keycodes::qid_to_name(encoder.ccw),
+                keycodes::qid_to_name(encoder.cw),
             ]))
         }
         result.push(Value::Array(layer));
     }
     Ok(result)
 }
-

@@ -3,10 +3,10 @@ pub mod buffer;
 use crate::protocol;
 use buffer::Buffer;
 use serde_json::Value;
+use std::cmp::max;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use thiserror::Error;
-use std::cmp::max;
 
 #[derive(Error, Debug)]
 #[error("MetaParsingError")]
@@ -55,16 +55,13 @@ pub fn get_encoders_count(keymap: &Value) -> Result<u8, Box<dyn std::error::Erro
                 for item in items {
                     if let Value::String(label) = item {
                         let parts: Vec<_> = label.split("\n").collect();
-                        if parts.len() > 9 {
-                            if parts[9].starts_with("e") {
-                                if let Some((index, direction)) = parts[0].split_once(",") {
-                                    if direction == "0" {
+                        if parts.len() > 9
+                            && parts[9].starts_with("e")
+                                && let Some((index, direction)) = parts[0].split_once(",")
+                                    && direction == "0" {
                                         let index: u8 = index.parse()?;
                                         result = max(result, index + 1);
                                     }
-                                }
-                            }
-                        }
                     }
                 }
             }
