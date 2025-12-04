@@ -57,11 +57,12 @@ pub fn get_encoders_count(keymap: &Value) -> Result<u8, Box<dyn std::error::Erro
                         let parts: Vec<_> = label.split("\n").collect();
                         if parts.len() > 9
                             && parts[9].starts_with("e")
-                                && let Some((index, direction)) = parts[0].split_once(",")
-                                    && direction == "0" {
-                                        let index: u8 = index.parse()?;
-                                        result = max(result, index + 1);
-                                    }
+                            && let Some((index, direction)) = parts[0].split_once(",")
+                            && direction == "0"
+                        {
+                            let index: u8 = index.parse()?;
+                            result = max(result, index + 1);
+                        }
                     }
                 }
             }

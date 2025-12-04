@@ -7,45 +7,45 @@ use thiserror::Error;
 
 use crate::keycodes;
 
-pub mod key_override;
+mod key_override;
 pub use crate::protocol::key_override::{
     KeyOverride, key_overrides_to_json, load_key_overrides, load_key_overrides_from_json,
     set_key_override,
 };
 
-pub mod alt_repeat;
+mod alt_repeat;
 pub use crate::protocol::alt_repeat::{
     AltRepeat, alt_repeats_to_json, load_alt_repeats, load_alt_repeats_from_json, set_alt_repeat,
 };
 
-pub mod tap_dance;
+mod tap_dance;
 pub use crate::protocol::tap_dance::{
     TapDance, load_tap_dances, load_tap_dances_from_json, set_tap_dance, tap_dances_to_json,
 };
 
-pub mod combo;
+mod combo;
 pub use crate::protocol::combo::{
     Combo, combos_to_json, load_combos, load_combos_from_json, set_combo,
 };
 
-pub mod r#macro;
+mod r#macro;
 pub use crate::protocol::r#macro::{
     Macro, load_macros, load_macros_from_json, macros_to_json, set_macros,
 };
 
-pub mod qmk_settings;
+mod qmk_settings;
 pub use crate::protocol::qmk_settings::{
     get_qmk_value, load_qmk_definitions, load_qmk_qsids, load_qmk_settings,
     load_qmk_settings_from_json, qmk_settings_to_json, reset_qmk_values, set_qmk_value,
 };
 
-pub mod rgb;
+mod rgb;
 pub use crate::protocol::rgb::{load_rgb_info, persist_rgb, set_leds_direct, set_rgb_mode};
 
-pub mod layout;
+mod layout;
 pub use crate::protocol::layout::{LayoutOptions, load_layout_options, set_layout_options};
 
-pub mod encoder;
+mod encoder;
 pub use crate::protocol::encoder::{
     Encoder, encoders_to_json, load_encoder, load_encoders_from_json, set_encoder,
 };

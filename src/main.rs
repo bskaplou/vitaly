@@ -7,22 +7,9 @@ mod keycodes;
 mod keymap;
 mod protocol;
 
-mod altrepeats;
-mod combos;
+mod commands;
+
 mod common;
-mod devices;
-mod encoders;
-mod keyoverrides;
-mod keys;
-mod layers;
-mod layout;
-mod load;
-mod lock;
-mod macros;
-mod rgb;
-mod save;
-mod settings;
-mod tapdances;
 
 /// VIA/Vial HID USB cli tool
 #[derive(FromArgs)]
@@ -56,7 +43,7 @@ enum CommandEnum {
     AltRepeats(CommandAltRepeats),
     Load(CommandLoad),
     Save(CommandSave),
-    Rgb(rgb::CommandRgb),
+    Rgb(commands::CommandRgb),
     Layout(CommandLayout),
 }
 
@@ -285,24 +272,26 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         device.path(),
                     );
                     let result = match command {
-                        CommandEnum::Devices(ops) => devices::run(&api, device, ops.capabilities),
-                        CommandEnum::Lock(ops) => lock::run(&api, device, ops.unlock),
+                        CommandEnum::Devices(ops) => {
+                            commands::devices_run(&api, device, ops.capabilities)
+                        }
+                        CommandEnum::Lock(ops) => commands::lock_run(&api, device, ops.unlock),
                         CommandEnum::Combos(ops) => {
-                            combos::run(&api, device, ops.number, &ops.value)
+                            commands::combos_run(&api, device, ops.number, &ops.value)
                         }
                         CommandEnum::Macros(ops) => {
-                            macros::run(&api, device, ops.number, &ops.value)
+                            commands::macros_run(&api, device, ops.number, &ops.value)
                         }
                         CommandEnum::TapDances(ops) => {
-                            tapdances::run(&api, device, ops.number, &ops.value)
+                            commands::tapdances_run(&api, device, ops.number, &ops.value)
                         }
                         CommandEnum::KeyOverrides(ops) => {
-                            keyoverrides::run(&api, device, ops.number, &ops.value)
+                            commands::keyoverrides_run(&api, device, ops.number, &ops.value)
                         }
                         CommandEnum::AltRepeats(ops) => {
-                            altrepeats::run(&api, device, ops.number, &ops.value)
+                            commands::altrepeats_run(&api, device, ops.number, &ops.value)
                         }
-                        CommandEnum::Layers(ops) => layers::run(
+                        CommandEnum::Layers(ops) => commands::layers_run(
                             &api,
                             device,
                             &ops.meta,
@@ -310,7 +299,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             ops.number,
                             &ops.options,
                         ),
-                        CommandEnum::Keys(ops) => keys::run(
+                        CommandEnum::Keys(ops) => commands::keys_run(
                             &api,
                             device,
                             &ops.meta,
@@ -318,19 +307,25 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             &ops.position,
                             &ops.value,
                         ),
-                        CommandEnum::Encoders(ops) => {
-                            encoders::run(&api, device, ops.layer, &ops.position, &ops.value)
-                        }
+                        CommandEnum::Encoders(ops) => commands::encoders_run(
+                            &api,
+                            device,
+                            ops.layer,
+                            &ops.position,
+                            &ops.value,
+                        ),
                         CommandEnum::Settings(ops) => {
-                            settings::run(&api, device, &ops.qsid, &ops.value, ops.reset)
+                            commands::settings_run(&api, device, &ops.qsid, &ops.value, ops.reset)
                         }
                         CommandEnum::Load(ops) => {
-                            load::run(&api, device, &ops.meta, &ops.file, ops.preview)
+                            commands::load_run(&api, device, &ops.meta, &ops.file, ops.preview)
                         }
-                        CommandEnum::Save(ops) => save::run(&api, device, &ops.meta, &ops.file),
-                        CommandEnum::Rgb(ops) => rgb::run(&api, device, ops),
+                        CommandEnum::Save(ops) => {
+                            commands::save_run(&api, device, &ops.meta, &ops.file)
+                        }
+                        CommandEnum::Rgb(ops) => commands::rgb_run(&api, device, ops),
                         CommandEnum::Layout(ops) => {
-                            layout::run(&api, device, &ops.meta, &ops.option, &ops.value)
+                            commands::layout_run(&api, device, &ops.meta, &ops.option, &ops.value)
                         }
                     };
                     match result {
