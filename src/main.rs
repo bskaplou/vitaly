@@ -60,9 +60,13 @@ struct CommandDevices {
 /// List connected devices
 #[argh(subcommand, name = "lock")]
 struct CommandLock {
-    /// scan for capabilities
+    /// initiate unlock process
     #[argh(switch, short = 'u')]
     unlock: bool,
+
+    /// lock keyboard
+    #[argh(switch, short = 'l')]
+    lock: bool,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -256,11 +260,13 @@ struct CommandEncoders {
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
     match HidApi::new() {
         Ok(api) => {
+            let mut found = false;
             for device in api.device_list() {
                 if device.usage_page() == protocol::USAGE_PAGE
                     && device.usage() == protocol::USAGE_ID
                     && (id.is_none() || id.unwrap() == device.product_id())
                 {
+                    found = true;
                     println!(
                         "Product name: {:?} id: {:?},\nManufacturer name: {:?}, id: {:?},\nRelease: {:?}, Serial: {:?}, Path: {:?}",
                         device.product_string().unwrap(),
@@ -275,7 +281,9 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         CommandEnum::Devices(ops) => {
                             commands::devices_run(&api, device, ops.capabilities)
                         }
-                        CommandEnum::Lock(ops) => commands::lock_run(&api, device, ops.unlock),
+                        CommandEnum::Lock(ops) => {
+                            commands::lock_run(&api, device, ops.unlock, ops.lock)
+                        }
                         CommandEnum::Combos(ops) => {
                             commands::combos_run(&api, device, ops.number, &ops.value)
                         }
@@ -337,6 +345,9 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         }
                     }
                 }
+            }
+            if !found {
+                eprintln!("No matching devices found");
             }
         }
         Err(e) => {

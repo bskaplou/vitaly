@@ -53,63 +53,67 @@ pub use crate::protocol::encoder::{
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;
 
-const MESSAGE_LENGTH: usize = 32;
+pub const MESSAGE_LENGTH: usize = 32;
 
-const HID_LAYERS_IN: u8 = 0x88;
-const GET_VERSION: u8 = 0x00;
-const HID_LAYERS_OUT_VERSION: u8 = 0x91;
+pub const HID_LAYERS_IN: u8 = 0x88;
+pub const GET_VERSION: u8 = 0x00;
+pub const HID_LAYERS_OUT_VERSION: u8 = 0x91;
 
 pub const VIAL_PROTOCOL_DYNAMIC: u32 = 4;
 pub const VIAL_PROTOCOL_QMK_SETTINGS: u32 = 4;
 
-const CMD_VIA_GET_PROTOCOL_VERSION: u8 = 0x01;
-const CMD_VIA_GET_KEYBOARD_VALUE: u8 = 0x02;
-const CMD_VIA_SET_KEYBOARD_VALUE: u8 = 0x03;
-const CMD_VIA_VIAL_PREFIX: u8 = 0xFE;
-const CMD_VIAL_GET_KEYBOARD_ID: u8 = 0x00;
-const CMD_VIAL_GET_SIZE: u8 = 0x01;
-const CMD_VIAL_GET_DEFINITION: u8 = 0x02;
-const CMD_VIA_SET_KEYCODE: u8 = 0x05;
-const CMD_VIA_GET_LAYER_COUNT: u8 = 0x11;
-const CMD_VIA_KEYMAP_GET_BUFFER: u8 = 0x12;
-const VIA_UNHANDLED: u8 = 0xFF;
-const VIA_LAYOUT_OPTIONS: u8 = 0x02;
+pub const CMD_VIA_GET_PROTOCOL_VERSION: u8 = 0x01;
+pub const CMD_VIA_GET_KEYBOARD_VALUE: u8 = 0x02;
+pub const CMD_VIA_SET_KEYBOARD_VALUE: u8 = 0x03;
+pub const CMD_VIA_VIAL_PREFIX: u8 = 0xFE;
+pub const CMD_VIAL_GET_KEYBOARD_ID: u8 = 0x00;
+pub const CMD_VIAL_GET_SIZE: u8 = 0x01;
+pub const CMD_VIAL_GET_DEFINITION: u8 = 0x02;
+pub const CMD_VIA_SET_KEYCODE: u8 = 0x05;
+pub const CMD_VIA_GET_LAYER_COUNT: u8 = 0x11;
+pub const CMD_VIA_KEYMAP_GET_BUFFER: u8 = 0x12;
 
-const CMD_VIAL_DYNAMIC_ENTRY_OP: u8 = 0x0D;
-const DYNAMIC_VIAL_GET_NUMBER_OF_ENTRIES: u8 = 0x00;
-const DYNAMIC_VIAL_TAP_DANCE_GET: u8 = 0x01;
-const DYNAMIC_VIAL_TAP_DANCE_SET: u8 = 0x02;
-const DYNAMIC_VIAL_COMBO_GET: u8 = 0x03;
-const DYNAMIC_VIAL_COMBO_SET: u8 = 0x04;
-const DYNAMIC_VIAL_KEY_OVERRIDE_GET: u8 = 0x05;
-const DYNAMIC_VIAL_KEY_OVERRIDE_SET: u8 = 0x06;
-const DYNAMIC_VIAL_ALT_REPEAT_KEY_GET: u8 = 0x07;
-const DYNAMIC_VIAL_ALT_REPEAT_KEY_SET: u8 = 0x08;
-const CMD_VIAL_QMK_SETTINGS_QUERY: u8 = 0x09;
-const CMD_VIAL_QMK_SETTINGS_GET: u8 = 0x0A;
-const CMD_VIAL_QMK_SETTINGS_SET: u8 = 0x0B;
-const CMD_VIAL_QMK_SETTINGS_RESET: u8 = 0x0C;
+pub const VIA_UNHANDLED: u8 = 0xFF;
+pub const VIA_LAYOUT_OPTIONS: u8 = 0x02;
 
-const CMD_VIA_MACRO_GET_COUNT: u8 = 0x0C;
-const CMD_VIA_MACRO_GET_BUFFER_SIZE: u8 = 0x0D;
-const CMD_VIA_MACRO_GET_BUFFER: u8 = 0x0E;
-const CMD_VIA_MACRO_SET_BUFFER: u8 = 0x0F;
+pub const CMD_VIAL_DYNAMIC_ENTRY_OP: u8 = 0x0D;
+pub const DYNAMIC_VIAL_GET_NUMBER_OF_ENTRIES: u8 = 0x00;
+pub const DYNAMIC_VIAL_TAP_DANCE_GET: u8 = 0x01;
+pub const DYNAMIC_VIAL_TAP_DANCE_SET: u8 = 0x02;
+pub const DYNAMIC_VIAL_COMBO_GET: u8 = 0x03;
+pub const DYNAMIC_VIAL_COMBO_SET: u8 = 0x04;
+pub const DYNAMIC_VIAL_KEY_OVERRIDE_GET: u8 = 0x05;
+pub const DYNAMIC_VIAL_KEY_OVERRIDE_SET: u8 = 0x06;
+pub const DYNAMIC_VIAL_ALT_REPEAT_KEY_GET: u8 = 0x07;
+pub const DYNAMIC_VIAL_ALT_REPEAT_KEY_SET: u8 = 0x08;
 
-const CMD_VIAL_GET_ENCODER: u8 = 0x03;
-const CMD_VIAL_SET_ENCODER: u8 = 0x04;
-const CMD_VIAL_GET_UNLOCK_STATUS: u8 = 0x05;
-const CMD_VIAL_UNLOCK_START: u8 = 0x06;
-const CMD_VIAL_UNLOCK_POLL: u8 = 0x07;
+pub const CMD_VIAL_QMK_SETTINGS_QUERY: u8 = 0x09;
+pub const CMD_VIAL_QMK_SETTINGS_GET: u8 = 0x0A;
+pub const CMD_VIAL_QMK_SETTINGS_SET: u8 = 0x0B;
+pub const CMD_VIAL_QMK_SETTINGS_RESET: u8 = 0x0C;
 
-const CMD_VIA_LIGHTING_SET_VALUE: u8 = 0x07;
-const CMD_VIA_LIGHTING_GET_VALUE: u8 = 0x08;
-const CMD_VIA_LIGHTING_SAVE: u8 = 0x09;
-const VIALRGB_GET_INFO: u8 = 0x40;
-const VIALRGB_GET_MODE: u8 = 0x41;
-const VIALRGB_SET_MODE: u8 = 0x41;
-const VIALRGB_GET_SUPPORTED: u8 = 0x42;
-const VIALRGB_GET_NUMBER_LEDS: u8 = 0x43;
-const VIALRGB_DIRECT_FASTSET: u8 = 0x42;
+pub const CMD_VIA_MACRO_GET_COUNT: u8 = 0x0C;
+pub const CMD_VIA_MACRO_GET_BUFFER_SIZE: u8 = 0x0D;
+pub const CMD_VIA_MACRO_GET_BUFFER: u8 = 0x0E;
+pub const CMD_VIA_MACRO_SET_BUFFER: u8 = 0x0F;
+
+pub const CMD_VIAL_GET_ENCODER: u8 = 0x03;
+pub const CMD_VIAL_SET_ENCODER: u8 = 0x04;
+pub const CMD_VIAL_GET_UNLOCK_STATUS: u8 = 0x05;
+pub const CMD_VIAL_UNLOCK_START: u8 = 0x06;
+pub const CMD_VIAL_UNLOCK_POLL: u8 = 0x07;
+pub const CMD_VIAL_LOCK: u8 = 0x08;
+
+pub const CMD_VIA_LIGHTING_SET_VALUE: u8 = 0x07;
+pub const CMD_VIA_LIGHTING_GET_VALUE: u8 = 0x08;
+pub const CMD_VIA_LIGHTING_SAVE: u8 = 0x09;
+
+pub const VIALRGB_GET_INFO: u8 = 0x40;
+pub const VIALRGB_GET_MODE: u8 = 0x41;
+pub const VIALRGB_SET_MODE: u8 = 0x41;
+pub const VIALRGB_GET_SUPPORTED: u8 = 0x42;
+pub const VIALRGB_GET_NUMBER_LEDS: u8 = 0x43;
+pub const VIALRGB_DIRECT_FASTSET: u8 = 0x42;
 /*
 const QMK_RGBLIGHT_BRIGHTNESS: u8 = 0x80;
 const QMK_RGBLIGHT_EFFECT: u8 = 0x81;
@@ -621,6 +625,13 @@ pub fn unlock_poll(device: &HidDevice) -> Result<(bool, u8), Box<dyn std::error:
             let seconds_remaining = data[2];
             Ok((unlocked, seconds_remaining))
         }
+        Err(e) => Err(e),
+    }
+}
+
+pub fn set_locked(device: &HidDevice) -> Result<(), Box<dyn std::error::Error>> {
+    match send_recv(device, &[CMD_VIA_VIAL_PREFIX, CMD_VIAL_LOCK]) {
+        Ok(_) => Ok(()),
         Err(e) => Err(e),
     }
 }

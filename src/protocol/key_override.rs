@@ -9,20 +9,20 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct KeyOverride {
-    index: u8,
-    trigger: u16,
-    replacement: u16,
-    layers: u16,
-    trigger_mods: u8,
-    negative_mod_mask: u8,
-    suppressed_mods: u8,
-    ko_option_activation_trigger_down: bool,
-    ko_option_activation_required_mod_down: bool,
-    ko_option_activation_negative_mod_up: bool,
-    ko_option_one_mod: bool,
-    ko_option_no_reregister_trigger: bool,
-    ko_option_no_unregister_on_other_key_down: bool,
-    ko_enabled: bool,
+    pub index: u8,
+    pub trigger: u16,
+    pub replacement: u16,
+    pub layers: u16,
+    pub trigger_mods: u8,
+    pub negative_mod_mask: u8,
+    pub suppressed_mods: u8,
+    pub ko_option_activation_trigger_down: bool,
+    pub ko_option_activation_required_mod_down: bool,
+    pub ko_option_activation_negative_mod_up: bool,
+    pub ko_option_one_mod: bool,
+    pub ko_option_no_reregister_trigger: bool,
+    pub ko_option_no_unregister_on_other_key_down: bool,
+    pub ko_enabled: bool,
 }
 
 impl KeyOverride {

@@ -9,6 +9,7 @@ pub fn run(
     api: &HidApi,
     device: &DeviceInfo,
     unlock: bool,
+    lock: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
@@ -35,14 +36,22 @@ pub fn run(
             if !status.unlock_in_progress {
                 protocol::start_unlock(&dev)?;
             }
-            let second = time::Duration::from_millis(1000);
+            let sleep_duration = time::Duration::from_millis(100);
             let mut unlocked = false;
-            let mut seconds_remaining: u8;
+            let mut polls_remaining: u8;
             while !unlocked {
-                thread::sleep(second);
-                (unlocked, seconds_remaining) = protocol::unlock_poll(&dev)?;
-                println!("Seconds remaining: {} keep pushing...", seconds_remaining);
+                thread::sleep(sleep_duration);
+                (unlocked, polls_remaining) = protocol::unlock_poll(&dev)?;
+                println!(
+                    "Seconds remaining: {} keep pushing...",
+                    (polls_remaining as f64) / 10.0
+                );
             }
+            status = protocol::get_locked_status(&dev)?;
+            println!("Device is locked: {}", status.locked);
+        } else if !status.locked && lock {
+            println!("Locking keyboard...");
+            protocol::set_locked(&dev)?;
             status = protocol::get_locked_status(&dev)?;
             println!("Device is locked: {}", status.locked);
         }
