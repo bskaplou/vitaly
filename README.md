@@ -6,7 +6,7 @@ It supports QMK keycodes notation together with aliases.
 Keys, combos, macros, tap dances, key overrides and alt repeat keys are supported.
 RGB lighting control is supported too.
 
-Encoders, non-colored underglow are not supported for now because there is no devices with such features around me for now.
+Non-colored underglow are not supported for now because there is no devices with such features around me for now.
 
 Layouts with no rotation are supproted and displays well. Layouts with rotated buttons might have problems in rendering of layers.
 
@@ -848,4 +848,27 @@ Alt repeat keys restored
 Combos restored
 TapDances restored
 Keys restored. All done!!!
+
+### Encoders subcommand
+
+Encoders subcommand allows to read and write encoders keycodes
+
+Read current value
+
+```
+❯ vitaly -i 4 encoders -l 0 -p 1,0
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4295189693"
+Encoder on layer=0, index=1, direction=0 => QK_UNDERGLOW_HUE_UP
+```
+
+Write new value
+
+```
+❯ vitaly -i 4 encoders -l 0 -p 1,0 -v KC_1
+Product name: "Corne v4" id: 4,
+Manufacturer name: "foostan", id: 18003,
+Release: 1040, Serial: "vial:f64c2b3c", Path: "DevSrvsID:4295189693"
+Encoder on layer=0, index=1, direction=0 set to => KC_1, keycode = 0x1e
 ```
