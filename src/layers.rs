@@ -47,7 +47,15 @@ pub fn run(
             .as_u64()
             .ok_or("matrix/rows not found in meta")? as u8;
         let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
-        common::render_layer(&keys, &buttons, layer_number)?
+        let mut encoders = Vec::new();
+        for button in &buttons {
+            if button.encoder && button.wire_y == 1 {
+                let e = protocol::load_encoder(&dev, layer_number, button.wire_x)?;
+                encoders.push(e);
+            }
+        }
+        encoders.sort_by(|e1, e2| e1.index.cmp(&e2.index));
+        common::render_layer(&keys, &encoders, &buttons, layer_number)?
     }
     Ok(())
 }

@@ -3,6 +3,7 @@ pub mod buffer;
 use crate::protocol;
 use buffer::Buffer;
 use serde_json::Value;
+use std::cmp::max;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use thiserror::Error;
@@ -44,6 +45,29 @@ fn matches(options: &[(u8, u8)], option: Option<(u8, u8)>) -> bool {
         Some(o) => options[o.0 as usize].1 == o.1,
         None => true,
     }
+}
+
+pub fn get_encoders_count(keymap: &Value) -> Result<u8, Box<dyn std::error::Error>> {
+    let mut result = 0;
+    if let Some(rows) = keymap.as_array() {
+        for row in rows.iter() {
+            if let Some(items) = row.as_array() {
+                for item in items {
+                    if let Value::String(label) = item {
+                        let parts: Vec<_> = label.split("\n").collect();
+                        if parts.len() > 9
+                            && parts[9].starts_with("e")
+                                && let Some((index, direction)) = parts[0].split_once(",")
+                                    && direction == "0" {
+                                        let index: u8 = index.parse()?;
+                                        result = max(result, index + 1);
+                                    }
+                    }
+                }
+            }
+        }
+    }
+    Ok(result)
 }
 
 pub fn keymap_to_buttons(
@@ -302,10 +326,22 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
 
         match labels {
             Some(ref labels) => {
-                match labels.get(&(button.wire_x, button.wire_y)) {
-                    Some(label) => {
-                        if button.encoder {
-                        } else {
+                if button.encoder {
+                    let label = format!(
+                        "{}{}",
+                        button.wire_x,
+                        match button.wire_y {
+                            0 => '↺',
+                            1 => '↻',
+                            _ => 'x',
+                        }
+                    );
+                    for (i, c) in label.chars().enumerate() {
+                        buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
+                    }
+                } else {
+                    match labels.get(&(button.wire_x, button.wire_y)) {
+                        Some(label) => {
                             // FIXME comma treatment is too ugly :( but works
                             let mut we_got_comma = false;
                             for (line, chunk) in label.split(',').enumerate() {
@@ -329,9 +365,9 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
                                 }
                             }
                         }
-                    }
-                    None => {
-                        // No label => empty button
+                        None => {
+                            // No label => empty button
+                        }
                     }
                 }
             }

@@ -1,4 +1,5 @@
 use crate::common;
+use crate::keymap;
 use crate::protocol;
 use hidapi::{DeviceInfo, HidApi};
 use serde_json::{Value, json};
@@ -23,6 +24,16 @@ pub fn run(
     let rows = meta["matrix"]["rows"]
         .as_u64()
         .ok_or("matrix/rows not found in meta")? as u8;
+
+    let encoders_count = keymap::get_encoders_count(&meta["layouts"]["keymap"])?;
+    let mut encoders = Vec::new();
+    for layer_number in 0..capabilities.layer_count {
+        let mut layer_encoders = Vec::new();
+        for encoder_index in 0..encoders_count {
+            layer_encoders.push(protocol::load_encoder(&dev, layer_number, encoder_index)?);
+        }
+        encoders.push(layer_encoders);
+    }
 
     let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
     let combos = match capabilities.combo_count {
@@ -67,6 +78,11 @@ pub fn run(
         "layout": keys.to_json()?,
         "layout_options": layout_options,
     });
+
+    result.as_object_mut().ok_or("broken root")?.insert(
+        "encoder_layout".to_string(),
+        Value::Array(protocol::encoders_to_json(&encoders)?),
+    );
 
     if capabilities.vial_version > 0 {
         result.as_object_mut().ok_or("broken root")?.insert(

@@ -11,6 +11,7 @@ mod altrepeats;
 mod combos;
 mod common;
 mod devices;
+mod encoders;
 mod keyoverrides;
 mod keys;
 mod layers;
@@ -47,6 +48,7 @@ enum CommandEnum {
     Settings(CommandSettings),
     Layers(CommandLayers),
     Keys(CommandKeys),
+    Encoders(CommandEncoders),
     Combos(CommandCombos),
     Macros(CommandMacros),
     TapDances(CommandTapDances),
@@ -247,6 +249,23 @@ struct CommandLayout {
     value: Option<u8>,
 }
 
+#[derive(FromArgs, PartialEq, Debug)]
+/// Encoders operations
+#[argh(subcommand, name = "encoders")]
+struct CommandEncoders {
+    /// elncoder layer
+    #[argh(option, short = 'l')]
+    layer: u8,
+
+    /// encoder position
+    #[argh(option, short = 'p')]
+    position: String,
+
+    /// encoder value
+    #[argh(option, short = 'v')]
+    value: Option<String>,
+}
+
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
     match HidApi::new() {
         Ok(api) => {
@@ -299,6 +318,9 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                             &ops.position,
                             &ops.value,
                         ),
+                        CommandEnum::Encoders(ops) => {
+                            encoders::run(&api, device, ops.layer, &ops.position, &ops.value)
+                        }
                         CommandEnum::Settings(ops) => {
                             settings::run(&api, device, &ops.qsid, &ops.value, ops.reset)
                         }

@@ -45,6 +45,11 @@ pub use crate::protocol::rgb::{load_rgb_info, persist_rgb, set_leds_direct, set_
 pub mod layout;
 pub use crate::protocol::layout::{LayoutOptions, load_layout_options, set_layout_options};
 
+pub mod encoder;
+pub use crate::protocol::encoder::{
+    Encoder, encoders_to_json, load_encoder, load_encoders_from_json, set_encoder,
+};
+
 pub const USAGE_PAGE: u16 = 0xFF60;
 pub const USAGE_ID: u16 = 0x61;
 
@@ -90,6 +95,8 @@ const CMD_VIA_MACRO_GET_BUFFER_SIZE: u8 = 0x0D;
 const CMD_VIA_MACRO_GET_BUFFER: u8 = 0x0E;
 const CMD_VIA_MACRO_SET_BUFFER: u8 = 0x0F;
 
+const CMD_VIAL_GET_ENCODER: u8 = 0x03;
+const CMD_VIAL_SET_ENCODER: u8 = 0x04;
 const CMD_VIAL_GET_UNLOCK_STATUS: u8 = 0x05;
 const CMD_VIAL_UNLOCK_START: u8 = 0x06;
 const CMD_VIAL_UNLOCK_POLL: u8 = 0x07;

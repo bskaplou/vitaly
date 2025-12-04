@@ -1,3 +1,4 @@
+use crate::keycodes;
 use crate::keymap;
 use crate::protocol;
 use hidapi::HidDevice;
@@ -46,6 +47,7 @@ pub fn load_meta(
 
 pub fn render_layer(
     keys: &protocol::Keymap,
+    encoders: &Vec<protocol::Encoder>,
     buttons: &Vec<keymap::Button>,
     layer_number: u8,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -54,35 +56,38 @@ pub fn render_layer(
     let mut processed = HashMap::new();
     let mut fat_labels = Vec::new();
     for button in buttons {
-        let wkey = (button.wire_x, button.wire_y);
-        if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
-            e.insert(true);
-            let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
-            let mut slim_label = true;
-            for (idx, part) in label.split(',').enumerate() {
-                if part.chars().count() > 3 || idx > 1 {
-                    slim_label &= false;
-                }
-            }
-            if !slim_label {
-                match fat_labels.iter().position(|e| *e == label) {
-                    None => {
-                        fat_labels.push(label);
-                        button_labels.insert(
-                            (button.wire_x, button.wire_y),
-                            format!("*{}", fat_labels.len()),
-                        );
-                    }
-                    Some(pos) => {
-                        println!(
-                            "{:?} , {:?} at {} {}",
-                            fat_labels, label, button.wire_x, button.wire_y
-                        );
-                        button_labels.insert((button.wire_x, button.wire_y), format!("*{}", pos));
+        if !button.encoder {
+            let wkey = (button.wire_x, button.wire_y);
+            if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
+                e.insert(true);
+                let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
+                let mut slim_label = true;
+                for (idx, part) in label.split(',').enumerate() {
+                    if part.chars().count() > 3 || idx > 1 {
+                        slim_label &= false;
                     }
                 }
-            } else {
-                button_labels.insert((button.wire_x, button.wire_y), label);
+                if !slim_label {
+                    match fat_labels.iter().position(|e| *e == label) {
+                        None => {
+                            fat_labels.push(label);
+                            button_labels.insert(
+                                (button.wire_x, button.wire_y),
+                                format!("*{}", fat_labels.len()),
+                            );
+                        }
+                        Some(pos) => {
+                            println!(
+                                "{:?} , {:?} at {} {}",
+                                fat_labels, label, button.wire_x, button.wire_y
+                            );
+                            button_labels
+                                .insert((button.wire_x, button.wire_y), format!("*{}", pos));
+                        }
+                    }
+                } else {
+                    button_labels.insert((button.wire_x, button.wire_y), label);
+                }
             }
         }
     }
@@ -90,6 +95,14 @@ pub fn render_layer(
     keymap::render_and_dump(buttons, Some(button_labels));
     for (idx, fat) in fat_labels.into_iter().enumerate() {
         println!("*{} - {}", idx + 1, fat);
+    }
+    for e in encoders {
+        println!(
+            "{0}↺ - {1}\n{0}↻ - {2}",
+            e.index,
+            keycodes::qid_to_name(e.ccw),
+            keycodes::qid_to_name(e.cw)
+        );
     }
     println!();
     Ok(())
