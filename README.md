@@ -3,10 +3,10 @@
 Vial CLI tool allows to configure keyboard through VIA/Vial protocol with command line interface.
 It supports QMK keycodes notation together with aliases.
 
-Keys, combos, macros, tap dances, key overrides and alt repeat keys are supported.
+Keys, encoders, combos, macros, tap dances, key overrides and alt repeat keys are supported.
 RGB lighting control is supported too.
 
-Non-colored underglow are not supported for now because there is no devices with such features around me for now.
+Non-colored underglow is not supported for now because there is no devices with such features around me for now.
 
 Layouts with no rotation are supproted and displays well. Layouts with rotated buttons might have problems in rendering of layers.
 
@@ -848,6 +848,7 @@ Alt repeat keys restored
 Combos restored
 TapDances restored
 Keys restored. All done!!!
+```
 
 ### Encoders subcommand
 
