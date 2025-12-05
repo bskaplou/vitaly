@@ -78,207 +78,176 @@ pub fn keymap_to_buttons(
     let via_options = current_options.via_options();
     let mut option_groups = HashMap::<u8, (f64, f64)>::new();
     let mut buttons = Vec::new();
-    match keymap.as_array() {
-        Some(rows) => {
-            let mut x_pos = 0f64;
-            let mut y_pos = 0f64;
-            let mut x_mod = 0f64;
-            let mut y_mod = 0f64;
-            let mut rx = 0f64;
-            let mut ry = 0f64;
-            let mut w = 1f64;
-            let mut h = 1f64;
-            let mut r = 0f64;
-            let mut y = 0f64;
-            let mut x = 0f64;
-            let mut decal = false;
-            let mut cluster: (f64, f64) = (0.0, 0.0);
+    let rows = keymap.as_array().ok_or("keymap should be an array")?;
+    let mut x_pos = 0f64;
+    let mut y_pos = 0f64;
+    let mut x_mod = 0f64;
+    let mut y_mod = 0f64;
+    let mut rx = 0f64;
+    let mut ry = 0f64;
+    let mut w = 1f64;
+    let mut h = 1f64;
+    let mut r = 0f64;
+    let mut y = 0f64;
+    let mut x = 0f64;
+    let mut decal = false;
+    let mut cluster: (f64, f64) = (0.0, 0.0);
 
-            for row in rows.iter() {
-                //print!("{:?}", row);
-                match row.as_array() {
-                    Some(items) => {
-                        for item in items {
-                            match item {
-                                Value::Object(item) => {
-                                    for (key, value) in item {
-                                        match key.as_str() {
-                                            "x" => {
-                                                x = value.as_f64().ok_or("x should be a number")?;
-                                                x_mod += x;
-                                            }
-                                            "y" => {
-                                                y = value.as_f64().ok_or("y should be a number")?;
-                                                y_mod += y;
-                                            }
-                                            "w" => {
-                                                w = value.as_f64().ok_or("w should be a number")?
-                                            }
-                                            "h" => {
-                                                h = value.as_f64().ok_or("h should be a number")?
-                                            }
-                                            "r" => {
-                                                r = value.as_f64().ok_or("r should be a number")?
-                                            }
-                                            "rx" => {
-                                                rx = value
-                                                    .as_f64()
-                                                    .ok_or("rx should be a number")?;
-                                                cluster.0 = rx;
-                                                //x = cluster.0;
-                                                //y = cluster.1;
-                                            }
-                                            "ry" => {
-                                                ry = value
-                                                    .as_f64()
-                                                    .ok_or("ry should be a number")?;
-                                                cluster.1 = ry;
-                                                //x = cluster.0;
-                                                //y = cluster.1;
-                                            }
-                                            "d" => {
-                                                decal = value.as_bool().ok_or("d should be bool")?
-                                            }
-                                            &_ => {
-                                                // println!("warning ignored value {:?} = {:?}", key, value)
-                                            }
-                                        }
+    for row in rows.iter() {
+        match row.as_array() {
+            Some(items) => {
+                for item in items {
+                    match item {
+                        Value::Object(item) => {
+                            for (key, value) in item {
+                                match key.as_str() {
+                                    "x" => {
+                                        x = value.as_f64().ok_or("x should be a number")?;
+                                        x_mod += x;
                                     }
-                                }
-                                Value::String(item) => {
-                                    if !decal {
-                                        // skip decals entirely
-                                        let labels: Vec<_> = item.split("\n").collect();
-                                        let (wire, option, encoder) = if labels.len() < 4 {
-                                            (labels[0], None, false)
-                                        } else if labels.len() < 10 {
-                                            (labels[0], Some(labels[3]), false)
-                                        } else {
-                                            (labels[0], Some(labels[3]), labels[9].starts_with("e"))
-                                        };
-                                        if let Some((xxx, yyy)) = wire.split_once(',') {
-                                            let xx: u8 = xxx.parse()?;
-                                            let yy: u8 = yyy.parse()?;
-                                            let layout_options = match option {
-                                                Some(s) => {
-                                                    if let Some((l, r)) = s.split_once(',') {
-                                                        let (l, r) = (l.parse()?, r.parse()?);
-                                                        if r == 0 {
-                                                            option_groups.entry(l).or_insert((
-                                                                x_pos + x_mod,
-                                                                y_pos + y_mod,
-                                                            ));
-                                                        }
-                                                        Some((l, r))
-                                                    } else {
-                                                        None
-                                                    }
-                                                }
-                                                None => None,
-                                            };
-                                            let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {
-                                                let bx = x_pos + x_mod;
-                                                let by = y_pos + y_mod;
-                                                let bw = w;
-                                                let bh = h;
-                                                Button {
-                                                    x: bx,
-                                                    y: by,
-                                                    w: bw,
-                                                    h: bh,
-                                                    wire_x: xx,
-                                                    wire_y: yy,
-                                                    layout_options,
-                                                    encoder,
-                                                }
-                                            } else {
-                                                /*
-                                                println!(
-                                                    "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}, x_mod = {:?}, y_mod = {:?}",
-                                                    xx, yy, r, rx, ry, x, y, x_mod, y_mod,
-                                                );
-                                                */
-                                                let theta = -r.to_radians();
-                                                let theta_sin = theta.sin();
-                                                let theta_cos = theta.cos();
-                                                let bx;
-                                                let by;
-                                                // y_shift is heuristic parsed while I was trying
-                                                // to make sofle render properly
-                                                let y_shift = if y.abs() < 1.0 || r == 0.0 {
-                                                    1.0
-                                                } else {
-                                                    0.0
-                                                };
-                                                if r >= 0.0 {
-                                                    bx = x * theta_cos + y * theta_sin + rx;
-                                                    by = -x * theta_sin
-                                                        + y * theta_cos
-                                                        + ry
-                                                        + y_shift;
-                                                } else {
-                                                    // for negative angle rotate right corner
-                                                    // and shift back -w
-                                                    // otherwise mirrored part will be
-                                                    // vertically shifted
-                                                    bx = (x + w) * theta_cos + y * theta_sin + rx
-                                                        - w;
-                                                    by = -(x + w) * theta_sin
-                                                        + y * theta_cos
-                                                        + ry
-                                                        + y_shift;
-                                                }
-                                                let bw = 1.0;
-                                                let bh = 1.0;
-                                                Button {
-                                                    x: bx,
-                                                    y: by,
-                                                    w: bw,
-                                                    h: bh,
-                                                    wire_x: xx,
-                                                    wire_y: yy,
-                                                    layout_options: None,
-                                                    encoder,
-                                                }
-                                                //return Err(MetaParsingError.into());
-                                            };
-                                            if matches(&via_options, layout_options) {
-                                                buttons.push(but);
-                                            } else {
-                                                //w = 0.0;
-                                            }
-                                        } else {
-                                            return Err(MetaParsingError.into());
-                                        }
+                                    "y" => {
+                                        y = value.as_f64().ok_or("y should be a number")?;
+                                        y_mod += y;
                                     }
-                                    x_pos += x_mod + w;
-                                    w = 1.0;
-                                    h = 1.0;
-                                    x_mod = 0.0;
-                                    decal = false;
-                                    //println!("! {:?} => {:?}", item.as_str().unwrap(), &but);
-                                }
-                                _ => {
-                                    return Err(MetaParsingError.into());
+                                    "w" => w = value.as_f64().ok_or("w should be a number")?,
+                                    "h" => h = value.as_f64().ok_or("h should be a number")?,
+                                    "r" => r = value.as_f64().ok_or("r should be a number")?,
+                                    "rx" => {
+                                        rx = value.as_f64().ok_or("rx should be a number")?;
+                                        cluster.0 = rx;
+                                        //x = cluster.0;
+                                        //y = cluster.1;
+                                    }
+                                    "ry" => {
+                                        ry = value.as_f64().ok_or("ry should be a number")?;
+                                        cluster.1 = ry;
+                                        //x = cluster.0;
+                                        //y = cluster.1;
+                                    }
+                                    "d" => decal = value.as_bool().ok_or("d should be bool")?,
+                                    &_ => {
+                                        // println!("warning ignored value {:?} = {:?}", key, value)
+                                    }
                                 }
                             }
                         }
-                    }
-                    None => {
-                        // sometimes first element is dict
-                        // return Err(MetaParsingError);
+                        Value::String(item) => {
+                            if !decal {
+                                // skip decals entirely
+                                let labels: Vec<_> = item.split("\n").collect();
+                                let (wire, option, encoder) = if labels.len() < 4 {
+                                    (labels[0], None, false)
+                                } else if labels.len() < 10 {
+                                    (labels[0], Some(labels[3]), false)
+                                } else {
+                                    (labels[0], Some(labels[3]), labels[9].starts_with("e"))
+                                };
+                                let (xxx, yyy) = wire
+                                    .split_once(',')
+                                    .ok_or("button label[0] should be in format x,y")?;
+                                let xx: u8 = xxx.parse()?;
+                                let yy: u8 = yyy.parse()?;
+                                let layout_options = match option {
+                                    Some(s) => {
+                                        if let Some((l, r)) = s.split_once(',') {
+                                            let (l, r) = (l.parse()?, r.parse()?);
+                                            if r == 0 {
+                                                option_groups
+                                                    .entry(l)
+                                                    .or_insert((x_pos + x_mod, y_pos + y_mod));
+                                            }
+                                            Some((l, r))
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                    None => None,
+                                };
+                                let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {
+                                    let bx = x_pos + x_mod;
+                                    let by = y_pos + y_mod;
+                                    let bw = w;
+                                    let bh = h;
+                                    Button {
+                                        x: bx,
+                                        y: by,
+                                        w: bw,
+                                        h: bh,
+                                        wire_x: xx,
+                                        wire_y: yy,
+                                        layout_options,
+                                        encoder,
+                                    }
+                                } else {
+                                    /*
+                                    println!(
+                                        "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}, x_mod = {:?}, y_mod = {:?}",
+                                        xx, yy, r, rx, ry, x, y, x_mod, y_mod,
+                                    );
+                                    */
+                                    let theta = -r.to_radians();
+                                    let theta_sin = theta.sin();
+                                    let theta_cos = theta.cos();
+                                    let bx;
+                                    let by;
+                                    // y_shift is heuristic parsed while I was trying
+                                    // to make sofle render properly
+                                    let y_shift = if y.abs() < 1.0 || r == 0.0 { 1.0 } else { 0.0 };
+                                    if r >= 0.0 {
+                                        bx = x * theta_cos + y * theta_sin + rx;
+                                        by = -x * theta_sin + y * theta_cos + ry + y_shift;
+                                    } else {
+                                        // for negative angle rotate right corner
+                                        // and shift back -w
+                                        // otherwise mirrored part will be
+                                        // vertically shifted
+                                        bx = (x + w) * theta_cos + y * theta_sin + rx - w;
+                                        by = -(x + w) * theta_sin + y * theta_cos + ry + y_shift;
+                                    }
+                                    let bw = 1.0;
+                                    let bh = 1.0;
+                                    Button {
+                                        x: bx,
+                                        y: by,
+                                        w: bw,
+                                        h: bh,
+                                        wire_x: xx,
+                                        wire_y: yy,
+                                        layout_options: None,
+                                        encoder,
+                                    }
+                                    //return Err(MetaParsingError.into());
+                                };
+                                if matches(&via_options, layout_options) {
+                                    buttons.push(but);
+                                } else {
+                                    //w = 0.0;
+                                }
+                            }
+                            x_pos += x_mod + w;
+                            w = 1.0;
+                            h = 1.0;
+                            x_mod = 0.0;
+                            decal = false;
+                            //println!("! {:?} => {:?}", item.as_str().unwrap(), &but);
+                        }
+                        _ => {
+                            return Err(MetaParsingError.into());
+                        }
                     }
                 }
-                x = 0.0;
-                y = 0.0;
-                x_pos = 0.0;
-                y_pos += 1.0;
-                //r = 0.0;
+            }
+            None => {
+                // sometimes first element is dict
+                // return Err(MetaParsingError);
             }
         }
-        None => return Err(MetaParsingError.into()),
+        x = 0.0;
+        y = 0.0;
+        x_pos = 0.0;
+        y_pos += 1.0;
+        //r = 0.0;
     }
-
     // this logic tries to follow via layout_options choices in a following way
     // option_groups contains coordinates of first default (x, 0) button
     // for first button code replaces current choice coordinates (x, current) with coordinates from
