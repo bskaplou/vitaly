@@ -92,6 +92,7 @@ pub fn keymap_to_buttons(
             let mut y = 0f64;
             let mut x = 0f64;
             let mut decal = false;
+            let mut cluster: (f64, f64) = (0.0, 0.0);
 
             for row in rows.iter() {
                 //print!("{:?}", row);
@@ -120,12 +121,20 @@ pub fn keymap_to_buttons(
                                                 r = value.as_f64().ok_or("r should be a number")?
                                             }
                                             "rx" => {
-                                                rx =
-                                                    value.as_f64().ok_or("rx should be a number")?
+                                                rx = value
+                                                    .as_f64()
+                                                    .ok_or("rx should be a number")?;
+                                                cluster.0 = rx;
+                                                //x = cluster.0;
+                                                //y = cluster.1;
                                             }
                                             "ry" => {
-                                                ry =
-                                                    value.as_f64().ok_or("ry should be a number")?
+                                                ry = value
+                                                    .as_f64()
+                                                    .ok_or("ry should be a number")?;
+                                                cluster.1 = ry;
+                                                //x = cluster.0;
+                                                //y = cluster.1;
                                             }
                                             "d" => {
                                                 decal = value.as_bool().ok_or("d should be bool")?
@@ -194,9 +203,19 @@ pub fn keymap_to_buttons(
                                                 let theta_cos = theta.cos();
                                                 let bx;
                                                 let by;
+                                                // y_shift is heuristic parsed while I was trying
+                                                // to make sofle render properly
+                                                let y_shift = if y.abs() < 1.0 || r == 0.0 {
+                                                    1.0
+                                                } else {
+                                                    0.0
+                                                };
                                                 if r >= 0.0 {
                                                     bx = x * theta_cos + y * theta_sin + rx;
-                                                    by = -x * theta_sin + y * theta_cos + ry;
+                                                    by = -x * theta_sin
+                                                        + y * theta_cos
+                                                        + ry
+                                                        + y_shift;
                                                 } else {
                                                     // for negative angle rotate right corner
                                                     // and shift back -w
@@ -204,7 +223,10 @@ pub fn keymap_to_buttons(
                                                     // vertically shifted
                                                     bx = (x + w) * theta_cos + y * theta_sin + rx
                                                         - w;
-                                                    by = -(x + w) * theta_sin + y * theta_cos + ry;
+                                                    by = -(x + w) * theta_sin
+                                                        + y * theta_cos
+                                                        + ry
+                                                        + y_shift;
                                                 }
                                                 let bw = 1.0;
                                                 let bh = 1.0;
