@@ -78,14 +78,14 @@ pub fn keymap_to_buttons(
     let via_options = current_options.via_options();
     let mut option_groups = HashMap::<u8, (f64, f64)>::new();
     let mut buttons = Vec::new();
-    let mut x_pos = 0f64;
-    let mut y_pos = 0f64;
-    let mut x_mod = 0f64;
-    let mut y_mod = 0f64;
-    let mut rx = 0f64;
-    let mut ry = 0f64;
     match keymap.as_array() {
         Some(rows) => {
+            let mut x_pos = 0f64;
+            let mut y_pos = 0f64;
+            let mut x_mod = 0f64;
+            let mut y_mod = 0f64;
+            let mut rx = 0f64;
+            let mut ry = 0f64;
             let mut w = 1f64;
             let mut h = 1f64;
             let mut r = 0f64;
