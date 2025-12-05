@@ -28,9 +28,21 @@ impl Buffer {
     }
 
     pub fn dump(&self) {
+        // cut top lines containing only spaces
+        let mut spaces_only = true;
         for line in self.b.iter() {
-            let s: String = line.iter().collect();
-            println!("{}", s);
+            if spaces_only {
+                for c in line {
+                    if *c != ' ' {
+                        spaces_only = false;
+                        break;
+                    }
+                }
+            }
+            if !spaces_only {
+                let s: String = line.iter().collect();
+                println!("{}", s);
+            }
         }
     }
 }

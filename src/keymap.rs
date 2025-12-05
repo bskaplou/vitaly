@@ -183,14 +183,29 @@ pub fn keymap_to_buttons(
                                                     encoder,
                                                 }
                                             } else {
-                                                //println!("p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}", xx, yy, r, rx, ry, x, y);
+                                                /*
+                                                println!(
+                                                    "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}, x_mod = {:?}, y_mod = {:?}",
+                                                    xx, yy, r, rx, ry, x, y, x_mod, y_mod,
+                                                );
+                                                */
                                                 let theta = -r.to_radians();
                                                 let theta_sin = theta.sin();
                                                 let theta_cos = theta.cos();
-                                                //let bx = x * theta_cos + y * theta_sin + rx;
-                                                //let by = -x * theta_sin + y * theta_cos + ry;
-                                                let bx = x * theta_cos + y * theta_sin + rx;
-                                                let by = -x * theta_sin + y * theta_cos + ry;
+                                                let bx;
+                                                let by;
+                                                if r >= 0.0 {
+                                                    bx = x * theta_cos + y * theta_sin + rx;
+                                                    by = -x * theta_sin + y * theta_cos + ry;
+                                                } else {
+                                                    // for negative angle rotate right corner
+                                                    // and shift back -w
+                                                    // otherwise mirrored part will be
+                                                    // vertically shifted
+                                                    bx = (x + w) * theta_cos + y * theta_sin + rx
+                                                        - w;
+                                                    by = -(x + w) * theta_sin + y * theta_cos + ry;
+                                                }
                                                 let bw = 1.0;
                                                 let bh = 1.0;
                                                 Button {
@@ -232,6 +247,8 @@ pub fn keymap_to_buttons(
                         // return Err(MetaParsingError);
                     }
                 }
+                x = 0.0;
+                y = 0.0;
                 x_pos = 0.0;
                 y_pos += 1.0;
                 //r = 0.0;
@@ -282,10 +299,13 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
     for button in buttons {
         let scale = 4.0;
         let b = button.scale(scale);
-        let lu = (b.x as usize, b.y as usize);
-        let ru = ((b.x + b.w - 1.0) as usize, b.y as usize);
-        let lb = (b.x as usize, (b.y + b.h - 1.0) as usize);
-        let rb = ((b.x + b.w - 1.0) as usize, (b.y + b.h - 1.0) as usize);
+        let lu = (b.x.round() as usize, b.y.round() as usize);
+        let ru = ((b.x + b.w - 1.0).round() as usize, b.y.round() as usize);
+        let lb = (b.x.round() as usize, (b.y + b.h - 1.0).round() as usize);
+        let rb = (
+            (b.x + b.w - 1.0).round() as usize,
+            (b.y + b.h - 1.0).round() as usize,
+        );
         if !b.encoder {
             buff.put(lu.0, lu.1, '╔');
             for x in (lu.0 + 1)..ru.0 {
