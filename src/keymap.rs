@@ -260,13 +260,14 @@ pub fn keymap_to_buttons(
                 if matches(&via_options, Some(option)) {
                     match deltas.entry(option.0) {
                         Entry::Vacant(v) => {
-                            let (def_x, def_y) = option_groups.get(&option.0).unwrap();
-                            //println!("{:?} => {:?}", button, (def_x, def_y));
-                            let dx = button.x - *def_x;
-                            let dy = button.y - *def_y;
-                            button.x = *def_x;
-                            button.y = *def_y;
-                            v.insert_entry((dx, dy));
+                            if let Some((def_x, def_y)) = option_groups.get(&option.0) {
+                                //println!("{:?} => {:?}", button, (def_x, def_y));
+                                let dx = button.x - *def_x;
+                                let dy = button.y - *def_y;
+                                button.x = *def_x;
+                                button.y = *def_y;
+                                v.insert_entry((dx, dy));
+                            }
                         }
                         Entry::Occupied(o) => {
                             let (dx, dy) = o.get();
