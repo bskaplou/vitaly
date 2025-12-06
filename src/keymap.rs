@@ -46,7 +46,7 @@ fn matches(options: &[(u8, u8)], option: Option<(u8, u8)>) -> bool {
             if options.len() > o.1.into() {
                 options[o.0 as usize].1 == o.1
             } else {
-                true
+                false
             }
         }
         None => true,

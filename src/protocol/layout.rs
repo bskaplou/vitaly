@@ -78,19 +78,24 @@ impl LayoutOptions<'_> {
         let mut result = Vec::new();
         for (option_idx, (_, variants, start_bit)) in self.options.iter().enumerate() {
             // nullify other options bits and put current option bits to rightmost position
-            let ignore_high_bits = 33 - start_bit - variants.len() as u8;
-            let variant_bits = self
-                .state
-                .overflowing_shl(ignore_high_bits.into())
-                .0
-                .overflowing_shr((start_bit + ignore_high_bits).into())
-                .0;
-            for (variant_idx, _) in variants.iter().enumerate() {
-                // zero means default option, other bit positon
-                if (variant_bits == 0 && variant_idx == 0)
-                    || (variant_idx > 0 && variant_bits >> (variant_idx - 1) == 1)
-                {
-                    result.push((option_idx as u8, variant_idx as u8));
+            if variants.len() > (33 - start_bit).into() {
+                //for options >32 selected variant is always 0
+                result.push((option_idx as u8, 0u8));
+            } else {
+                let ignore_high_bits = 33 - start_bit - variants.len() as u8;
+                let variant_bits = self
+                    .state
+                    .overflowing_shl(ignore_high_bits.into())
+                    .0
+                    .overflowing_shr((start_bit + ignore_high_bits).into())
+                    .0;
+                for (variant_idx, _) in variants.iter().enumerate() {
+                    // zero means default option, other bit positon
+                    if (variant_bits == 0 && variant_idx == 0)
+                        || (variant_idx > 0 && variant_bits >> (variant_idx - 1) == 1)
+                    {
+                        result.push((option_idx as u8, variant_idx as u8));
+                    }
                 }
             }
         }
@@ -104,16 +109,20 @@ impl LayoutOptions<'_> {
         for (option_idx, (_, variants, start_bit)) in self.options.iter().enumerate() {
             for (new_option, new_variant) in &options {
                 if option_idx as u8 == *new_option {
-                    let ignore_high_bits = 33 - start_bit - variants.len() as u8;
-                    let mask = !((0xFFFFFFFF << ignore_high_bits)
-                        >> (start_bit + ignore_high_bits)
-                        << start_bit);
-                    let variant_bit = if *new_variant == 0 {
-                        0
+                    if variants.len() > (33 - start_bit).into() {
+                        // too many variants, ignoring
                     } else {
-                        1 << (new_variant - 1 + start_bit)
-                    };
-                    self.state = self.state & mask | variant_bit;
+                        let ignore_high_bits = 33 - start_bit - variants.len() as u8;
+                        let mask = !((0xFFFFFFFF << ignore_high_bits)
+                            >> (start_bit + ignore_high_bits)
+                            << start_bit);
+                        let variant_bit = if *new_variant == 0 {
+                            0
+                        } else {
+                            1 << (new_variant - 1 + start_bit)
+                        };
+                        self.state = self.state & mask | variant_bit;
+                    }
                 }
             }
         }
