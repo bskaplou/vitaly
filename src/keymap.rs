@@ -42,7 +42,13 @@ impl Button {
 fn matches(options: &[(u8, u8)], option: Option<(u8, u8)>) -> bool {
     //return true;
     match option {
-        Some(o) => options[o.0 as usize].1 == o.1,
+        Some(o) => {
+            if options.len() > o.1.into() {
+                options[o.0 as usize].1 == o.1
+            } else {
+                true
+            }
+        }
         None => true,
     }
 }

@@ -19,6 +19,7 @@ pub fn load_meta(
 ) -> Result<Value, Box<dyn std::error::Error>> {
     match meta_file {
         Some(meta_file) => {
+            //println!("loading meta from file {:?}", &meta_file);
             let meta_str = fs::read_to_string(meta_file)?;
             Ok(serde_json::from_str(&meta_str)?)
         }
