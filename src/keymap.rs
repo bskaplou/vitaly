@@ -22,6 +22,7 @@ pub struct Button {
     pub wire_y: u8,
     pub layout_options: Option<(u8, u8)>,
     pub encoder: bool,
+    pub decal: bool,
 }
 
 impl Button {
@@ -35,6 +36,7 @@ impl Button {
             wire_y: self.wire_y,
             layout_options: self.layout_options,
             encoder: self.encoder,
+            decal: self.decal,
         }
     }
 }
@@ -138,97 +140,102 @@ pub fn keymap_to_buttons(
                             }
                         }
                         Value::String(item) => {
-                            if !decal {
-                                // skip decals entirely
-                                let labels: Vec<_> = item.split("\n").collect();
-                                let (wire, option, encoder) = if labels.len() < 4 {
-                                    (labels[0], None, false)
-                                } else if labels.len() < 10 {
-                                    (labels[0], Some(labels[3]), false)
+                            // skip decals entirely
+                            let labels: Vec<_> = item.split("\n").collect();
+                            let (wire, option, encoder) = if labels.len() < 4 {
+                                (labels[0], None, false)
+                            } else if labels.len() < 10 {
+                                (labels[0], Some(labels[3]), false)
+                            } else {
+                                (labels[0], Some(labels[3]), labels[9].starts_with("e"))
+                            };
+                            let (xx, yy): (u8, u8) = if let Some((xxx, yyy)) = wire.split_once(',')
+                            {
+                                if let (Ok(x), Ok(y)) = (xxx.parse(), yyy.parse()) {
+                                    (x, y)
                                 } else {
-                                    (labels[0], Some(labels[3]), labels[9].starts_with("e"))
-                                };
-                                let (xxx, yyy) = wire
-                                    .split_once(',')
-                                    .ok_or("button label[0] should be in format x,y")?;
-                                let xx: u8 = xxx.parse()?;
-                                let yy: u8 = yyy.parse()?;
-                                let layout_options = match option {
-                                    Some(s) => {
-                                        if let Some((l, r)) = s.split_once(',') {
-                                            let (l, r) = (l.parse()?, r.parse()?);
-                                            if r == 0 {
-                                                option_groups
-                                                    .entry(l)
-                                                    .or_insert((x_pos + x_mod, y_pos + y_mod));
-                                            }
-                                            Some((l, r))
-                                        } else {
-                                            None
-                                        }
-                                    }
-                                    None => None,
-                                };
-                                let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {
-                                    let bx = x_pos + x_mod;
-                                    let by = y_pos + y_mod;
-                                    let bw = w;
-                                    let bh = h;
-                                    Button {
-                                        x: bx,
-                                        y: by,
-                                        w: bw,
-                                        h: bh,
-                                        wire_x: xx,
-                                        wire_y: yy,
-                                        layout_options,
-                                        encoder,
-                                    }
-                                } else {
-                                    /*
-                                    println!(
-                                        "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}, x_mod = {:?}, y_mod = {:?}",
-                                        xx, yy, r, rx, ry, x, y, x_mod, y_mod,
-                                    );
-                                    */
-                                    let theta = -r.to_radians();
-                                    let theta_sin = theta.sin();
-                                    let theta_cos = theta.cos();
-                                    let bx;
-                                    let by;
-                                    // y_shift is heuristic parsed while I was trying
-                                    // to make sofle render properly
-                                    let y_shift = if y.abs() < 1.0 || r == 0.0 { 1.0 } else { 0.0 };
-                                    if r >= 0.0 {
-                                        bx = x * theta_cos + y * theta_sin + rx;
-                                        by = -x * theta_sin + y * theta_cos + ry + y_shift;
-                                    } else {
-                                        // for negative angle rotate right corner
-                                        // and shift back -w
-                                        // otherwise mirrored part will be
-                                        // vertically shifted
-                                        bx = (x + w) * theta_cos + y * theta_sin + rx - w;
-                                        by = -(x + w) * theta_sin + y * theta_cos + ry + y_shift;
-                                    }
-                                    let bw = 1.0;
-                                    let bh = 1.0;
-                                    Button {
-                                        x: bx,
-                                        y: by,
-                                        w: bw,
-                                        h: bh,
-                                        wire_x: xx,
-                                        wire_y: yy,
-                                        layout_options: None,
-                                        encoder,
-                                    }
-                                    //return Err(MetaParsingError.into());
-                                };
-                                if matches(&via_options, layout_options) {
-                                    buttons.push(but);
-                                } else {
-                                    //w = 0.0;
+                                    (0, 0)
                                 }
+                            } else {
+                                (0, 0)
+                            };
+                            let layout_options = match option {
+                                Some(s) => {
+                                    if let Some((l, r)) = s.split_once(',') {
+                                        let (l, r) = (l.parse()?, r.parse()?);
+                                        if r == 0 {
+                                            option_groups
+                                                .entry(l)
+                                                .or_insert((x_pos + x_mod, y_pos + y_mod));
+                                        }
+                                        Some((l, r))
+                                    } else {
+                                        None
+                                    }
+                                }
+                                None => None,
+                            };
+                            let but = if r == 0.0 && rx == 0.0 && ry == 0.0 {
+                                let bx = x_pos + x_mod;
+                                let by = y_pos + y_mod;
+                                let bw = w;
+                                let bh = h;
+                                Button {
+                                    x: bx,
+                                    y: by,
+                                    w: bw,
+                                    h: bh,
+                                    wire_x: xx,
+                                    wire_y: yy,
+                                    layout_options,
+                                    encoder,
+                                    decal,
+                                }
+                            } else {
+                                /*
+                                println!(
+                                    "p = {},{}, r = {:?}, rx = {:?}, ry = {:?}, x = {:?}, y = {:?}, x_mod = {:?}, y_mod = {:?}",
+                                    xx, yy, r, rx, ry, x, y, x_mod, y_mod,
+                                );
+                                */
+                                let theta = -r.to_radians();
+                                let theta_sin = theta.sin();
+                                let theta_cos = theta.cos();
+                                let bx;
+                                let by;
+                                // y_shift is heuristic parsed while I was trying
+                                // to make sofle render properly
+                                let y_shift = if y.abs() < 1.0 || r == 0.0 { 1.0 } else { 0.0 };
+                                if r >= 0.0 {
+                                    bx = x * theta_cos + y * theta_sin + rx;
+                                    by = -x * theta_sin + y * theta_cos + ry + y_shift;
+                                } else {
+                                    // for negative angle rotate right corner
+                                    // and shift back -w
+                                    // otherwise mirrored part will be
+                                    // vertically shifted
+                                    bx = (x + w) * theta_cos + y * theta_sin + rx - w;
+                                    by = -(x + w) * theta_sin + y * theta_cos + ry + y_shift;
+                                }
+                                let bw = 1.0;
+                                let bh = 1.0;
+                                Button {
+                                    x: bx,
+                                    y: by,
+                                    w: bw,
+                                    h: bh,
+                                    wire_x: xx,
+                                    wire_y: yy,
+                                    layout_options: None,
+                                    encoder,
+                                    decal,
+                                }
+                                //return Err(MetaParsingError.into());
+                            };
+                            if matches(&via_options, layout_options) || decal {
+                                buttons.push(but);
+                            } else {
+                                //w = 0.0;
                             }
                             x_pos += x_mod + w;
                             w = 1.0;
@@ -295,109 +302,111 @@ pub fn keymap_to_buttons(
 pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), String>>) {
     let mut buff = Buffer::new();
     for button in buttons {
-        let scale = 4.0;
-        let b = button.scale(scale);
-        let lu = (b.x.round() as usize, b.y.round() as usize);
-        let ru = ((b.x + b.w - 1.0).round() as usize, b.y.round() as usize);
-        let lb = (b.x.round() as usize, (b.y + b.h - 1.0).round() as usize);
-        let rb = (
-            (b.x + b.w - 1.0).round() as usize,
-            (b.y + b.h - 1.0).round() as usize,
-        );
-        if !b.encoder {
-            buff.put(lu.0, lu.1, '╔');
-            for x in (lu.0 + 1)..ru.0 {
-                buff.put(x, lu.1, '═');
+        if !button.decal {
+            let scale = 4.0;
+            let b = button.scale(scale);
+            let lu = (b.x.round() as usize, b.y.round() as usize);
+            let ru = ((b.x + b.w - 1.0).round() as usize, b.y.round() as usize);
+            let lb = (b.x.round() as usize, (b.y + b.h - 1.0).round() as usize);
+            let rb = (
+                (b.x + b.w - 1.0).round() as usize,
+                (b.y + b.h - 1.0).round() as usize,
+            );
+            if !b.encoder {
+                buff.put(lu.0, lu.1, '╔');
+                for x in (lu.0 + 1)..ru.0 {
+                    buff.put(x, lu.1, '═');
+                }
+                buff.put(ru.0, ru.1, '╗');
+                for y in (lu.1 + 1)..lb.1 {
+                    buff.put(lu.0, y, '║');
+                }
+                for y in (ru.1 + 1)..rb.1 {
+                    buff.put(ru.0, y, '║');
+                }
+                buff.put(lb.0, lb.1, '╚');
+                for x in (lb.0 + 1)..rb.0 {
+                    buff.put(x, lb.1, '═');
+                }
+                buff.put(rb.0, rb.1, '╝');
+            } else {
+                buff.put(lu.0, lu.1, '╭');
+                for x in (lu.0 + 1)..ru.0 {
+                    buff.put(x, lu.1, '─');
+                }
+                buff.put(ru.0, ru.1, '╮');
+                for y in (lu.1 + 1)..lb.1 {
+                    buff.put(lu.0, y, '│');
+                }
+                for y in (ru.1 + 1)..rb.1 {
+                    buff.put(ru.0, y, '│');
+                }
+                buff.put(lb.0, lb.1, '╰');
+                for x in (lb.0 + 1)..rb.0 {
+                    buff.put(x, lb.1, '─');
+                }
+                buff.put(rb.0, rb.1, '╯');
             }
-            buff.put(ru.0, ru.1, '╗');
-            for y in (lu.1 + 1)..lb.1 {
-                buff.put(lu.0, y, '║');
-            }
-            for y in (ru.1 + 1)..rb.1 {
-                buff.put(ru.0, y, '║');
-            }
-            buff.put(lb.0, lb.1, '╚');
-            for x in (lb.0 + 1)..rb.0 {
-                buff.put(x, lb.1, '═');
-            }
-            buff.put(rb.0, rb.1, '╝');
-        } else {
-            buff.put(lu.0, lu.1, '╭');
-            for x in (lu.0 + 1)..ru.0 {
-                buff.put(x, lu.1, '─');
-            }
-            buff.put(ru.0, ru.1, '╮');
-            for y in (lu.1 + 1)..lb.1 {
-                buff.put(lu.0, y, '│');
-            }
-            for y in (ru.1 + 1)..rb.1 {
-                buff.put(ru.0, y, '│');
-            }
-            buff.put(lb.0, lb.1, '╰');
-            for x in (lb.0 + 1)..rb.0 {
-                buff.put(x, lb.1, '─');
-            }
-            buff.put(rb.0, rb.1, '╯');
-        }
 
-        let label_x_shift = if b.w < 3.0 { 1 } else { 0 };
-        let label_y_shift = if b.h < 3.0 { 1 } else { 0 };
+            let label_x_shift = if b.w < 3.0 { 1 } else { 0 };
+            let label_y_shift = if b.h < 3.0 { 1 } else { 0 };
 
-        match labels {
-            Some(ref labels) => {
-                if button.encoder {
-                    let label = format!(
-                        "{}{}",
-                        button.wire_x,
-                        match button.wire_y {
-                            0 => '↺',
-                            1 => '↻',
-                            _ => 'x',
+            match labels {
+                Some(ref labels) => {
+                    if button.encoder {
+                        let label = format!(
+                            "{}{}",
+                            button.wire_x,
+                            match button.wire_y {
+                                0 => '↺',
+                                1 => '↻',
+                                _ => 'x',
+                            }
+                        );
+                        for (i, c) in label.chars().enumerate() {
+                            buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
                         }
-                    );
-                    for (i, c) in label.chars().enumerate() {
-                        buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
-                    }
-                } else {
-                    match labels.get(&(button.wire_x, button.wire_y)) {
-                        Some(label) => {
-                            // FIXME comma treatment is too ugly :( but works
-                            let mut we_got_comma = false;
-                            for (line, chunk) in label.split(',').enumerate() {
-                                if chunk.is_empty() {
-                                    if !we_got_comma {
-                                        buff.put(
-                                            lu.0 + 1 - label_x_shift + line,
-                                            lu.1 - label_y_shift + 1,
-                                            ',',
-                                        );
-                                        we_got_comma = true;
-                                    }
-                                } else {
-                                    for (i, c) in chunk.chars().enumerate() {
-                                        buff.put(
-                                            lu.0 + 1 - label_x_shift + i,
-                                            lu.1 + 1 - label_y_shift + line,
-                                            c,
-                                        );
+                    } else {
+                        match labels.get(&(button.wire_x, button.wire_y)) {
+                            Some(label) => {
+                                // FIXME comma treatment is too ugly :( but works
+                                let mut we_got_comma = false;
+                                for (line, chunk) in label.split(',').enumerate() {
+                                    if chunk.is_empty() {
+                                        if !we_got_comma {
+                                            buff.put(
+                                                lu.0 + 1 - label_x_shift + line,
+                                                lu.1 - label_y_shift + 1,
+                                                ',',
+                                            );
+                                            we_got_comma = true;
+                                        }
+                                    } else {
+                                        for (i, c) in chunk.chars().enumerate() {
+                                            buff.put(
+                                                lu.0 + 1 - label_x_shift + i,
+                                                lu.1 + 1 - label_y_shift + line,
+                                                c,
+                                            );
+                                        }
                                     }
                                 }
                             }
-                        }
-                        None => {
-                            // No label => empty button
+                            None => {
+                                // No label => empty button
+                            }
                         }
                     }
                 }
-            }
-            None => {
-                let xx = format!("{}", button.wire_x);
-                let yy = format!("{}", button.wire_y);
-                for (i, c) in xx.chars().enumerate() {
-                    buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
-                }
-                for (i, c) in yy.chars().enumerate() {
-                    buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 2, c);
+                None => {
+                    let xx = format!("{}", button.wire_x);
+                    let yy = format!("{}", button.wire_y);
+                    for (i, c) in xx.chars().enumerate() {
+                        buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 1, c);
+                    }
+                    for (i, c) in yy.chars().enumerate() {
+                        buff.put(lu.0 + 1 - label_x_shift + i, lu.1 - label_y_shift + 2, c);
+                    }
                 }
             }
         }
