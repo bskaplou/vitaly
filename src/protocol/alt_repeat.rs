@@ -37,7 +37,7 @@ impl AltRepeat {
         options
     }
 
-    pub fn from_string(index: u8, value: &str) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<AltRepeat, Box<dyn std::error::Error>> {
         let cleaned = value.replace(" ", "");
         let keys: Vec<_> = cleaned.split(";").filter(|k| !k.is_empty()).collect();
 
@@ -53,8 +53,8 @@ impl AltRepeat {
             for part in keys {
                 let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
                 match left {
-                    "keycode" | "k" => keycode = keycodes::name_to_qid(right)?,
-                    "alt_keycode" | "a" => alt_keycode = keycodes::name_to_qid(right)?,
+                    "keycode" | "k" => keycode = keycodes::name_to_qid(right, vial_version)?,
+                    "alt_keycode" | "a" => alt_keycode = keycodes::name_to_qid(right, vial_version)?,
                     "allowed_mods" | "m" => allowed_mods = keycodes::name_to_bitmod(right)?,
                     "options" | "option" | "opt" | "o" => {
                         for o in right.split("|") {
@@ -106,6 +106,7 @@ impl AltRepeat {
     pub fn from_json(
         index: u8,
         alt_repeat_json: &Value,
+        vial_version: u32,
     ) -> Result<AltRepeat, Box<dyn std::error::Error>> {
         let mut keycode = 0u16;
         let mut alt_keycode = 0u16;
@@ -123,11 +124,13 @@ impl AltRepeat {
                 "keycode" => {
                     keycode = keycodes::name_to_qid(
                         value.as_str().ok_or("keycode value should be string")?,
+                        vial_version,
                     )?;
                 }
                 "alt_keycode" => {
                     alt_keycode = keycodes::name_to_qid(
                         value.as_str().ok_or("keycode value should be string")?,
+                        vial_version,
                     )?;
                 }
                 "allowed_mods" => {
@@ -188,11 +191,11 @@ impl fmt::Display for AltRepeat {
         if self.is_empty() {
             Ok(write!(f, "EMPTY")?)
         } else {
-            write!(f, "keycode = {}; ", keycodes::qid_to_name(self.keycode))?;
+            write!(f, "keycode = {}; ", keycodes::qid_to_name(self.keycode, 6))?;
             write!(
                 f,
                 "alt_keycode = {}; ",
-                keycodes::qid_to_name(self.alt_keycode)
+                keycodes::qid_to_name(self.alt_keycode, 6)
             )?;
             write!(
                 f,
@@ -259,13 +262,14 @@ pub fn load_alt_repeats(
 
 pub fn load_alt_repeats_from_json(
     alt_repeats_json: &Value,
+    vial_version: u32,
 ) -> Result<Vec<AltRepeat>, Box<dyn std::error::Error>> {
     let alt_repeats = alt_repeats_json
         .as_array()
         .ok_or("alt_repeats_json should be an array")?;
     let mut result = Vec::new();
     for (i, alt_repeat) in alt_repeats.iter().enumerate() {
-        result.push(AltRepeat::from_json(i as u8, alt_repeat)?);
+        result.push(AltRepeat::from_json(i as u8, alt_repeat, vial_version)?);
     }
     Ok(result)
 }
@@ -296,12 +300,13 @@ pub fn set_alt_repeat(
 
 pub fn alt_repeats_to_json(
     alt_repeats: &Vec<AltRepeat>,
+    vial_version: u32,
 ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for alt_repeat in alt_repeats {
         result.push(json!({
-            "keycode": keycodes::qid_to_name(alt_repeat.keycode),
-            "alt_keycode": keycodes::qid_to_name(alt_repeat.alt_keycode),
+            "keycode": keycodes::qid_to_name(alt_repeat.keycode, vial_version),
+            "alt_keycode": keycodes::qid_to_name(alt_repeat.alt_keycode, vial_version),
             "allowed_mods": alt_repeat.allowed_mods,
             "options": alt_repeat.options(),
         }))
@@ -319,11 +324,12 @@ mod tests {
         let altrepeat = AltRepeat::from_string(
             3,
             &"keycode = KC_3; alt_keycode= KC_5; options= arep_enabled;".to_string(),
+            6,
         )
         .unwrap();
         assert_eq!(altrepeat.index, 3);
-        assert_eq!(keycodes::qid_to_name(altrepeat.keycode), "KC_3");
-        assert_eq!(keycodes::qid_to_name(altrepeat.alt_keycode), "KC_5");
+        assert_eq!(keycodes::qid_to_name(altrepeat.keycode, 6), "KC_3");
+        assert_eq!(keycodes::qid_to_name(altrepeat.alt_keycode, 6), "KC_5");
         assert_eq!(altrepeat.allowed_mods, 0);
         assert_eq!(altrepeat.arep_enabled, true);
     }
@@ -333,10 +339,11 @@ mod tests {
         let ar = AltRepeat::from_string(
             0,
             &"k=KC_A; a=KC_B; m=LCTL; o=enabled|bidirectional".to_string(),
+            6,
         )
         .unwrap();
-        assert_eq!(keycodes::qid_to_name(ar.keycode), "KC_A");
-        assert_eq!(keycodes::qid_to_name(ar.alt_keycode), "KC_B");
+        assert_eq!(keycodes::qid_to_name(ar.keycode, 6), "KC_A");
+        assert_eq!(keycodes::qid_to_name(ar.alt_keycode, 6), "KC_B");
         assert_eq!(ar.allowed_mods, 0b00000001); // MOD_LCTL
         assert!(ar.arep_enabled);
         assert!(ar.arep_option_bidirectional);
@@ -346,19 +353,19 @@ mod tests {
     #[test]
     fn test_from_string_errors() {
         assert!(
-            AltRepeat::from_string(0, &"k=KC_A; a".to_string()).is_err(),
+            AltRepeat::from_string(0, &"k=KC_A; a".to_string(), 6).is_err(),
             "Missing ="
         );
         assert!(
-            AltRepeat::from_string(0, &"foo=bar".to_string()).is_err(),
+            AltRepeat::from_string(0, &"foo=bar".to_string(), 6).is_err(),
             "Unknown key"
         );
         assert!(
-            AltRepeat::from_string(0, &"o=invalid_option".to_string()).is_err(),
+            AltRepeat::from_string(0, &"o=invalid_option".to_string(), 6).is_err(),
             "Unknown option"
         );
         assert!(
-            AltRepeat::from_string(0, &"k=INVALID".to_string()).is_err(),
+            AltRepeat::from_string(0, &"k=INVALID".to_string(), 6).is_err(),
             "Invalid keycode"
         );
     }
@@ -371,9 +378,9 @@ mod tests {
             "allowed_mods": 1,
             "options": 10
         });
-        let ar = AltRepeat::from_json(0, &json).unwrap();
-        assert_eq!(keycodes::qid_to_name(ar.keycode), "KC_A");
-        assert_eq!(keycodes::qid_to_name(ar.alt_keycode), "KC_B");
+        let ar = AltRepeat::from_json(0, &json, 6).unwrap();
+        assert_eq!(keycodes::qid_to_name(ar.keycode, 6), "KC_A");
+        assert_eq!(keycodes::qid_to_name(ar.alt_keycode, 6), "KC_B");
         assert_eq!(ar.allowed_mods, 1);
         assert!(!ar.arep_option_default_to_this_alt_key);
         assert!(ar.arep_option_bidirectional);
@@ -383,11 +390,11 @@ mod tests {
 
     #[test]
     fn test_from_json_errors() {
-        assert!(AltRepeat::from_json(0, &json!("not an object")).is_err());
-        assert!(AltRepeat::from_json(0, &json!({"keycode": 123})).is_err());
-        assert!(AltRepeat::from_json(0, &json!({"allowed_mods": "string"})).is_err());
-        assert!(AltRepeat::from_json(0, &json!({"options": "string"})).is_err());
-        assert!(AltRepeat::from_json(0, &json!({"unknown_key": "KC_A"})).is_err());
+        assert!(AltRepeat::from_json(0, &json!("not an object"), 6).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"keycode": 123}), 6).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"allowed_mods": "string"}), 6).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"options": "string"}), 6).is_err());
+        assert!(AltRepeat::from_json(0, &json!({"unknown_key": "KC_A"}), 6).is_err());
     }
 
     #[test]
@@ -410,7 +417,7 @@ mod tests {
         assert!(empty_ar.is_empty());
 
         let mut non_empty = AltRepeat::empty(1);
-        non_empty.keycode = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
+        non_empty.keycode = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
         assert!(!non_empty.is_empty());
 
         let mut non_empty2 = AltRepeat::empty(2);
@@ -424,8 +431,8 @@ mod tests {
         assert_eq!(format!("{}", empty_ar), "0) EMPTY");
 
         let mut ar = AltRepeat::empty(1);
-        ar.keycode = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
-        ar.alt_keycode = keycodes::name_to_qid(&"KC_B".to_string()).unwrap();
+        ar.keycode = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
+        ar.alt_keycode = keycodes::name_to_qid(&"KC_B".to_string(), 6).unwrap();
         ar.arep_enabled = true;
         let display_str = format!("{}", ar);
         assert!(display_str.contains("keycode = KC_A;"));
@@ -436,19 +443,19 @@ mod tests {
     #[test]
     fn test_json_round_trip() {
         let mut ar1 = AltRepeat::empty(0);
-        ar1.keycode = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
+        ar1.keycode = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
         ar1.arep_enabled = true;
         ar1.arep_option_bidirectional = true;
 
         let mut ar2 = AltRepeat::empty(1);
-        ar2.keycode = keycodes::name_to_qid(&"KC_X".to_string()).unwrap();
-        ar2.alt_keycode = keycodes::name_to_qid(&"KC_Y".to_string()).unwrap();
+        ar2.keycode = keycodes::name_to_qid(&"KC_X".to_string(), 6).unwrap();
+        ar2.alt_keycode = keycodes::name_to_qid(&"KC_Y".to_string(), 6).unwrap();
         ar2.allowed_mods = 1; // LCTL
 
         let alt_repeats = vec![ar1, ar2];
 
-        let json_val = alt_repeats_to_json(&alt_repeats).unwrap();
-        let loaded_ars = load_alt_repeats_from_json(&Value::Array(json_val)).unwrap();
+        let json_val = alt_repeats_to_json(&alt_repeats, 6).unwrap();
+        let loaded_ars = load_alt_repeats_from_json(&Value::Array(json_val), 6).unwrap();
 
         assert_eq!(alt_repeats.len(), loaded_ars.len());
         assert_eq!(alt_repeats[0].keycode, loaded_ars[0].keycode);

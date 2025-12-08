@@ -52,7 +52,7 @@ pub fn run(
             }
         }
         Some(value) => {
-            let m = protocol::Macro::from_string(n, value)?;
+            let m = protocol::Macro::from_string(n, value, capabilities.vial_version)?;
             if !m.is_empty() {
                 if (n as usize) < macros.len() {
                     macros[n as usize] = m;

@@ -61,7 +61,7 @@ pub fn run(
         Some(value) => {
             let combo = match value.len() {
                 0 => protocol::Combo::empty(n),
-                _ => protocol::Combo::from_string(n, value)?,
+                _ => protocol::Combo::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_combo(&dev, &combo)?;
             println!("Combo {} saved", combo);

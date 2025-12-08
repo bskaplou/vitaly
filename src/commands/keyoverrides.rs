@@ -37,7 +37,7 @@ pub fn run(
         Some(value) => {
             let ko = match value.len() {
                 0 => protocol::KeyOverride::empty(n),
-                _ => protocol::KeyOverride::from_string(n, value)?,
+                _ => protocol::KeyOverride::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_key_override(&dev, &ko)?;
             println!("KeyOverride {} saved", ko);

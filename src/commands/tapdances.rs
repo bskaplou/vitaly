@@ -62,7 +62,7 @@ pub fn run(
         Some(value) => {
             let tapdance = match value.len() {
                 0 => protocol::TapDance::empty(n),
-                _ => protocol::TapDance::from_string(n, value)?,
+                _ => protocol::TapDance::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_tap_dance(&dev, &tapdance)?;
             println!("TapDance {} saved", tapdance);

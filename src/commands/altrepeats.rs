@@ -37,7 +37,7 @@ pub fn run(
         Some(value) => {
             let alt_repeat = match value.len() {
                 0 => protocol::AltRepeat::empty(n),
-                _ => protocol::AltRepeat::from_string(n, value)?,
+                _ => protocol::AltRepeat::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_alt_repeat(&dev, &alt_repeat)?;
             println!("AltRepeat {} saved", alt_repeat);

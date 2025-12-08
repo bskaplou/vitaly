@@ -397,6 +397,7 @@ impl Keymap {
         cols: u8,
         layers: u8,
         layers_data: &Vec<Value>,
+        vial_version: u32,
     ) -> Result<Keymap, Box<dyn std::error::Error>> {
         let mut keys = Vec::<u8>::new();
         for layer in layers_data {
@@ -416,7 +417,7 @@ impl Keymap {
                                     value.split_once("x").ok_or("Incorrect hex encoding")?;
                                 u16::from_str_radix(hex, 16)?
                             } else {
-                                keycodes::name_to_qid(value)?
+                                keycodes::name_to_qid(value, vial_version)?
                             }
                         }
                         _ => {
@@ -439,14 +440,14 @@ impl Keymap {
         })
     }
 
-    pub fn to_json(&self) -> Result<Value, Box<dyn std::error::Error>> {
+    pub fn to_json(&self, vial_version: u32) -> Result<Value, Box<dyn std::error::Error>> {
         let mut result = Vec::new();
         for layer_num in 0..self.layers {
             let mut layer = Vec::new();
             for row_num in 0..self.rows {
                 let mut row = Vec::new();
                 for col_num in 0..self.cols {
-                    row.push(Value::String(self.get_long(layer_num, row_num, col_num)?));
+                    row.push(Value::String(self.get_long(layer_num, row_num, col_num, vial_version)?));
                 }
                 layer.push(Value::Array(row));
             }
@@ -460,6 +461,7 @@ impl Keymap {
         layer: u8,
         row: u8,
         col: u8,
+        vial_version: u32,
     ) -> Result<String, Box<dyn std::error::Error>> {
         if layer >= self.layers {
             Err(KeymapError("non existing layer requested".to_string()).into())
@@ -474,7 +476,7 @@ impl Keymap {
             let v1 = self.keys[offset];
             let v2 = self.keys[offset + 1];
             let kk = ((v1 as u16) << 8) + (v2 as u16);
-            Ok(keycodes::qid_to_short(kk))
+            Ok(keycodes::qid_to_short(kk, vial_version))
         }
     }
 
@@ -483,6 +485,7 @@ impl Keymap {
         layer: u8,
         row: u8,
         col: u8,
+        vial_version: u32,
     ) -> Result<String, Box<dyn std::error::Error>> {
         if layer >= self.layers {
             Err(KeymapError("non existing layer requested".to_string()).into())
@@ -497,7 +500,7 @@ impl Keymap {
             let v1 = self.keys[offset];
             let v2 = self.keys[offset + 1];
             let kk = ((v1 as u16) << 8) + (v2 as u16);
-            Ok(keycodes::qid_to_name(kk))
+            Ok(keycodes::qid_to_name(kk, vial_version))
         }
     }
 

@@ -56,6 +56,7 @@ pub fn set_encoder(
 
 pub fn load_encoders_from_json(
     encoders_json: &Value,
+    vial_version: u32,
 ) -> Result<Vec<Vec<Encoder>>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     if matches!(encoders_json, Value::Null) {
@@ -84,11 +85,11 @@ pub fn load_encoders_from_json(
             let ccw = values[0]
                 .as_str()
                 .ok_or("encoder value should be a string")?;
-            let ccw = keycodes::name_to_qid(ccw)?;
+            let ccw = keycodes::name_to_qid(ccw, vial_version)?;
             let cw = values[1]
                 .as_str()
                 .ok_or("encoder value should be a string")?;
-            let cw = keycodes::name_to_qid(cw)?;
+            let cw = keycodes::name_to_qid(cw, vial_version)?;
             layer_encoders.push(Encoder {
                 index: idx as u8,
                 ccw,
@@ -102,14 +103,15 @@ pub fn load_encoders_from_json(
 
 pub fn encoders_to_json(
     layers_encoders: &Vec<Vec<Encoder>>,
+    vial_version: u32,
 ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for layer_encoder in layers_encoders {
         let mut layer = Vec::new();
         for encoder in layer_encoder {
             layer.push(json!([
-                keycodes::qid_to_name(encoder.ccw),
-                keycodes::qid_to_name(encoder.cw),
+                keycodes::qid_to_name(encoder.ccw, vial_version),
+                keycodes::qid_to_name(encoder.cw, vial_version),
             ]))
         }
         result.push(Value::Array(layer));

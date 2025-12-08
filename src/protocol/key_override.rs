@@ -52,7 +52,7 @@ impl KeyOverride {
         options
     }
 
-    pub fn from_string(index: u8, value: &str) -> Result<KeyOverride, Box<dyn std::error::Error>> {
+    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<KeyOverride, Box<dyn std::error::Error>> {
         let spaceless = value.replace(" ", "");
         let keys: Vec<&str> = spaceless.split(";").filter(|k| !k.is_empty()).collect();
 
@@ -75,9 +75,9 @@ impl KeyOverride {
                 let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
                 match left {
                     "trigger" | "t" => {
-                        trigger = keycodes::name_to_qid(right)?;
+                        trigger = keycodes::name_to_qid(right, vial_version)?;
                     }
-                    "replacement" | "r" => replacement = keycodes::name_to_qid(right)?,
+                    "replacement" | "r" => replacement = keycodes::name_to_qid(right, vial_version)?,
                     "layers" | "l" => {
                         for l in right.split("|") {
                             let layer: u8 = l.parse()?;
@@ -160,6 +160,7 @@ impl KeyOverride {
     pub fn from_json(
         index: u8,
         key_override_json: &Value,
+        vial_version: u32,
     ) -> Result<KeyOverride, Box<dyn std::error::Error>> {
         let mut trigger = 0u16;
         let mut replacement = 0u16;
@@ -183,11 +184,13 @@ impl KeyOverride {
                 "trigger" => {
                     trigger = keycodes::name_to_qid(
                         value.as_str().ok_or("trigger value should be string")?,
+                        vial_version,
                     )?;
                 }
                 "replacement" => {
                     replacement = keycodes::name_to_qid(
                         value.as_str().ok_or("replacement value should be string")?,
+                        vial_version,
                     )?;
                 }
                 "layers" => {
@@ -278,11 +281,11 @@ impl fmt::Display for KeyOverride {
         if self.is_empty() {
             Ok(write!(f, "EMPTY")?)
         } else {
-            write!(f, "trigger = {}; ", keycodes::qid_to_name(self.trigger))?;
+            write!(f, "trigger = {}; ", keycodes::qid_to_name(self.trigger, 6))?;
             write!(
                 f,
                 "replacement = {}; ",
-                keycodes::qid_to_name(self.replacement)
+                keycodes::qid_to_name(self.replacement, 6)
             )?;
             write!(f, "layers = ")?;
             let mut lne = false;
@@ -344,13 +347,14 @@ impl fmt::Display for KeyOverride {
 
 pub fn load_key_overrides_from_json(
     key_overrides_json: &Value,
+    vial_version: u32,
 ) -> Result<Vec<KeyOverride>, Box<dyn std::error::Error>> {
     let key_overrides = key_overrides_json
         .as_array()
         .ok_or("key_override should be an array")?;
     let mut result = Vec::new();
     for (i, key_override) in key_overrides.iter().enumerate() {
-        result.push(KeyOverride::from_json(i as u8, key_override)?);
+        result.push(KeyOverride::from_json(i as u8, key_override, vial_version)?);
     }
     Ok(result)
 }
@@ -428,12 +432,13 @@ pub fn set_key_override(
 }
 pub fn key_overrides_to_json(
     key_overrides: &Vec<KeyOverride>,
+    vial_version: u32,
 ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for key_override in key_overrides {
         result.push(json!({
-            "trigger": keycodes::qid_to_name(key_override.trigger),
-            "replacement": keycodes::qid_to_name(key_override.replacement),
+            "trigger": keycodes::qid_to_name(key_override.trigger, vial_version),
+            "replacement": keycodes::qid_to_name(key_override.replacement, vial_version),
             "layers": key_override.layers,
             "trigger_mods": key_override.trigger_mods,
             "negative_mod_mask": key_override.negative_mod_mask,
@@ -454,11 +459,12 @@ mod tests {
         let keyoverride = KeyOverride::from_string(
             9,
             &"trigger=KC_1; replacement=KC_2; layers=1; options=ko_enabled|ko_option_no_reregister_trigger;".to_string(),
+            6,
         )
         .unwrap();
         assert_eq!(keyoverride.index, 9);
-        assert_eq!(keycodes::qid_to_name(keyoverride.trigger), "KC_1");
-        assert_eq!(keycodes::qid_to_name(keyoverride.replacement), "KC_2");
+        assert_eq!(keycodes::qid_to_name(keyoverride.trigger, 6), "KC_1");
+        assert_eq!(keycodes::qid_to_name(keyoverride.replacement, 6), "KC_2");
         assert_eq!(keyoverride.layers, 2);
         assert_eq!(keyoverride.ko_enabled, true);
         assert_eq!(keyoverride.ko_option_no_reregister_trigger, true);
@@ -467,9 +473,9 @@ mod tests {
     #[test]
     fn test_from_string_full() {
         let s = "t=KC_A; r=KC_B; l=1|3; tm=LCTL; nmm=RCTL; sm=LALT; o=enabled|one_mod".to_string();
-        let ko = KeyOverride::from_string(0, &s).unwrap();
-        assert_eq!(keycodes::qid_to_name(ko.trigger), "KC_A");
-        assert_eq!(keycodes::qid_to_name(ko.replacement), "KC_B");
+        let ko = KeyOverride::from_string(0, &s, 6).unwrap();
+        assert_eq!(keycodes::qid_to_name(ko.trigger, 6), "KC_A");
+        assert_eq!(keycodes::qid_to_name(ko.replacement, 6), "KC_B");
         assert_eq!(ko.layers, (1 << 1) | (1 << 3));
         assert_eq!(ko.trigger_mods, 1); // MOD_LCTL
         assert_eq!(ko.negative_mod_mask, 16); // MOD_RCTL
@@ -481,23 +487,23 @@ mod tests {
     #[test]
     fn test_from_string_errors() {
         assert!(
-            KeyOverride::from_string(0, &"t=KC_A; r".to_string()).is_err(),
+            KeyOverride::from_string(0, &"t=KC_A; r".to_string(), 6).is_err(),
             "Missing ="
         );
         assert!(
-            KeyOverride::from_string(0, &"foo=bar".to_string()).is_err(),
+            KeyOverride::from_string(0, &"foo=bar".to_string(), 6).is_err(),
             "Unknown key"
         );
         assert!(
-            KeyOverride::from_string(0, &"t=INVALID".to_string()).is_err(),
+            KeyOverride::from_string(0, &"t=INVALID".to_string(), 6).is_err(),
             "Invalid keycode"
         );
         assert!(
-            KeyOverride::from_string(0, &"l=abc".to_string()).is_err(),
+            KeyOverride::from_string(0, &"l=abc".to_string(), 6).is_err(),
             "Invalid layer"
         );
         assert!(
-            KeyOverride::from_string(0, &"o=invalid_option".to_string()).is_err(),
+            KeyOverride::from_string(0, &"o=invalid_option".to_string(), 6).is_err(),
             "Unknown option"
         );
     }
@@ -513,9 +519,9 @@ mod tests {
             "suppressed_mods": 4,
             "options": 129 // enabled | trigger_down
         });
-        let ko = KeyOverride::from_json(0, &json).unwrap();
-        assert_eq!(keycodes::qid_to_name(ko.trigger), "KC_A");
-        assert_eq!(keycodes::qid_to_name(ko.replacement), "KC_B");
+        let ko = KeyOverride::from_json(0, &json, 6).unwrap();
+        assert_eq!(keycodes::qid_to_name(ko.trigger, 6), "KC_A");
+        assert_eq!(keycodes::qid_to_name(ko.replacement, 6), "KC_B");
         assert_eq!(ko.layers, 5);
         assert_eq!(ko.trigger_mods, 1);
         assert_eq!(ko.negative_mod_mask, 2);
@@ -526,10 +532,10 @@ mod tests {
 
     #[test]
     fn test_from_json_errors() {
-        assert!(KeyOverride::from_json(0, &json!("not an object")).is_err());
-        assert!(KeyOverride::from_json(0, &json!({"trigger": 123})).is_err());
-        assert!(KeyOverride::from_json(0, &json!({"layers": "abc"})).is_err());
-        assert!(KeyOverride::from_json(0, &json!({"unknown_key": "KC_A"})).is_err());
+        assert!(KeyOverride::from_json(0, &json!("not an object"), 6).is_err());
+        assert!(KeyOverride::from_json(0, &json!({"trigger": 123}), 6).is_err());
+        assert!(KeyOverride::from_json(0, &json!({"layers": "abc"}), 6).is_err());
+        assert!(KeyOverride::from_json(0, &json!({"unknown_key": "KC_A"}), 6).is_err());
     }
 
     #[test]
@@ -550,7 +556,7 @@ mod tests {
         assert!(empty_ko.is_empty());
 
         let mut non_empty = KeyOverride::empty(1);
-        non_empty.trigger = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
+        non_empty.trigger = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
         assert!(!non_empty.is_empty());
 
         let mut non_empty2 = KeyOverride::empty(2);
@@ -563,7 +569,7 @@ mod tests {
         let empty_ko = KeyOverride::empty(0);
         assert_eq!(format!("{}", empty_ko), "0) EMPTY");
 
-        let ko = KeyOverride::from_string(1, &"t=KC_A;r=KC_B;l=2|4;tm=LCTL;o=enabled".to_string())
+        let ko = KeyOverride::from_string(1, &"t=KC_A;r=KC_B;l=2|4;tm=LCTL;o=enabled".to_string(), 6)
             .unwrap();
         let display_str = format!("{}", ko);
         assert!(display_str.contains("trigger = KC_A;"));
@@ -576,14 +582,14 @@ mod tests {
     #[test]
     fn test_json_round_trip() {
         let mut ko1 = KeyOverride::empty(0);
-        ko1.trigger = keycodes::name_to_qid(&"KC_A".to_string()).unwrap();
-        ko1.replacement = keycodes::name_to_qid(&"KC_B".to_string()).unwrap();
+        ko1.trigger = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
+        ko1.replacement = keycodes::name_to_qid(&"KC_B".to_string(), 6).unwrap();
         ko1.layers = 1;
         ko1.ko_enabled = true;
 
         let key_overrides = vec![ko1];
-        let json_val = key_overrides_to_json(&key_overrides).unwrap();
-        let loaded_kos = load_key_overrides_from_json(&Value::Array(json_val)).unwrap();
+        let json_val = key_overrides_to_json(&key_overrides, 6).unwrap();
+        let loaded_kos = load_key_overrides_from_json(&Value::Array(json_val), 6).unwrap();
 
         assert_eq!(key_overrides.len(), loaded_kos.len());
         assert_eq!(key_overrides[0].trigger, loaded_kos[0].trigger);
