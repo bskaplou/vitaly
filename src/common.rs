@@ -80,12 +80,12 @@ pub fn render_layer(
                             );
                         }
                         Some(pos) => {
-                            println!(
-                                "{:?} , {:?} at {} {}",
-                                fat_labels, label, button.wire_x, button.wire_y
-                            );
+                            //println!(
+                            //    "{:?} , {:?} at {} {}",
+                            //    fat_labels, label, button.wire_x, button.wire_y
+                            //);
                             button_labels
-                                .insert((button.wire_x, button.wire_y), format!("*{}", pos));
+                                .insert((button.wire_x, button.wire_y), format!("*{}", pos + 1));
                         }
                     }
                 } else {

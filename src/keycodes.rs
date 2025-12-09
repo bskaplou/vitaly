@@ -200,21 +200,21 @@ fn parse_num(num: &String) -> Result<u16, KeyParsingError> {
 
 pub fn name_to_qid(name: &str, vial_version: u32) -> Result<u16, Box<dyn std::error::Error>> {
     match vial_version {
-        6 => v6::name_to_qid(name),
+        6 | 0 => v6::name_to_qid(name),
         _ => v5::name_to_qid(name),
     }
 }
 
 pub fn qid_to_short(keycode: u16, vial_version: u32) -> String {
     match vial_version {
-        6 => v6::qid_to_short(keycode),
+        6 | 0 => v6::qid_to_short(keycode),
         _ => v5::qid_to_short(keycode),
     }
 }
 
 pub fn qid_to_name(keycode: u16, vial_version: u32) -> String {
     match vial_version {
-        6 => v6::qid_to_name(keycode),
+        6 | 0 => v6::qid_to_name(keycode),
         _ => v5::qid_to_name(keycode),
     }
 }
