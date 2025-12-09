@@ -257,7 +257,6 @@ pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
     m.insert("QK_MAGIC_UNSWAP_RALT_RGUI", 0x5C0E);
     m.insert("QK_MAGIC_GUI_ON", 0x5C0F);
     m.insert("QK_MAGIC_GUI_OFF", 0x5C06);
-    m.insert("QK_MAGIC_TOGGLE_GUI", 0x999C2);
     m.insert("QK_MAGIC_SWAP_GRAVE_ESC", 0x5C07);
     m.insert("QK_MAGIC_UNSWAP_GRAVE_ESC", 0x5C10);
     m.insert("QK_MAGIC_SWAP_BACKSLASH_BACKSPACE", 0x5C08);
@@ -684,8 +683,6 @@ pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
     m.insert("QK_AUTOCORRECT_TOGGLE", 0x7C76);
     m.insert("QK_TRI_LAYER_LOWER", 0x5F10);
     m.insert("QK_TRI_LAYER_UPPER", 0x5F11);
-    m.insert("QK_REPEAT_KEY", 0x999C0);
-    m.insert("QK_ALT_REPEAT_KEY", 0x999C1);
     m.insert("QK_LAYER_LOCK", 0x999F);
     m.insert("QK_KB_0", 0x5F80);
     m.insert("QK_KB_1", 0x5F81);
