@@ -11,6 +11,7 @@ pub fn run(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_path = device.path();
     let dev = api.open_path(device_path)?;
+    let capabilities = protocol::scan_capabilities(&dev)?;
     let clean_position = position.replace(" ", "");
     let (index, direction) = clean_position
         .split_once(",")
@@ -25,7 +26,7 @@ pub fn run(
                 )
                 .into());
             }
-            let keycode = keycodes::name_to_qid(value)?;
+            let keycode = keycodes::name_to_qid(value, capabilities.vial_version)?;
             protocol::set_encoder(&dev, layer, index, direction, keycode)?;
             println!(
                 "Encoder on layer={:?}, index={:?}, direction={:?} set to => {}, keycode = {:#x}",
@@ -35,8 +36,8 @@ pub fn run(
         None => {
             let e = protocol::load_encoder(&dev, layer, index)?;
             let value = match direction {
-                0 => keycodes::qid_to_name(e.ccw),
-                1 => keycodes::qid_to_name(e.cw),
+                0 => keycodes::qid_to_name(e.ccw, capabilities.vial_version),
+                1 => keycodes::qid_to_name(e.cw, capabilities.vial_version),
                 _ => {
                     return Err(protocol::ProtocolError::General(
                         "direction should be 0 or 1".to_string(),

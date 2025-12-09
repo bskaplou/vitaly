@@ -45,7 +45,8 @@ pub fn run(
                 }
                 println!("Combos list:");
                 for idx in 0..first_empty {
-                    println!("{}", combos[idx as usize]);
+                    combos[idx as usize].dump(capabilities.vial_version)?;
+                    println!();
                 }
                 if first_empty < capabilities.combo_count {
                     println!(
@@ -55,16 +56,17 @@ pub fn run(
                     );
                 }
             } else {
-                println!("{}", combos[n as usize]);
+                combos[n as usize].dump(capabilities.vial_version)?;
+                println!();
             }
         }
         Some(value) => {
             let combo = match value.len() {
                 0 => protocol::Combo::empty(n),
-                _ => protocol::Combo::from_string(n, value)?,
+                _ => protocol::Combo::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_combo(&dev, &combo)?;
-            println!("Combo {} saved", combo);
+            println!("Combo {} saved", combo.index);
         }
     }
     Ok(())

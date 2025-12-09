@@ -52,27 +52,41 @@ pub fn run(
         .as_array()
         .ok_or("layout should be an array")?;
 
-    let keys = protocol::Keymap::from_json(rows, cols, capabilities.layer_count, layers)?;
+    let keys = protocol::Keymap::from_json(
+        rows,
+        cols,
+        capabilities.layer_count,
+        layers,
+        capabilities.vial_version,
+    )?;
     let encoder_layout = match &root.get("encoder_layout") {
-        Some(value) => protocol::load_encoders_from_json(value)?,
+        Some(value) => protocol::load_encoders_from_json(value, capabilities.vial_version)?,
         None => Vec::new(),
     };
     let combos = match capabilities.combo_count {
         0 => Vec::new(),
-        _ => protocol::load_combos_from_json(root.get("combo").ok_or("combo is not defined")?)?,
+        _ => protocol::load_combos_from_json(
+            root.get("combo").ok_or("combo is not defined")?,
+            capabilities.vial_version,
+        )?,
     };
     let tap_dances = match capabilities.tap_dance_count {
         0 => Vec::new(),
         _ => protocol::load_tap_dances_from_json(
             root.get("tap_dance").ok_or("tad_dance is not defined")?,
+            capabilities.vial_version,
         )?,
     };
-    let macros = protocol::load_macros_from_json(root.get("macro").ok_or("macro is not defined")?)?;
+    let macros = protocol::load_macros_from_json(
+        root.get("macro").ok_or("macro is not defined")?,
+        capabilities.vial_version,
+    )?;
     let key_overrides = match capabilities.key_override_count {
         0 => Vec::new(),
         _ => protocol::load_key_overrides_from_json(
             root.get("key_override")
                 .ok_or("key_override are not defined")?,
+            capabilities.vial_version,
         )?,
     };
 
@@ -81,6 +95,7 @@ pub fn run(
         _ => protocol::load_alt_repeats_from_json(
             root.get("alt_repeat_key")
                 .ok_or("alt_repeat_key are not defined")?,
+            capabilities.vial_version,
         )?,
     };
 
@@ -145,14 +160,21 @@ pub fn run(
             } else {
                 &Vec::new()
             };
-            common::render_layer(&keys, encoders, &buttons, layer_number)?
+            common::render_layer(
+                &keys,
+                encoders,
+                &buttons,
+                layer_number,
+                capabilities.vial_version,
+            )?
         }
 
         if !combos.is_empty() {
             println!("Combos:");
             for combo in &combos {
                 if !combo.is_empty() {
-                    println!("{}", &combo);
+                    combo.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -162,7 +184,8 @@ pub fn run(
             println!("Macros:");
             for m in &macros {
                 if !m.is_empty() {
-                    println!("{}", &m);
+                    m.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -172,7 +195,8 @@ pub fn run(
             println!("TapDances:");
             for tap_dance in &tap_dances {
                 if !tap_dance.is_empty() {
-                    println!("{}", &tap_dance);
+                    tap_dance.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -182,7 +206,8 @@ pub fn run(
             println!("KeyOverrides:");
             for key_override in &key_overrides {
                 if !key_override.is_empty() {
-                    println!("{}", &key_override);
+                    key_override.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -192,7 +217,8 @@ pub fn run(
             println!("AltRepeatKeys:");
             for alt_repeat in &alt_repeats {
                 if !alt_repeat.is_empty() {
-                    println!("{}", &alt_repeat);
+                    alt_repeat.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();

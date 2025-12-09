@@ -46,7 +46,8 @@ pub fn run(
                 }
                 println!("TapDance list:");
                 for idx in 0..first_empty {
-                    println!("{}", tapdances[idx as usize]);
+                    tapdances[idx as usize].dump(capabilities.vial_version)?;
+                    println!();
                 }
                 if first_empty < capabilities.tap_dance_count {
                     println!(
@@ -56,16 +57,17 @@ pub fn run(
                     );
                 }
             } else {
-                println!("{}", tapdances[n as usize]);
+                tapdances[n as usize].dump(capabilities.vial_version)?;
+                println!();
             }
         }
         Some(value) => {
             let tapdance = match value.len() {
                 0 => protocol::TapDance::empty(n),
-                _ => protocol::TapDance::from_string(n, value)?,
+                _ => protocol::TapDance::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_tap_dance(&dev, &tapdance)?;
-            println!("TapDance {} saved", tapdance);
+            println!("TapDance {} saved", tapdance.index);
         }
     }
     Ok(())

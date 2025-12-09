@@ -55,7 +55,13 @@ pub fn run(
             }
         }
         encoders.sort_by(|e1, e2| e1.index.cmp(&e2.index));
-        common::render_layer(&keys, &encoders, &buttons, layer_number)?
+        common::render_layer(
+            &keys,
+            &encoders,
+            &buttons,
+            layer_number,
+            capabilities.vial_version,
+        )?
     }
     Ok(())
 }

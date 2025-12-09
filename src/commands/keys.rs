@@ -31,7 +31,7 @@ pub fn run(
         return Err(common::CommandError("position format is 'row,col'".to_string()).into());
     }
     match value {
-        Some(value) => match keycodes::name_to_qid(value) {
+        Some(value) => match keycodes::name_to_qid(value, capabilities.vial_version) {
             Ok(keycode) => {
                 protocol::set_keycode(&dev, layer, row, col, keycode)?;
                 println!(
@@ -48,7 +48,7 @@ pub fn run(
         },
         None => {
             let keys = protocol::load_layers_keys(&dev, capabilities.layer_count, rows, cols)?;
-            let label = keys.get_long(layer, row, col)?;
+            let label = keys.get_long(layer, row, col, capabilities.vial_version)?;
             println!(
                 "Key on layer={:?}, row={:?}, col={:?} => {}",
                 layer, row, col, label

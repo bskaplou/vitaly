@@ -37,10 +37,10 @@ pub fn run(
         Some(value) => {
             let alt_repeat = match value.len() {
                 0 => protocol::AltRepeat::empty(n),
-                _ => protocol::AltRepeat::from_string(n, value)?,
+                _ => protocol::AltRepeat::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_alt_repeat(&dev, &alt_repeat)?;
-            println!("AltRepeat {} saved", alt_repeat);
+            println!("AltRepeat {} saved", alt_repeat.index);
         }
         None => {
             let altrepeats = protocol::load_alt_repeats(&dev, capabilities.alt_repeat_key_count)?;
@@ -56,7 +56,8 @@ pub fn run(
                 }
                 println!("AltRepeat list:");
                 for idx in 0..first_empty {
-                    println!("{}", altrepeats[idx as usize]);
+                    altrepeats[idx as usize].dump(capabilities.vial_version)?;
+                    println!();
                 }
                 if first_empty < capabilities.alt_repeat_key_count {
                     println!(
@@ -66,7 +67,8 @@ pub fn run(
                     );
                 }
             } else {
-                println!("{}", altrepeats[n as usize]);
+                altrepeats[n as usize].dump(capabilities.vial_version)?;
+                println!();
             }
         }
     }

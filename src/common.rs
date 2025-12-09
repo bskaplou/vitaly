@@ -51,6 +51,7 @@ pub fn render_layer(
     encoders: &Vec<protocol::Encoder>,
     buttons: &Vec<keymap::Button>,
     layer_number: u8,
+    vial_version: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut button_labels = HashMap::new();
     // keys wire positons might appear more then once in layout we process them strictly once here
@@ -61,7 +62,8 @@ pub fn render_layer(
             let wkey = (button.wire_x, button.wire_y);
             if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
                 e.insert(true);
-                let label = keys.get_short(layer_number, button.wire_x, button.wire_y)?;
+                let label =
+                    keys.get_short(layer_number, button.wire_x, button.wire_y, vial_version)?;
                 let mut slim_label = true;
                 for (idx, part) in label.split(',').enumerate() {
                     if part.chars().count() > 3 || idx > 1 {
@@ -78,12 +80,12 @@ pub fn render_layer(
                             );
                         }
                         Some(pos) => {
-                            println!(
-                                "{:?} , {:?} at {} {}",
-                                fat_labels, label, button.wire_x, button.wire_y
-                            );
+                            //println!(
+                            //    "{:?} , {:?} at {} {}",
+                            //    fat_labels, label, button.wire_x, button.wire_y
+                            //);
                             button_labels
-                                .insert((button.wire_x, button.wire_y), format!("*{}", pos));
+                                .insert((button.wire_x, button.wire_y), format!("*{}", pos + 1));
                         }
                     }
                 } else {
@@ -101,8 +103,8 @@ pub fn render_layer(
         println!(
             "{0}↺ - {1}\n{0}↻ - {2}",
             e.index,
-            keycodes::qid_to_name(e.ccw),
-            keycodes::qid_to_name(e.cw)
+            keycodes::qid_to_name(e.ccw, vial_version),
+            keycodes::qid_to_name(e.cw, vial_version),
         );
     }
     println!();
