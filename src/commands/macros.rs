@@ -40,10 +40,12 @@ pub fn run(
             if number.is_none() {
                 println!("Macros list:");
                 for m in macros {
-                    println!("{}", m)
+                    m.dump(capabilities.vial_version)?;
+                    println!();
                 }
             } else if macros.len() > n.into() {
-                println!("{}", macros[n as usize])
+                macros[n as usize].dump(capabilities.vial_version)?;
+                println!();
             } else {
                 return Err(common::CommandError(
                     format!("Macro {} is not defined", n).to_string(),
@@ -69,7 +71,8 @@ pub fn run(
             }
             println!("Updated macros list:");
             for m in &macros {
-                println!("{}", m)
+                m.dump(capabilities.vial_version)?;
+                println!()
             }
             if capabilities.vial_version > 0 {
                 let status = protocol::get_locked_status(&dev)?;

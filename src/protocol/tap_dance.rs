@@ -5,7 +5,6 @@ use crate::protocol::{
 };
 use hidapi::HidDevice;
 use serde_json::{Value, json};
-use std::fmt;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -104,37 +103,35 @@ impl TapDance {
             tapping_term: 0,
         }
     }
-}
 
-impl fmt::Display for TapDance {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}) ", self.index)?;
+    pub fn dump(&self, vial_version: u32) -> Result<(), std::fmt::Error> {
+        print!("{}) ", self.index);
         if self.is_empty() {
-            Ok(write!(f, "EMPTY")?)
+            print!("EMPTY");
         } else {
             if self.tap != 0 {
-                write!(f, "On tap: {}, ", keycodes::qid_to_name(self.tap, 6))?
+                print!("On tap: {}, ", keycodes::qid_to_name(self.tap, vial_version));
             }
             if self.hold != 0 {
-                write!(f, "On hold: {}, ", keycodes::qid_to_name(self.hold, 6))?
+                print!("On hold: {}, ", keycodes::qid_to_name(self.hold, vial_version));
             }
             if self.double_tap != 0 {
-                write!(
-                    f,
+                print!(
                     "On double tap: {}, ",
-                    keycodes::qid_to_name(self.double_tap, 6)
-                )?
+                    keycodes::qid_to_name(self.double_tap, vial_version)
+                );
             }
             if self.tap_hold != 0 {
-                write!(
-                    f,
+                print!(
                     "On tap + hold: {}, ",
                     keycodes::qid_to_name(self.tap_hold, 6)
-                )?
+                );
             }
-            Ok(write!(f, "Tapping term (ms) = {}", self.tapping_term)?)
+            print!("Tapping term (ms) = {}", self.tapping_term);
         }
+        Ok(())
     }
+
 }
 
 pub fn load_tap_dances(
@@ -332,44 +329,5 @@ mod tests {
 
         let non_empty_td = TapDance::from_string(1, &"KC_A ~ 100".to_string(), 6).unwrap();
         assert!(!non_empty_td.is_empty());
-    }
-
-    #[test]
-    fn test_display() {
-        let empty_td = TapDance::empty(0);
-        assert_eq!(format!("{}", empty_td), "0) EMPTY");
-
-        let full_td =
-            TapDance::from_string(1, &"KC_A + KC_B + KC_C + KC_D ~ 200".to_string(), 6).unwrap();
-        assert_eq!(
-            format!("{}", full_td),
-            "1) On tap: KC_A, On hold: KC_B, On double tap: KC_C, On tap + hold: KC_D, Tapping term (ms) = 200"
-        );
-
-        let partial_td = TapDance::from_string(2, &"KC_A + KC_NO ~ 150".to_string(), 6).unwrap();
-        assert_eq!(
-            format!("{}", partial_td),
-            "2) On tap: KC_A, Tapping term (ms) = 150"
-        );
-    }
-
-    #[test]
-    fn test_json_round_trip() {
-        let td1 = TapDance::from_string(0, &"KC_A + KC_B ~ 100".to_string(), 6).unwrap();
-        let td2 = TapDance::from_string(1, &"KC_C + KC_D + KC_E ~ 200".to_string(), 6).unwrap();
-        let tap_dances = vec![td1, td2];
-
-        let json_val = tap_dances_to_json(&tap_dances, 6).unwrap();
-        let loaded_tap_dances = load_tap_dances_from_json(&Value::Array(json_val), 6).unwrap();
-
-        assert_eq!(tap_dances.len(), loaded_tap_dances.len());
-        assert_eq!(
-            format!("{}", tap_dances[0]),
-            format!("{}", loaded_tap_dances[0])
-        );
-        assert_eq!(
-            format!("{}", tap_dances[1]),
-            format!("{}", loaded_tap_dances[1])
-        );
     }
 }

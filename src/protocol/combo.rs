@@ -5,7 +5,6 @@ use crate::protocol::{
 };
 use hidapi::HidDevice;
 use serde_json::{Value, json};
-use std::fmt;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -93,29 +92,29 @@ impl Combo {
             output: ks[4],
         })
     }
-}
 
-impl fmt::Display for Combo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}) ", self.index)?;
+    pub fn dump(&self, vial_version: u32) -> Result<(), std::fmt::Error> {
+        print!("{}) ", self.index);
         if self.is_empty() {
-            Ok(write!(f, "EMPTY")?)
+            print!("EMPTY");
         } else {
             if self.key1 != 0 {
-                write!(f, "{}", keycodes::qid_to_name(self.key1, 6))?
+                print!("{}", keycodes::qid_to_name(self.key1, vial_version));
             }
             if self.key2 != 0 {
-                write!(f, " + {}", keycodes::qid_to_name(self.key2, 6))?
+                print!(" + {}", keycodes::qid_to_name(self.key2, vial_version));
             }
             if self.key3 != 0 {
-                write!(f, " + {}", keycodes::qid_to_name(self.key3, 6))?
+                print!(" + {}", keycodes::qid_to_name(self.key3, vial_version));
             }
             if self.key4 != 0 {
-                write!(f, " + {}", keycodes::qid_to_name(self.key4, 6))?
+                print!(" + {}", keycodes::qid_to_name(self.key4, vial_version));
             }
-            Ok(write!(f, " = {}", keycodes::qid_to_name(self.output, 6))?)
+            print!(" = {}", keycodes::qid_to_name(self.output, vial_version));
         }
+        Ok(())
     }
+
 }
 
 pub fn load_combos(
@@ -327,25 +326,6 @@ mod tests {
             result.unwrap_err().to_string(),
             "Combo elements should be strings"
         );
-    }
-
-    #[test]
-    fn test_display_empty_combo() {
-        let combo = Combo::empty(0);
-        assert_eq!(format!("{}", combo), "0) EMPTY");
-    }
-
-    #[test]
-    fn test_display_one_key() {
-        let combo = Combo::from_string(1, &"KC_A = KC_B".to_string(), 6).unwrap();
-        assert_eq!(format!("{}", combo), "1) KC_A = KC_B");
-    }
-
-    #[test]
-    fn test_display_four_keys() {
-        let combo =
-            Combo::from_string(2, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string(), 6).unwrap();
-        assert_eq!(format!("{}", combo), "2) KC_A + KC_B + KC_C + KC_D = KC_E");
     }
 
     #[test]

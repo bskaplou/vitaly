@@ -40,7 +40,7 @@ pub fn run(
                 _ => protocol::KeyOverride::from_string(n, value, capabilities.vial_version)?,
             };
             protocol::set_key_override(&dev, &ko)?;
-            println!("KeyOverride {} saved", ko);
+            println!("KeyOverride {} saved", ko.index);
         }
         None => {
             let keyoverrides = protocol::load_key_overrides(&dev, capabilities.key_override_count)?;
@@ -56,7 +56,8 @@ pub fn run(
                 }
                 println!("KeyOverride list:");
                 for idx in 0..first_empty {
-                    println!("{}", keyoverrides[idx as usize]);
+                    keyoverrides[idx as usize].dump(capabilities.vial_version)?;
+                    println!();
                 }
                 if first_empty < capabilities.key_override_count {
                     println!(
@@ -66,7 +67,8 @@ pub fn run(
                     );
                 }
             } else {
-                println!("{}", keyoverrides[n as usize]);
+                keyoverrides[n as usize].dump(capabilities.vial_version)?;
+                println!();
             }
         }
     }

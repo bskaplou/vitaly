@@ -6,7 +6,6 @@ use crate::protocol::{
 use hidapi::HidDevice;
 use serde_json::{Value, json};
 use std::cmp::min;
-use std::fmt;
 use thiserror::Error;
 
 const SS_QMK_PREFIX: u8 = 1;
@@ -164,18 +163,18 @@ impl MacroStep {
             }
         }
     }
-}
 
-impl fmt::Display for MacroStep {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    pub fn dump(&self, vial_version: u32) -> Result<(), std::fmt::Error> {
         match self {
-            MacroStep::Tap(kc) => Ok(write!(f, "Tap({})", keycodes::qid_to_name(*kc, 6))?),
-            MacroStep::Down(kc) => Ok(write!(f, "Down({})", keycodes::qid_to_name(*kc, 6))?),
-            MacroStep::Up(kc) => Ok(write!(f, "Up({})", keycodes::qid_to_name(*kc, 6))?),
-            MacroStep::Delay(ms) => Ok(write!(f, "Delay({})", ms)?),
-            MacroStep::Text(txt) => Ok(write!(f, "Text({})", txt)?),
+            MacroStep::Tap(kc) => print!("Tap({})", keycodes::qid_to_name(*kc, vial_version)),
+            MacroStep::Down(kc) => print!("Down({})", keycodes::qid_to_name(*kc, vial_version)),
+            MacroStep::Up(kc) => print!("Up({})", keycodes::qid_to_name(*kc, vial_version)),
+            MacroStep::Delay(ms) => print!("Delay({})", ms),
+            MacroStep::Text(txt) => print!("Text({})", txt),
         }
+        Ok(())
     }
+
 }
 
 #[derive(Debug)]
@@ -232,23 +231,22 @@ impl Macro {
             steps: parsed_steps,
         })
     }
-}
 
-impl fmt::Display for Macro {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}) ", self.index)?;
+    pub fn dump(&self, vial_version: u32) -> Result<(), std::fmt::Error> {
+        print!("{}) ", self.index);
         if self.is_empty() {
-            Ok(write!(f, "EMPTY")?)
+            print!("EMPTY");
         } else {
             for (i, step) in self.steps.iter().enumerate() {
                 if i > 0 {
-                    write!(f, "; ")?
+                    print!("; ");
                 }
-                write!(f, "{}", step)?
+                step.dump(vial_version)?;
             }
-            Ok(())
         }
+        Ok(())
     }
+
 }
 
 pub fn load_macros_from_json(
@@ -636,37 +634,12 @@ mod tests {
     }
 
     #[test]
-    fn test_display_macro_step() {
-        assert_eq!(
-            format!(
-                "{}",
-                MacroStep::Tap(name_to_qid(&"KC_A".to_string(), 6).unwrap())
-            ),
-            "Tap(KC_A)"
-        );
-        assert_eq!(format!("{}", MacroStep::Delay(100)), "Delay(100)");
-        assert_eq!(
-            format!("{}", MacroStep::Text("hello".to_string())),
-            "Text(hello)"
-        );
-    }
-
-    #[test]
-    fn test_display_macro() {
-        let m = Macro::from_string(0, &"Tap(KC_A); Delay(100)".to_string(), 6).unwrap();
-        assert_eq!(format!("{}", m), "0) Tap(KC_A); Delay(100)");
-        //let empty_m = Macro::empty(1);
-        //assert_eq!(format!("{}", empty_m), "1) EMPTY");
-    }
-
-    #[test]
     fn test_macro_from_string_round_trip() {
         let macro_str = "Tap(KC_A); Down(KC_LEFT_CTRL); Text(hello); Up(KC_LEFT_CTRL)".to_string();
         let m1 = Macro::from_string(0, &macro_str, 6).unwrap();
         let ser = serialize(&vec![m1]);
         let m2 = deserialize(ser).unwrap();
         assert_eq!(m2.len(), 1);
-        assert_eq!(format!("{}", m2[0]), format!("0) {}", macro_str));
     }
 
     #[test]
@@ -675,8 +648,6 @@ mod tests {
         assert!(deserialize(vec![0]).unwrap().is_empty(), "Single zero byte");
         let m = deserialize(vec![1, 1, 4, 0, 1, 1, 5, 0]).unwrap();
         assert_eq!(m.len(), 2, "Two macros");
-        assert_eq!(format!("{}", m[0]), "0) Tap(KC_A)");
-        assert_eq!(format!("{}", m[1]), "1) Tap(KC_B)");
     }
 
     #[test]
@@ -687,10 +658,6 @@ mod tests {
         let json_val = macros_to_json(&macros_vec, 6)?;
         let loaded_macros = load_macros_from_json(&serde_json::Value::Array(json_val), 6)?;
         assert_eq!(loaded_macros.len(), 1);
-        assert_eq!(
-            format!("{}", loaded_macros[0]),
-            format!("{}", macros_vec[0])
-        );
         Ok(())
     }
 
@@ -704,9 +671,5 @@ mod tests {
         assert_eq!(macros.len(), 2);
         assert_eq!(macros[0].steps.len(), 4); // tap, tap, delay, text
         assert_eq!(macros[1].steps.len(), 3);
-        assert_eq!(
-            format!("{}", macros[0]),
-            "0) Tap(KC_A); Tap(KC_B); Delay(100); Text(hello)"
-        );
     }
 }

@@ -5,7 +5,6 @@ use crate::protocol::{
 };
 use hidapi::HidDevice;
 use serde_json::{Value, json};
-use std::fmt;
 
 #[derive(Debug)]
 pub struct AltRepeat {
@@ -189,43 +188,38 @@ impl AltRepeat {
             arep_enabled: false,
         }
     }
-}
 
-impl fmt::Display for AltRepeat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}) ", self.index)?;
+    pub fn dump(&self, vial_version: u32) -> Result<(), std::fmt::Error> {
+        print!("{}) ", self.index);
         if self.is_empty() {
-            Ok(write!(f, "EMPTY")?)
+            print!("EMPTY")
         } else {
-            write!(f, "keycode = {}; ", keycodes::qid_to_name(self.keycode, 6))?;
-            write!(
-                f,
+            print!("keycode = {}; ", keycodes::qid_to_name(self.keycode, vial_version));
+            print!(
                 "alt_keycode = {}; ",
-                keycodes::qid_to_name(self.alt_keycode, 6)
-            )?;
-            write!(
-                f,
+                keycodes::qid_to_name(self.alt_keycode, vial_version)
+            );
+            print!(
                 "\n\tallowed_mods = {};",
                 keycodes::bitmod_to_name(self.allowed_mods)
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tarep_option_default_to_this_alt_key = {}",
                 self.arep_option_default_to_this_alt_key
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tarep_option_bidirectional = {}",
                 self.arep_option_bidirectional
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tarep_option_ignore_mod_handedness = {}",
                 self.arep_option_ignore_mod_handedness
-            )?;
-            Ok(write!(f, "\n\tarep_enabled = {}", self.arep_enabled)?)
+            );
+            print!("\n\tarep_enabled = {}", self.arep_enabled)
         }
+        Ok(())
     }
+
 }
 
 pub fn load_alt_repeats(
@@ -429,21 +423,6 @@ mod tests {
         let mut non_empty2 = AltRepeat::empty(2);
         non_empty2.arep_enabled = true;
         assert!(!non_empty2.is_empty());
-    }
-
-    #[test]
-    fn test_display() {
-        let empty_ar = AltRepeat::empty(0);
-        assert_eq!(format!("{}", empty_ar), "0) EMPTY");
-
-        let mut ar = AltRepeat::empty(1);
-        ar.keycode = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
-        ar.alt_keycode = keycodes::name_to_qid(&"KC_B".to_string(), 6).unwrap();
-        ar.arep_enabled = true;
-        let display_str = format!("{}", ar);
-        assert!(display_str.contains("keycode = KC_A;"));
-        assert!(display_str.contains("alt_keycode = KC_B;"));
-        assert!(display_str.contains("\n\tarep_enabled = true"));
     }
 
     #[test]

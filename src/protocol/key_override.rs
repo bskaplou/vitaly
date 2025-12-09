@@ -5,7 +5,6 @@ use crate::protocol::{
 };
 use hidapi::HidDevice;
 use serde_json::{Value, json};
-use std::fmt;
 
 #[derive(Debug)]
 pub struct KeyOverride {
@@ -279,76 +278,67 @@ impl KeyOverride {
             ko_enabled: false,
         }
     }
-}
 
-impl fmt::Display for KeyOverride {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}) ", self.index)?;
+    pub fn dump(&self, vial_version: u32) -> Result<(), std::fmt::Error> {
+        print!("{}) ", self.index);
         if self.is_empty() {
-            Ok(write!(f, "EMPTY")?)
+            print!("EMPTY");
         } else {
-            write!(f, "trigger = {}; ", keycodes::qid_to_name(self.trigger, 6))?;
-            write!(
-                f,
+            print!("trigger = {}; ", keycodes::qid_to_name(self.trigger, vial_version));
+            print!(
                 "replacement = {}; ",
-                keycodes::qid_to_name(self.replacement, 6)
-            )?;
-            write!(f, "layers = ")?;
+                keycodes::qid_to_name(self.replacement, vial_version)
+            );
+            print!("layers = ");
             let mut lne = false;
             for l in 0..16 {
                 if self.layers & (1 << l) != 0 {
                     if lne {
-                        write!(f, "|")?;
+                        print!("|");
                     }
-                    write!(f, "{}", l)?;
+                    print!("{}", l);
                     lne = true;
                 }
             }
-            write!(f, ";")?;
-            write!(
-                f,
+            print!(";");
+            print!(
                 "\n\ttrigger_mods = {};",
                 keycodes::bitmod_to_name(self.trigger_mods)
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tnegative_mod_mask = {};",
                 keycodes::bitmod_to_name(self.negative_mod_mask)
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tsuppressed_mods = {};",
                 keycodes::bitmod_to_name(self.suppressed_mods)
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tko_option_activation_trigger_down = {}",
                 self.ko_option_activation_trigger_down
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tko_option_activation_required_mod_down = {}",
                 self.ko_option_activation_required_mod_down
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tko_option_activation_negative_mod_up = {}",
                 self.ko_option_activation_negative_mod_up
-            )?;
-            write!(f, "\n\tko_option_one_mod = {}", self.ko_option_one_mod)?;
-            write!(
-                f,
+            );
+            print!("\n\tko_option_one_mod = {}", self.ko_option_one_mod);
+            print!(
                 "\n\tko_option_no_reregister_trigger = {}",
                 self.ko_option_no_reregister_trigger
-            )?;
-            write!(
-                f,
+            );
+            print!(
                 "\n\tko_option_no_unregister_on_other_key_down = {}",
                 self.ko_option_no_unregister_on_other_key_down
-            )?;
-            Ok(write!(f, "\n\tko_enabled = {}", self.ko_enabled)?)
+            );
+            print!("\n\tko_enabled = {}", self.ko_enabled);
         }
+        Ok(())
     }
+
 }
 
 pub fn load_key_overrides_from_json(
@@ -568,22 +558,6 @@ mod tests {
         let mut non_empty2 = KeyOverride::empty(2);
         non_empty2.ko_enabled = true;
         assert!(!non_empty2.is_empty());
-    }
-
-    #[test]
-    fn test_display() {
-        let empty_ko = KeyOverride::empty(0);
-        assert_eq!(format!("{}", empty_ko), "0) EMPTY");
-
-        let ko =
-            KeyOverride::from_string(1, &"t=KC_A;r=KC_B;l=2|4;tm=LCTL;o=enabled".to_string(), 6)
-                .unwrap();
-        let display_str = format!("{}", ko);
-        assert!(display_str.contains("trigger = KC_A;"));
-        assert!(display_str.contains("replacement = KC_B;"));
-        assert!(display_str.contains("layers = 2|4;"));
-        assert!(display_str.contains("\n\ttrigger_mods = MOD_BIT_LCTRL;"));
-        assert!(display_str.contains("\n\tko_enabled = true"));
     }
 
     #[test]

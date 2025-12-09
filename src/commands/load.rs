@@ -173,7 +173,8 @@ pub fn run(
             println!("Combos:");
             for combo in &combos {
                 if !combo.is_empty() {
-                    println!("{}", &combo);
+                    combo.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -183,7 +184,8 @@ pub fn run(
             println!("Macros:");
             for m in &macros {
                 if !m.is_empty() {
-                    println!("{}", &m);
+                    m.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -193,7 +195,8 @@ pub fn run(
             println!("TapDances:");
             for tap_dance in &tap_dances {
                 if !tap_dance.is_empty() {
-                    println!("{}", &tap_dance);
+                    tap_dance.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -203,7 +206,8 @@ pub fn run(
             println!("KeyOverrides:");
             for key_override in &key_overrides {
                 if !key_override.is_empty() {
-                    println!("{}", &key_override);
+                    key_override.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
@@ -213,7 +217,8 @@ pub fn run(
             println!("AltRepeatKeys:");
             for alt_repeat in &alt_repeats {
                 if !alt_repeat.is_empty() {
-                    println!("{}", &alt_repeat);
+                    alt_repeat.dump(capabilities.vial_version)?;
+                    println!();
                 }
             }
             println!();
