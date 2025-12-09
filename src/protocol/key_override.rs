@@ -52,7 +52,11 @@ impl KeyOverride {
         options
     }
 
-    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<KeyOverride, Box<dyn std::error::Error>> {
+    pub fn from_string(
+        index: u8,
+        value: &str,
+        vial_version: u32,
+    ) -> Result<KeyOverride, Box<dyn std::error::Error>> {
         let spaceless = value.replace(" ", "");
         let keys: Vec<&str> = spaceless.split(";").filter(|k| !k.is_empty()).collect();
 
@@ -77,7 +81,9 @@ impl KeyOverride {
                     "trigger" | "t" => {
                         trigger = keycodes::name_to_qid(right, vial_version)?;
                     }
-                    "replacement" | "r" => replacement = keycodes::name_to_qid(right, vial_version)?,
+                    "replacement" | "r" => {
+                        replacement = keycodes::name_to_qid(right, vial_version)?
+                    }
                     "layers" | "l" => {
                         for l in right.split("|") {
                             let layer: u8 = l.parse()?;
@@ -569,8 +575,9 @@ mod tests {
         let empty_ko = KeyOverride::empty(0);
         assert_eq!(format!("{}", empty_ko), "0) EMPTY");
 
-        let ko = KeyOverride::from_string(1, &"t=KC_A;r=KC_B;l=2|4;tm=LCTL;o=enabled".to_string(), 6)
-            .unwrap();
+        let ko =
+            KeyOverride::from_string(1, &"t=KC_A;r=KC_B;l=2|4;tm=LCTL;o=enabled".to_string(), 6)
+                .unwrap();
         let display_str = format!("{}", ko);
         assert!(display_str.contains("trigger = KC_A;"));
         assert!(display_str.contains("replacement = KC_B;"));

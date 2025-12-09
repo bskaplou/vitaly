@@ -89,13 +89,19 @@ impl MacroStep {
             "Delay" => Ok(MacroStep::Delay(right.parse()?)),
             "Text" => Ok(MacroStep::Text(right)),
             "Tap" => Ok(MacroStep::Tap(keycodes::name_to_qid(&right, vial_version)?)),
-            "Down" => Ok(MacroStep::Down(keycodes::name_to_qid(&right, vial_version)?)),
+            "Down" => Ok(MacroStep::Down(keycodes::name_to_qid(
+                &right,
+                vial_version,
+            )?)),
             "Up" => Ok(MacroStep::Up(keycodes::name_to_qid(&right, vial_version)?)),
             _ => Err(MacroParsingError(format!("Unknown macro step {}", right).to_string()).into()),
         }
     }
 
-    fn from_json(step_json: &Value, vial_version: u32) -> Result<Vec<MacroStep>, Box<dyn std::error::Error>> {
+    fn from_json(
+        step_json: &Value,
+        vial_version: u32,
+    ) -> Result<Vec<MacroStep>, Box<dyn std::error::Error>> {
         let step = step_json
             .as_array()
             .ok_or("macro step should be an array")?;
@@ -126,21 +132,30 @@ impl MacroStep {
             "tap" => {
                 for arg in &step[1..] {
                     let text_arg = arg.as_str().ok_or("text argument should be string")?;
-                    result.push(MacroStep::Tap(keycodes::name_to_qid(text_arg, vial_version)?));
+                    result.push(MacroStep::Tap(keycodes::name_to_qid(
+                        text_arg,
+                        vial_version,
+                    )?));
                 }
                 Ok(result)
             }
             "down" => {
                 for arg in &step[1..] {
                     let text_arg = arg.as_str().ok_or("text argument should be string")?;
-                    result.push(MacroStep::Down(keycodes::name_to_qid(text_arg, vial_version)?));
+                    result.push(MacroStep::Down(keycodes::name_to_qid(
+                        text_arg,
+                        vial_version,
+                    )?));
                 }
                 Ok(result)
             }
             "up" => {
                 for arg in &step[1..] {
                     let text_arg = arg.as_str().ok_or("text argument should be string")?;
-                    result.push(MacroStep::Up(keycodes::name_to_qid(text_arg, vial_version)?));
+                    result.push(MacroStep::Up(keycodes::name_to_qid(
+                        text_arg,
+                        vial_version,
+                    )?));
                 }
                 Ok(result)
             }
@@ -182,7 +197,11 @@ impl Macro {
         self.steps.len() == 0
     }
 
-    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<Macro, Box<dyn std::error::Error>> {
+    pub fn from_string(
+        index: u8,
+        value: &str,
+        vial_version: u32,
+    ) -> Result<Macro, Box<dyn std::error::Error>> {
         let steps: Vec<&str> = value.split(";").map(|s| s.trim()).collect();
         let mut parsed_steps = Vec::new();
         for step in steps {
@@ -196,7 +215,11 @@ impl Macro {
         })
     }
 
-    pub fn from_json(index: u8, steps_json: &Value, vial_version: u32) -> Result<Macro, Box<dyn std::error::Error>> {
+    pub fn from_json(
+        index: u8,
+        steps_json: &Value,
+        vial_version: u32,
+    ) -> Result<Macro, Box<dyn std::error::Error>> {
         let mut parsed_steps = Vec::new();
         let steps = steps_json
             .as_array()
@@ -230,7 +253,7 @@ impl fmt::Display for Macro {
 
 pub fn load_macros_from_json(
     macros_json: &Value,
-    vial_version: u32
+    vial_version: u32,
 ) -> Result<Vec<Macro>, Box<dyn std::error::Error>> {
     let macros = macros_json
         .as_array()
@@ -481,15 +504,24 @@ pub fn set_macros(
     Ok(())
 }
 
-pub fn macros_to_json(macros: &Vec<Macro>, vial_version: u32) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+pub fn macros_to_json(
+    macros: &Vec<Macro>,
+    vial_version: u32,
+) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for m in macros {
         let mut step_json = Vec::new();
         for step in &m.steps {
             match step {
-                MacroStep::Tap(v) => step_json.push(json!(["tap", keycodes::qid_to_name(*v, vial_version)])),
-                MacroStep::Down(v) => step_json.push(json!(["down", keycodes::qid_to_name(*v, vial_version)])),
-                MacroStep::Up(v) => step_json.push(json!(["up", keycodes::qid_to_name(*v, vial_version)])),
+                MacroStep::Tap(v) => {
+                    step_json.push(json!(["tap", keycodes::qid_to_name(*v, vial_version)]))
+                }
+                MacroStep::Down(v) => {
+                    step_json.push(json!(["down", keycodes::qid_to_name(*v, vial_version)]))
+                }
+                MacroStep::Up(v) => {
+                    step_json.push(json!(["up", keycodes::qid_to_name(*v, vial_version)]))
+                }
                 MacroStep::Delay(v) => step_json.push(json!(["delay", v])),
                 MacroStep::Text(v) => step_json.push(json!(["text", v])),
             }
@@ -541,9 +573,13 @@ mod tests {
     #[test]
     fn test_step_serde_round_trip() {
         step_round_trip(MacroStep::Tap(name_to_qid(&"KC_A".to_string(), 6).unwrap()));
-        step_round_trip(MacroStep::Down(name_to_qid(&"KC_B".to_string(), 6).unwrap()));
+        step_round_trip(MacroStep::Down(
+            name_to_qid(&"KC_B".to_string(), 6).unwrap(),
+        ));
         step_round_trip(MacroStep::Up(name_to_qid(&"KC_C".to_string(), 6).unwrap()));
-        step_round_trip(MacroStep::Tap(name_to_qid(&"KC_LCTL".to_string(), 6).unwrap()));
+        step_round_trip(MacroStep::Tap(
+            name_to_qid(&"KC_LCTL".to_string(), 6).unwrap(),
+        ));
         step_round_trip(MacroStep::Tap(
             name_to_qid(&"LCTL(KC_C)".to_string(), 6).unwrap(),
         ));
@@ -569,7 +605,10 @@ mod tests {
 
     #[test]
     fn test_macrostep_from_json_invalid() {
-        assert!(MacroStep::from_json(&json!("tap"), 6).is_err(), "Not an array");
+        assert!(
+            MacroStep::from_json(&json!("tap"), 6).is_err(),
+            "Not an array"
+        );
         assert!(
             MacroStep::from_json(&json!(["tap"]), 6).is_err(),
             "Array too short"

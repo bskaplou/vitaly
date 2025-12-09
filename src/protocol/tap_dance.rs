@@ -23,7 +23,11 @@ pub struct TapDance {
 }
 
 impl TapDance {
-    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<TapDance, Box<dyn std::error::Error>> {
+    pub fn from_string(
+        index: u8,
+        value: &str,
+        vial_version: u32,
+    ) -> Result<TapDance, Box<dyn std::error::Error>> {
         let (keys_string, output) = value
             .split_once("~")
             .ok_or("tapping term in ms should be passed after ~")?;
@@ -302,7 +306,8 @@ mod tests {
         assert_eq!(td.hold, 0);
 
         assert!(
-            TapDance::from_json(0, &json!(["KC_A", "KC_B", "KC_C", "KC_D", 200, "KC_E"]), 6).is_err(),
+            TapDance::from_json(0, &json!(["KC_A", "KC_B", "KC_C", "KC_D", 200, "KC_E"]), 6)
+                .is_err(),
             "Array too long"
         );
         assert!(

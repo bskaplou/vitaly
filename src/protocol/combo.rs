@@ -23,7 +23,11 @@ pub struct Combo {
 }
 
 impl Combo {
-    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<Combo, Box<dyn std::error::Error>> {
+    pub fn from_string(
+        index: u8,
+        value: &str,
+        vial_version: u32,
+    ) -> Result<Combo, Box<dyn std::error::Error>> {
         let (keys_all, output) = value
             .split_once("=")
             .ok_or("resulting action should be declared after =")?;
@@ -58,7 +62,11 @@ impl Combo {
         self.output == 0 || self.key1 == 0
     }
 
-    pub fn from_json(index: u8, combo_json: &Value, vial_version: u32) -> Result<Combo, Box<dyn std::error::Error>> {
+    pub fn from_json(
+        index: u8,
+        combo_json: &Value,
+        vial_version: u32,
+    ) -> Result<Combo, Box<dyn std::error::Error>> {
         let mut ks: [u16; 5] = [0x0; 5];
         let values = combo_json
             .as_array()
@@ -185,7 +193,10 @@ pub fn set_combo(device: &HidDevice, combo: &Combo) -> Result<(), Box<dyn std::e
     }
 }
 
-pub fn combos_to_json(combos: &Vec<Combo>, vial_version: u32) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+pub fn combos_to_json(
+    combos: &Vec<Combo>,
+    vial_version: u32,
+) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for combo in combos {
         result.push(json!([
@@ -234,7 +245,8 @@ mod tests {
 
     #[test]
     fn test_from_string_four_buttons() {
-        let combo = Combo::from_string(0, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string(), 6).unwrap();
+        let combo =
+            Combo::from_string(0, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string(), 6).unwrap();
         assert_eq!(keycodes::qid_to_name(combo.key1, 6), "KC_A");
         assert_eq!(keycodes::qid_to_name(combo.key2, 6), "KC_B");
         assert_eq!(keycodes::qid_to_name(combo.key3, 6), "KC_C");
@@ -331,7 +343,8 @@ mod tests {
 
     #[test]
     fn test_display_four_keys() {
-        let combo = Combo::from_string(2, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string(), 6).unwrap();
+        let combo =
+            Combo::from_string(2, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string(), 6).unwrap();
         assert_eq!(format!("{}", combo), "2) KC_A + KC_B + KC_C + KC_D = KC_E");
     }
 

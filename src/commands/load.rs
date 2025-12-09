@@ -52,14 +52,23 @@ pub fn run(
         .as_array()
         .ok_or("layout should be an array")?;
 
-    let keys = protocol::Keymap::from_json(rows, cols, capabilities.layer_count, layers, capabilities.vial_version)?;
+    let keys = protocol::Keymap::from_json(
+        rows,
+        cols,
+        capabilities.layer_count,
+        layers,
+        capabilities.vial_version,
+    )?;
     let encoder_layout = match &root.get("encoder_layout") {
         Some(value) => protocol::load_encoders_from_json(value, capabilities.vial_version)?,
         None => Vec::new(),
     };
     let combos = match capabilities.combo_count {
         0 => Vec::new(),
-        _ => protocol::load_combos_from_json(root.get("combo").ok_or("combo is not defined")?, capabilities.vial_version)?,
+        _ => protocol::load_combos_from_json(
+            root.get("combo").ok_or("combo is not defined")?,
+            capabilities.vial_version,
+        )?,
     };
     let tap_dances = match capabilities.tap_dance_count {
         0 => Vec::new(),
@@ -68,7 +77,10 @@ pub fn run(
             capabilities.vial_version,
         )?,
     };
-    let macros = protocol::load_macros_from_json(root.get("macro").ok_or("macro is not defined")?, capabilities.vial_version)?;
+    let macros = protocol::load_macros_from_json(
+        root.get("macro").ok_or("macro is not defined")?,
+        capabilities.vial_version,
+    )?;
     let key_overrides = match capabilities.key_override_count {
         0 => Vec::new(),
         _ => protocol::load_key_overrides_from_json(
@@ -148,7 +160,13 @@ pub fn run(
             } else {
                 &Vec::new()
             };
-            common::render_layer(&keys, encoders, &buttons, layer_number, capabilities.vial_version)?
+            common::render_layer(
+                &keys,
+                encoders,
+                &buttons,
+                layer_number,
+                capabilities.vial_version,
+            )?
         }
 
         if !combos.is_empty() {

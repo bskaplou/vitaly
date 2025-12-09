@@ -81,7 +81,10 @@ pub fn run(
 
     result.as_object_mut().ok_or("broken root")?.insert(
         "encoder_layout".to_string(),
-        Value::Array(protocol::encoders_to_json(&encoders, capabilities.vial_version)?),
+        Value::Array(protocol::encoders_to_json(
+            &encoders,
+            capabilities.vial_version,
+        )?),
     );
 
     if capabilities.vial_version > 0 {
@@ -94,35 +97,50 @@ pub fn run(
     if !alt_repeats.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "alt_repeat_key".to_string(),
-            Value::Array(protocol::alt_repeats_to_json(&alt_repeats, capabilities.vial_version)?),
+            Value::Array(protocol::alt_repeats_to_json(
+                &alt_repeats,
+                capabilities.vial_version,
+            )?),
         );
     }
 
     if !key_overrides.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "key_override".to_string(),
-            Value::Array(protocol::key_overrides_to_json(&key_overrides, capabilities.vial_version)?),
+            Value::Array(protocol::key_overrides_to_json(
+                &key_overrides,
+                capabilities.vial_version,
+            )?),
         );
     }
 
     if !combos.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "combo".to_string(),
-            Value::Array(protocol::combos_to_json(&combos, capabilities.vial_version)?),
+            Value::Array(protocol::combos_to_json(
+                &combos,
+                capabilities.vial_version,
+            )?),
         );
     }
 
     if !tap_dances.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "tap_dance".to_string(),
-            Value::Array(protocol::tap_dances_to_json(&tap_dances, capabilities.vial_version)?),
+            Value::Array(protocol::tap_dances_to_json(
+                &tap_dances,
+                capabilities.vial_version,
+            )?),
         );
     }
 
     if !macros.is_empty() {
         result.as_object_mut().ok_or("broken root")?.insert(
             "macro".to_string(),
-            Value::Array(protocol::macros_to_json(&macros, capabilities.vial_version)?),
+            Value::Array(protocol::macros_to_json(
+                &macros,
+                capabilities.vial_version,
+            )?),
         );
     } else {
         result

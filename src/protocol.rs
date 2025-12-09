@@ -447,7 +447,12 @@ impl Keymap {
             for row_num in 0..self.rows {
                 let mut row = Vec::new();
                 for col_num in 0..self.cols {
-                    row.push(Value::String(self.get_long(layer_num, row_num, col_num, vial_version)?));
+                    row.push(Value::String(self.get_long(
+                        layer_num,
+                        row_num,
+                        col_num,
+                        vial_version,
+                    )?));
                 }
                 layer.push(Value::Array(row));
             }

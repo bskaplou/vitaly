@@ -37,7 +37,11 @@ impl AltRepeat {
         options
     }
 
-    pub fn from_string(index: u8, value: &str, vial_version: u32) -> Result<AltRepeat, Box<dyn std::error::Error>> {
+    pub fn from_string(
+        index: u8,
+        value: &str,
+        vial_version: u32,
+    ) -> Result<AltRepeat, Box<dyn std::error::Error>> {
         let cleaned = value.replace(" ", "");
         let keys: Vec<_> = cleaned.split(";").filter(|k| !k.is_empty()).collect();
 
@@ -54,7 +58,9 @@ impl AltRepeat {
                 let (left, right) = part.split_once("=").ok_or("each part should contain =")?;
                 match left {
                     "keycode" | "k" => keycode = keycodes::name_to_qid(right, vial_version)?,
-                    "alt_keycode" | "a" => alt_keycode = keycodes::name_to_qid(right, vial_version)?,
+                    "alt_keycode" | "a" => {
+                        alt_keycode = keycodes::name_to_qid(right, vial_version)?
+                    }
                     "allowed_mods" | "m" => allowed_mods = keycodes::name_to_bitmod(right)?,
                     "options" | "option" | "opt" | "o" => {
                         for o in right.split("|") {

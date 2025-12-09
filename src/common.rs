@@ -62,7 +62,8 @@ pub fn render_layer(
             let wkey = (button.wire_x, button.wire_y);
             if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
                 e.insert(true);
-                let label = keys.get_short(layer_number, button.wire_x, button.wire_y, vial_version)?;
+                let label =
+                    keys.get_short(layer_number, button.wire_x, button.wire_y, vial_version)?;
                 let mut slim_label = true;
                 for (idx, part) in label.split(',').enumerate() {
                     if part.chars().count() > 3 || idx > 1 {
