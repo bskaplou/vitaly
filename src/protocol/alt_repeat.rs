@@ -194,7 +194,10 @@ impl AltRepeat {
         if self.is_empty() {
             print!("EMPTY")
         } else {
-            print!("keycode = {}; ", keycodes::qid_to_name(self.keycode, vial_version));
+            print!(
+                "keycode = {}; ",
+                keycodes::qid_to_name(self.keycode, vial_version)
+            );
             print!(
                 "alt_keycode = {}; ",
                 keycodes::qid_to_name(self.alt_keycode, vial_version)
@@ -219,7 +222,6 @@ impl AltRepeat {
         }
         Ok(())
     }
-
 }
 
 pub fn load_alt_repeats(

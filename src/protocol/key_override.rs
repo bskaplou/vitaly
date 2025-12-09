@@ -284,7 +284,10 @@ impl KeyOverride {
         if self.is_empty() {
             print!("EMPTY");
         } else {
-            print!("trigger = {}; ", keycodes::qid_to_name(self.trigger, vial_version));
+            print!(
+                "trigger = {}; ",
+                keycodes::qid_to_name(self.trigger, vial_version)
+            );
             print!(
                 "replacement = {}; ",
                 keycodes::qid_to_name(self.replacement, vial_version)
@@ -338,7 +341,6 @@ impl KeyOverride {
         }
         Ok(())
     }
-
 }
 
 pub fn load_key_overrides_from_json(

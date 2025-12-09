@@ -994,7 +994,7 @@ pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
     m.insert("AG_RNRM", *m.get("QK_MAGIC_UNSWAP_RALT_RGUI").unwrap());
     m.insert("GU_ON", *m.get("QK_MAGIC_GUI_ON").unwrap());
     m.insert("GU_OFF", *m.get("QK_MAGIC_GUI_OFF").unwrap());
-    m.insert("GU_TOGG", *m.get("QK_MAGIC_TOGGLE_GUI").unwrap());
+    //m.insert("GU_TOGG", *m.get("QK_MAGIC_TOGGLE_GUI").unwrap());
     m.insert("GE_SWAP", *m.get("QK_MAGIC_SWAP_GRAVE_ESC").unwrap());
     m.insert("GE_NORM", *m.get("QK_MAGIC_UNSWAP_GRAVE_ESC").unwrap());
     m.insert(
@@ -1500,8 +1500,8 @@ pub static FULLNAMES: LazyLock<HashMap<&str, u16>> = LazyLock::new(|| {
     m.insert("AC_TOGG", *m.get("QK_AUTOCORRECT_TOGGLE").unwrap());
     m.insert("TL_LOWR", *m.get("QK_TRI_LAYER_LOWER").unwrap());
     m.insert("TL_UPPR", *m.get("QK_TRI_LAYER_UPPER").unwrap());
-    m.insert("QK_REP", *m.get("QK_REPEAT_KEY").unwrap());
-    m.insert("QK_AREP", *m.get("QK_ALT_REPEAT_KEY").unwrap());
+    //m.insert("QK_REP", *m.get("QK_REPEAT_KEY").unwrap());
+    //m.insert("QK_AREP", *m.get("QK_ALT_REPEAT_KEY").unwrap());
     m.insert("QK_LLCK", *m.get("QK_LAYER_LOCK").unwrap());
     m.insert("M0", 0x5F12);
     m.insert("M1", 0x5F13);

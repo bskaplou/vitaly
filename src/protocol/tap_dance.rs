@@ -110,10 +110,16 @@ impl TapDance {
             print!("EMPTY");
         } else {
             if self.tap != 0 {
-                print!("On tap: {}, ", keycodes::qid_to_name(self.tap, vial_version));
+                print!(
+                    "On tap: {}, ",
+                    keycodes::qid_to_name(self.tap, vial_version)
+                );
             }
             if self.hold != 0 {
-                print!("On hold: {}, ", keycodes::qid_to_name(self.hold, vial_version));
+                print!(
+                    "On hold: {}, ",
+                    keycodes::qid_to_name(self.hold, vial_version)
+                );
             }
             if self.double_tap != 0 {
                 print!(
@@ -131,7 +137,6 @@ impl TapDance {
         }
         Ok(())
     }
-
 }
 
 pub fn load_tap_dances(

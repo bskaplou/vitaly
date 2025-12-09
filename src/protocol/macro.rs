@@ -174,7 +174,6 @@ impl MacroStep {
         }
         Ok(())
     }
-
 }
 
 #[derive(Debug)]
@@ -246,7 +245,6 @@ impl Macro {
         }
         Ok(())
     }
-
 }
 
 pub fn load_macros_from_json(

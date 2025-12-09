@@ -218,3 +218,40 @@ pub fn qid_to_name(keycode: u16, vial_version: u32) -> String {
         _ => v5::qid_to_name(keycode),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_5_to_name() {
+        assert_eq!(qid_to_name(0x7228, 5), "MT(MOD_RSFT,KC_ENTER)");
+        assert_eq!(qid_to_name(0x5f10, 5), "QK_TRI_LAYER_LOWER");
+        assert_eq!(qid_to_name(0x5f11, 5), "QK_TRI_LAYER_UPPER");
+        assert_eq!(qid_to_name(0x5f1c, 5), "QK_MACRO_10");
+    }
+
+    #[test]
+    fn test_5_to_code() {
+        assert_eq!(name_to_qid("MT(MOD_RSFT,KC_ENTER)", 5).unwrap(), 0x7228);
+        assert_eq!(name_to_qid("QK_TRI_LAYER_LOWER", 5).unwrap(), 0x5f10);
+        assert_eq!(name_to_qid("QK_TRI_LAYER_UPPER", 5).unwrap(), 0x5f11);
+        assert_eq!(name_to_qid("QK_MACRO_10", 5).unwrap(), 0x5f1c);
+    }
+
+    #[test]
+    fn test_6_to_name() {
+        assert_eq!(qid_to_name(0x3228, 6), "MT(MOD_RSFT,KC_ENTER)");
+        assert_eq!(qid_to_name(0x7C77, 6), "QK_TRI_LAYER_LOWER");
+        assert_eq!(qid_to_name(0x7C78, 6), "QK_TRI_LAYER_UPPER");
+        assert_eq!(qid_to_name(0x770A, 6), "QK_MACRO_10");
+    }
+
+    #[test]
+    fn test_6_to_code() {
+        assert_eq!(name_to_qid("MT(MOD_RSFT,KC_ENTER)", 6).unwrap(), 0x3228);
+        assert_eq!(name_to_qid("QK_TRI_LAYER_LOWER", 6).unwrap(), 0x7C77);
+        assert_eq!(name_to_qid("QK_TRI_LAYER_UPPER", 6).unwrap(), 0x7C78);
+        assert_eq!(name_to_qid("QK_MACRO_10", 6).unwrap(), 0x770A);
+    }
+}
