@@ -281,6 +281,7 @@ pub static SHORTNAMES: LazyLock<HashMap<u16, &str>> = LazyLock::new(|| {
     m.insert(0x7E5E, "QK_USER_30");
     m.insert(0x7E5F, "QK_USER_31");
     m.insert(0x7C77, "Fn1,Fn3");
+    m.insert(0x7C78, "Fn2,Fn3");
     m
 });
 
