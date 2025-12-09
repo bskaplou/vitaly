@@ -295,12 +295,14 @@ pub fn scan_capabilities(device: &HidDevice) -> Result<Capabilities, Box<dyn std
     ) {
         Ok(buff) => {
             if buff[0] != VIA_UNHANDLED {
+                /*
                 if vial_version < 6 {
                     println!(
                         "!!!WARNING!!! vial version = {}, tool for now fully supports version 6, keycodes mismatch and incorrect decoding are possible.",
                         vial_version
                     );
                 }
+                */
                 Ok(Capabilities {
                     via_version,
                     vial_version,
