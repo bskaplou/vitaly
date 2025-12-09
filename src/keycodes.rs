@@ -232,6 +232,14 @@ mod tests {
     }
 
     #[test]
+    fn test_5_to_short() {
+        assert_eq!(qid_to_short(0x7228, 5), "MT(MOD_RSFT,KC_ENTER)");
+        assert_eq!(qid_to_short(0x5f10, 5), "Fn1,Fn3");
+        assert_eq!(qid_to_short(0x5f11, 5), "Fn2,Fn3");
+        assert_eq!(qid_to_short(0x5f1c, 5), "QK_MACRO_10");
+    }
+
+    #[test]
     fn test_5_to_code() {
         assert_eq!(name_to_qid("MT(MOD_RSFT,KC_ENTER)", 5).unwrap(), 0x7228);
         assert_eq!(name_to_qid("QK_TRI_LAYER_LOWER", 5).unwrap(), 0x5f10);
@@ -245,6 +253,14 @@ mod tests {
         assert_eq!(qid_to_name(0x7C77, 6), "QK_TRI_LAYER_LOWER");
         assert_eq!(qid_to_name(0x7C78, 6), "QK_TRI_LAYER_UPPER");
         assert_eq!(qid_to_name(0x770A, 6), "QK_MACRO_10");
+    }
+
+    #[test]
+    fn test_6_to_short() {
+        assert_eq!(qid_to_short(0x3228, 6), "MT(MOD_RSFT,KC_ENTER)");
+        assert_eq!(qid_to_short(0x7C77, 6), "Fn1,Fn3");
+        assert_eq!(qid_to_short(0x7C78, 6), "Fn2,Fn3");
+        assert_eq!(qid_to_short(0x770A, 6), "QK_MACRO_10");
     }
 
     #[test]
