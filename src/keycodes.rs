@@ -229,6 +229,7 @@ mod tests {
         assert_eq!(qid_to_name(0x5f10, 5), "QK_TRI_LAYER_LOWER");
         assert_eq!(qid_to_name(0x5f11, 5), "QK_TRI_LAYER_UPPER");
         assert_eq!(qid_to_name(0x5f1c, 5), "QK_MACRO_10");
+        assert_eq!(qid_to_name(0x5c14, 5), "QK_MAGIC_TOGGLE_NKRO");
     }
 
     #[test]
@@ -245,6 +246,7 @@ mod tests {
         assert_eq!(name_to_qid("QK_TRI_LAYER_LOWER", 5).unwrap(), 0x5f10);
         assert_eq!(name_to_qid("QK_TRI_LAYER_UPPER", 5).unwrap(), 0x5f11);
         assert_eq!(name_to_qid("QK_MACRO_10", 5).unwrap(), 0x5f1c);
+        assert_eq!(name_to_qid("QK_MAGIC_TOGGLE_NKRO", 5).unwrap(), 0x5c14);
     }
 
     #[test]
@@ -253,6 +255,7 @@ mod tests {
         assert_eq!(qid_to_name(0x7C77, 6), "QK_TRI_LAYER_LOWER");
         assert_eq!(qid_to_name(0x7C78, 6), "QK_TRI_LAYER_UPPER");
         assert_eq!(qid_to_name(0x770A, 6), "QK_MACRO_10");
+        assert_eq!(qid_to_name(0x7013, 6), "QK_MAGIC_TOGGLE_NKRO");
     }
 
     #[test]
@@ -269,5 +272,6 @@ mod tests {
         assert_eq!(name_to_qid("QK_TRI_LAYER_LOWER", 6).unwrap(), 0x7C77);
         assert_eq!(name_to_qid("QK_TRI_LAYER_UPPER", 6).unwrap(), 0x7C78);
         assert_eq!(name_to_qid("QK_MACRO_10", 6).unwrap(), 0x770A);
+        assert_eq!(name_to_qid("QK_MAGIC_TOGGLE_NKRO", 6).unwrap(), 0x7013);
     }
 }
