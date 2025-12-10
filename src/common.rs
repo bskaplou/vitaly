@@ -52,8 +52,33 @@ pub fn render_layer(
     buttons: &Vec<keymap::Button>,
     layer_number: u8,
     vial_version: u32,
+    custom_keycodes: &Option<&Value>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut button_labels = HashMap::new();
+
+    let custom = if let Some(custom) = custom_keycodes {
+        match custom {
+            Value::Array(custom) => {
+                let mut result: Vec<&str> = Vec::new();
+                for code in custom {
+                    let name = code
+                        .as_object()
+                        .ok_or("customKeycode elements should be objects")?
+                        .get("shortName")
+                        .ok_or("shortName should be defined")?
+                        .as_str()
+                        .ok_or("shortName should be a string")?;
+                    result.push(name);
+                }
+                result
+            }
+            // badly formatted json is ignored silently
+            _ => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    };
+
     // keys wire positons might appear more then once in layout we process them strictly once here
     let mut processed = HashMap::new();
     let mut fat_labels = Vec::new();
@@ -62,8 +87,15 @@ pub fn render_layer(
             let wkey = (button.wire_x, button.wire_y);
             if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
                 e.insert(true);
-                let label =
+                let mut label =
                     keys.get_short(layer_number, button.wire_x, button.wire_y, vial_version)?;
+                if let Some(custom_index) = keycodes::is_custom(
+                    keys.get(layer_number, button.wire_x, button.wire_y),
+                    vial_version,
+                ) && custom.len() > custom_index.into()
+                {
+                    label = custom[custom_index as usize].to_string();
+                }
                 let mut slim_label = true;
                 for (idx, part) in label.split(',').enumerate() {
                     if part.chars().count() > 3 || idx > 1 {
@@ -89,7 +121,7 @@ pub fn render_layer(
                         }
                     }
                 } else {
-                    button_labels.insert((button.wire_x, button.wire_y), label);
+                    button_labels.insert((button.wire_x, button.wire_y), label.to_string());
                 }
             }
         }

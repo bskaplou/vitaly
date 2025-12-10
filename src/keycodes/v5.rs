@@ -6,6 +6,14 @@ use crate::keycodes::{
 pub mod code_to_name;
 pub mod name_to_code;
 
+pub fn is_custom(keycode: u16) -> Option<u8> {
+    if (0x5F80..=0x5F9F).contains(&keycode) {
+        Some((keycode - 0x5F80) as u8)
+    } else {
+        None
+    }
+}
+
 pub fn name_to_qid(name: &str) -> Result<u16, Box<dyn std::error::Error>> {
     let n = name.replace(" ", "");
     if n.starts_with("0x") {

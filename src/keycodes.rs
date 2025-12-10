@@ -17,6 +17,13 @@ const MOD_BIT_RSHIFT: u8 = 0b00100000;
 const MOD_BIT_RALT: u8 = 0b01000000;
 const MOD_BIT_RGUI: u8 = 0b10000000;
 
+pub fn is_custom(keycode: u16, vial_version: u32) -> Option<u8> {
+    match vial_version {
+        6 | 0 => v6::is_custom(keycode),
+        _ => v5::is_custom(keycode),
+    }
+}
+
 pub fn name_to_bitmod(mods: &str) -> Result<u8, KeyParsingError> {
     let mut m = 0x0u8;
     for mp in mods.split("|") {

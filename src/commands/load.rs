@@ -166,6 +166,7 @@ pub fn run(
                 &buttons,
                 layer_number,
                 capabilities.vial_version,
+                &meta.get("customKeycodes"),
             )?
         }
 
