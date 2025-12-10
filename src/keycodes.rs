@@ -274,4 +274,20 @@ mod tests {
         assert_eq!(name_to_qid("QK_MACRO_10", 6).unwrap(), 0x770A);
         assert_eq!(name_to_qid("QK_MAGIC_TOGGLE_NKRO", 6).unwrap(), 0x7013);
     }
+
+    #[test]
+    fn test_layers_to_qid() {
+        assert_eq!(name_to_qid("MO(1)", 6).unwrap(), 0x5221);
+        assert_eq!(name_to_qid("TO(2)", 6).unwrap(), 0x5202);
+        assert_eq!(name_to_qid("MO(1)", 5).unwrap(), 0x5101);
+        assert_eq!(name_to_qid("TO(2)", 5).unwrap(), 0x5002);
+    }
+
+    #[test]
+    fn test_layers_to_name() {
+        assert_eq!(qid_to_name(0x5221, 6), "MO(1)");
+        assert_eq!(qid_to_name(0x5202, 6), "TO(2)");
+        assert_eq!(qid_to_name(0x5101, 5), "MO(1)");
+        assert_eq!(qid_to_name(0x5002, 5), "TO(2)");
+    }
 }
