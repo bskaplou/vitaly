@@ -291,18 +291,6 @@ pub fn qid_to_short(keycode: u16) -> String {
             dest.push_str("R⇧,");
             dest.push_str(&qid_to_short(keycode & 0xFF));
         }
-        0x5000..=0x501F => {
-            dest.push_str("TO,");
-            dest.push_str((keycode & 0x1F).to_string().as_str());
-        }
-        0x5100..=0x511F => {
-            dest.push_str("MO,");
-            dest.push_str((keycode & 0x1F).to_string().as_str());
-        }
-        0x5300..=0x531F => {
-            dest.push_str("TG,");
-            dest.push_str((keycode & 0x1F).to_string().as_str());
-        }
         _ => match code_to_name::SHORTNAMES.get(&keycode) {
             Some(name) => {
                 dest.push_str(name);

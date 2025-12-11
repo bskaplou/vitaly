@@ -213,10 +213,20 @@ pub fn name_to_qid(name: &str, vial_version: u32) -> Result<u16, Box<dyn std::er
 }
 
 pub fn qid_to_short(keycode: u16, vial_version: u32) -> String {
-    match vial_version {
+    let text = match vial_version {
         6 | 0 => v6::qid_to_short(keycode),
         _ => v5::qid_to_short(keycode),
+    };
+    if let Some((left, right)) = text.split_once("(")
+        && !right.contains('(')
+        && !right.contains(',')
+        && left.len() < 4
+        && right.len() < 5
+        && let Some(right) = right.strip_suffix(")")
+    {
+        return format!("{},{}", left, right);
     }
+    text
 }
 
 pub fn qid_to_name(keycode: u16, vial_version: u32) -> String {
@@ -244,7 +254,7 @@ mod tests {
         assert_eq!(qid_to_short(0x7228, 5), "MT(MOD_RSFT,KC_ENTER)");
         assert_eq!(qid_to_short(0x5f10, 5), "Fn1,Fn3");
         assert_eq!(qid_to_short(0x5f11, 5), "Fn2,Fn3");
-        assert_eq!(qid_to_short(0x5f1c, 5), "QK_MACRO_10");
+        assert_eq!(qid_to_short(0x5f1c, 5), "M,10");
     }
 
     #[test]
@@ -270,7 +280,7 @@ mod tests {
         assert_eq!(qid_to_short(0x3228, 6), "MT(MOD_RSFT,KC_ENTER)");
         assert_eq!(qid_to_short(0x7C77, 6), "Fn1,Fn3");
         assert_eq!(qid_to_short(0x7C78, 6), "Fn2,Fn3");
-        assert_eq!(qid_to_short(0x770A, 6), "QK_MACRO_10");
+        assert_eq!(qid_to_short(0x770A, 6), "M,10");
     }
 
     #[test]
@@ -296,5 +306,17 @@ mod tests {
         assert_eq!(qid_to_name(0x5202, 6), "TO(2)");
         assert_eq!(qid_to_name(0x5101, 5), "MO(1)");
         assert_eq!(qid_to_name(0x5002, 5), "TO(2)");
+    }
+
+    #[test]
+    fn test_shifts() {
+        assert_eq!(name_to_qid("KC_LEFT_SHIFT", 6).unwrap(), 0xE1);
+        assert_eq!(name_to_qid("KC_RIGHT_SHIFT", 6).unwrap(), 0xE5);
+        assert_eq!(qid_to_name(0xE1, 6), "KC_LEFT_SHIFT");
+        assert_eq!(qid_to_name(0xE5, 6), "KC_RIGHT_SHIFT");
+        assert_eq!(name_to_qid("KC_LEFT_SHIFT", 5).unwrap(), 0xE1);
+        assert_eq!(name_to_qid("KC_RIGHT_SHIFT", 5).unwrap(), 0xE5);
+        assert_eq!(qid_to_name(0xE1, 5), "KC_LEFT_SHIFT");
+        assert_eq!(qid_to_name(0xE5, 5), "KC_RIGHT_SHIFT");
     }
 }
