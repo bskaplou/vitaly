@@ -59,7 +59,7 @@ pub fn render_layer(
     let custom = if let Some(custom) = custom_keycodes {
         match custom {
             Value::Array(custom) => {
-                let mut result: Vec<&str> = Vec::new();
+                let mut result: Vec<String> = Vec::new();
                 for code in custom {
                     let name = code
                         .as_object()
@@ -67,7 +67,8 @@ pub fn render_layer(
                         .get("shortName")
                         .ok_or("shortName should be defined")?
                         .as_str()
-                        .ok_or("shortName should be a string")?;
+                        .ok_or("shortName should be a string")?
+                        .replace('\n', " ");
                     result.push(name);
                 }
                 result
