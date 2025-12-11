@@ -60,7 +60,7 @@ pub fn render_layer(
         match custom {
             Value::Array(custom) => {
                 let mut result: Vec<String> = Vec::new();
-                for code in custom {
+                for (idx, code) in custom.iter().enumerate() {
                     let name = code
                         .as_object()
                         .ok_or("customKeycode elements should be objects")?
@@ -69,7 +69,7 @@ pub fn render_layer(
                         .as_str()
                         .ok_or("shortName should be a string")?
                         .replace('\n', " ");
-                    result.push(name);
+                    result.push(format!("QK_KB_{} - {}", idx, name));
                 }
                 result
             }
