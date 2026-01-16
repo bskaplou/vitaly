@@ -9,17 +9,17 @@ use super::layer_keymap::LayerKeymap;
 use super::layer_selector::LayerSelector;
 use crate::{keymap, protocol};
 
-pub struct KeymapWidget<'a> {
+pub struct Keymap<'a> {
     pub layer_count: u8,
     pub selected_layer: u8,
-    pub buttons: &'a Vec<keymap::Button>,
+    pub buttons: &'a mut Vec<keymap::Button>,
     pub keys: &'a protocol::Keymap,
     pub vial_version: u32,
     pub active_widget: ActiveWidget,
     pub selected_button: usize,
 }
 
-impl<'a> Widget for KeymapWidget<'a> {
+impl<'a> Widget for Keymap<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let vertical_chunks = Layout::default()
             .direction(Direction::Vertical)

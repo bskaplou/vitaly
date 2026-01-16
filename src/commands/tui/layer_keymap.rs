@@ -7,13 +7,10 @@ use ratatui::{
     widgets::{Block, Borders, Widget},
 };
 
-use super::{
-    BORDER_COLOR_ACTIVE, SELECTED_BGCOLOR_ACTIVE, SELECTED_BGCOLOR_INACTIVE,
-    SELECTED_COLOR_ACTIVE, SELECTED_COLOR_INACTIVE,
-};
+use super::BORDER_COLOR_ACTIVE;
 
 pub struct LayerKeymap<'a> {
-    pub buttons: &'a Vec<keymap::Button>,
+    pub buttons: &'a mut Vec<keymap::Button>,
     pub keys: &'a protocol::Keymap,
     pub layer: u8,
     pub vial_version: u32,
@@ -36,6 +33,21 @@ impl<'a> Widget for LayerKeymap<'a> {
 
         let inner_area = block.inner(area);
         block.render(area, buf);
+
+        // Modify button color in place
+        let original_color = if self.selected_button < self.buttons.len() {
+            let button = &mut self.buttons[self.selected_button];
+            let original = button.color;
+            let color = if self.is_active {
+                (0, 255, 255) // Cyan
+            } else {
+                (100, 100, 100) // Dark Gray
+            };
+            button.color = Some(color);
+            Some(original)
+        } else {
+            None
+        };
 
         if let Ok(data) = common::prepare_layer_render(
             self.keys,
@@ -75,53 +87,6 @@ impl<'a> Widget for LayerKeymap<'a> {
                 }
             }
 
-            // Highlight selected button
-            if self.selected_button < self.buttons.len() {
-                let button = &self.buttons[self.selected_button];
-                let scale = 4.0;
-                let b = button.scale(scale);
-
-                // Calculate bounds (matching src/keymap.rs render_and_dump logic)
-                let lu = (b.x.round() as usize, b.y.round() as usize);
-                let rb = (
-                    (b.x + b.w - 1.0).round() as usize,
-                    (b.y + b.h - 1.0).round() as usize,
-                );
-
-                let start_x = lu.0;
-                let end_x = rb.0;
-                let start_y = lu.1;
-                let end_y = rb.1;
-
-                let highlight_style = if self.is_active {
-                    Style::default()
-                        .bg(SELECTED_BGCOLOR_ACTIVE)
-                        .fg(SELECTED_COLOR_ACTIVE)
-                } else {
-                    Style::default()
-                        .bg(SELECTED_BGCOLOR_INACTIVE)
-                        .fg(SELECTED_COLOR_INACTIVE)
-                };
-
-                for y in start_y..=end_y {
-                    let target_y = inner_area.y + y as u16;
-                    if target_y >= inner_area.bottom() {
-                        continue;
-                    }
-
-                    for x in start_x..=end_x {
-                        let target_x = inner_area.x + x as u16;
-                        if target_x >= inner_area.right() {
-                            continue;
-                        }
-
-                        if let Some(cell) = buf.cell_mut((target_x, target_y)) {
-                            cell.set_style(highlight_style);
-                        }
-                    }
-                }
-            }
-
             // Render fat labels below grid if space allows
             let grid_height = data.buffer.b.len() as u16;
             let mut current_y = inner_area.y + grid_height;
@@ -135,5 +100,11 @@ impl<'a> Widget for LayerKeymap<'a> {
                 current_y += 1;
             }
         }
+
+        // Restore original color
+        if let Some(original) = original_color
+            && self.selected_button < self.buttons.len() {
+                self.buttons[self.selected_button].color = original;
+            }
     }
 }

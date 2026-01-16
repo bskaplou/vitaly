@@ -1,4 +1,4 @@
-use crate::{common, keymap, protocol};
+use crate::{common, keymap as project_keymap, protocol};
 use anyhow::{Result, anyhow};
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
@@ -14,12 +14,18 @@ use ratatui::{
 };
 use std::io;
 
-mod keymap_widget;
+mod keymap;
 mod layer_keymap;
 mod layer_selector;
-mod sidebar;
-use keymap_widget::KeymapWidget;
-use sidebar::Sidebar;
+mod informers;
+mod key_informer;
+mod combos_informer;
+mod tap_dance_informer;
+mod key_overrides_informer;
+mod macro_informer;
+mod encoder_informer;
+use keymap::Keymap;
+use informers::Informers;
 
 const BORDER_COLOR_ACTIVE: Color = Color::Cyan;
 const SELECTED_BGCOLOR_ACTIVE: Color = Color::Cyan;
@@ -42,8 +48,9 @@ pub struct App {
     pub should_quit: bool,
     pub layer_count: u8,
     pub selected_layer: u8,
-    pub buttons: Vec<keymap::Button>,
+    pub buttons: Vec<project_keymap::Button>,
     pub keys: protocol::Keymap,
+    pub encoders: Vec<Vec<protocol::Encoder>>,
     pub combos: Vec<protocol::Combo>,
     pub tap_dances: Vec<protocol::TapDance>,
     pub macros: Vec<protocol::Macro>,
@@ -56,8 +63,9 @@ pub struct App {
 impl App {
     pub fn new(
         layer_count: u8,
-        buttons: Vec<keymap::Button>,
+        buttons: Vec<project_keymap::Button>,
         keys: protocol::Keymap,
+        encoders: Vec<Vec<protocol::Encoder>>,
         combos: Vec<protocol::Combo>,
         tap_dances: Vec<protocol::TapDance>,
         macros: Vec<protocol::Macro>,
@@ -70,17 +78,18 @@ impl App {
             selected_layer: 0,
             buttons,
             keys,
+            encoders,
             combos,
             tap_dances,
             macros,
             key_overrides,
             vial_version,
-            active_widget: ActiveWidget::LayerSelector,
+            active_widget: ActiveWidget::Keymap,
             selected_button: 0,
         }
     }
 
-    pub fn render(&self, f: &mut Frame) {
+    pub fn render(&mut self, f: &mut Frame) {
         let size = f.area();
 
         let chunks = Layout::default()
@@ -88,10 +97,10 @@ impl App {
             .constraints([Constraint::Percentage(66), Constraint::Percentage(34)])
             .split(size);
 
-        let keymap_widget = KeymapWidget {
+        let keymap_widget = Keymap {
             layer_count: self.layer_count,
             selected_layer: self.selected_layer,
-            buttons: &self.buttons,
+            buttons: &mut self.buttons,
             keys: &self.keys,
             vial_version: self.vial_version,
             active_widget: self.active_widget,
@@ -99,11 +108,11 @@ impl App {
         };
         f.render_widget(keymap_widget, chunks[0]);
 
-        let sidebar = Sidebar {
-            active_widget: self.active_widget,
+        let sidebar = Informers {
             selected_layer: self.selected_layer,
             selected_button: self.buttons.get(self.selected_button),
             keys: &self.keys,
+            encoders: &self.encoders,
             combos: &self.combos,
             tap_dances: &self.tap_dances,
             macros: &self.macros,
@@ -169,10 +178,8 @@ impl App {
 
     pub fn handle_event(&mut self) -> io::Result<bool> {
         let mut rerender = false;
-        if let Event::Key(key) = event::read()?
-            && key.kind == KeyEventKind::Press
-        {
-            match key.code {
+        match event::read()? {
+            Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
                 KeyCode::Char('c') if key.modifiers.contains(event::KeyModifiers::CONTROL) => {
                     self.should_quit = true;
                 }
@@ -221,7 +228,7 @@ impl App {
                         rerender = true;
                     }
                     _ => {}
-                }
+                },
                 KeyCode::Down => match self.active_widget {
                     ActiveWidget::LayerSelector => {
                         if self.selected_layer > 0 {
@@ -234,9 +241,13 @@ impl App {
                         rerender = true;
                     }
                     _ => {}
-                }
+                },
                 _ => {}
+            },
+            Event::Resize(_, _) => {
+                rerender = true;
             }
+            _ => {}
         }
         Ok(rerender)
     }
@@ -255,7 +266,7 @@ pub fn run(api: &HidApi, device: &DeviceInfo) -> Result<()> {
     let layout_options_state = protocol::load_layout_options(&dev)?;
     let layout_options =
         protocol::LayoutOptions::from_json(layout_options_state, &meta["layouts"]["labels"])?;
-    let buttons = keymap::keymap_to_buttons(&meta["layouts"]["keymap"], &layout_options)?;
+    let buttons = project_keymap::keymap_to_buttons(&meta["layouts"]["keymap"], &layout_options)?;
 
     // Load keymap keys
     let cols = meta["matrix"]["cols"]
@@ -265,6 +276,17 @@ pub fn run(api: &HidApi, device: &DeviceInfo) -> Result<()> {
         .as_u64()
         .ok_or(anyhow!("matrix/rows not found in meta"))? as u8;
     let keys = protocol::load_layers_keys(&dev, caps.layer_count, rows, cols)?;
+
+    // Load encoders
+    let encoder_count = project_keymap::get_encoders_count(&meta["layouts"]["keymap"])?;
+    let mut encoders = Vec::new();
+    for layer in 0..caps.layer_count {
+        let mut layer_encoders = Vec::new();
+        for i in 0..encoder_count {
+            layer_encoders.push(protocol::load_encoder(&dev, layer, i)?);
+        }
+        encoders.push(layer_encoders);
+    }
 
     // Load combos
     let combos = protocol::load_combos(&dev, caps.combo_count)?;
@@ -290,6 +312,7 @@ pub fn run(api: &HidApi, device: &DeviceInfo) -> Result<()> {
         caps.layer_count,
         buttons,
         keys,
+        encoders,
         combos,
         tap_dances,
         macros,
