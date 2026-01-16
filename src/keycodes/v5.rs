@@ -15,6 +15,14 @@ pub fn is_custom(keycode: u16) -> Option<u8> {
     }
 }
 
+pub fn is_macro(keycode: u16) -> Option<u8> {
+    if (0x5F12..=0x5F31).contains(&keycode) {
+        Some((keycode - 0x5F12) as u8)
+    } else {
+        None
+    }
+}
+
 pub fn name_to_qid(name: &str) -> Result<u16> {
     let n = name.replace(" ", "");
     if n.starts_with("0x") {

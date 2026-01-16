@@ -32,7 +32,7 @@ pub use crate::protocol::combo::{
 
 mod r#macro;
 pub use crate::protocol::r#macro::{
-    Macro, load_macros, load_macros_from_json, macros_to_json, set_macros,
+    Macro, MacroStep, load_macros, load_macros_from_json, macros_to_json, set_macros,
 };
 
 mod qmk_settings;

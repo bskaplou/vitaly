@@ -2,7 +2,7 @@ use anyhow::{Result, anyhow};
 pub mod buffer;
 
 use crate::protocol;
-use buffer::Buffer;
+pub use buffer::Buffer;
 use palette::Srgb;
 use serde_json::Value;
 use std::cmp::max;
@@ -15,7 +15,7 @@ use thiserror::Error;
 #[error("MetaParsingError")]
 pub struct MetaParsingError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Button {
     pub x: f64,
     pub y: f64,
@@ -337,7 +337,10 @@ pub fn keymap_to_buttons(
     Ok(buttons)
 }
 
-pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), String>>) {
+pub fn render_to_buffer(
+    buttons: &Vec<Button>,
+    labels: Option<HashMap<(u8, u8), String>>,
+) -> Buffer {
     let mut buff = Buffer::new();
     for button in buttons {
         if !button.decal {
@@ -471,5 +474,9 @@ pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), S
             }
         }
     }
-    buff.dump();
+    buff
+}
+
+pub fn render_and_dump(buttons: &Vec<Button>, labels: Option<HashMap<(u8, u8), String>>) {
+    render_to_buffer(buttons, labels).dump();
 }

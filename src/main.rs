@@ -47,6 +47,7 @@ enum CommandEnum {
     Layout(CommandLayout),
     Tester(CommandTester),
     Bootload(CommandBootload),
+    Tui(CommandTui),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -273,6 +274,11 @@ struct CommandTester {
 #[argh(subcommand, name = "bootload")]
 struct CommandBootload {}
 
+#[derive(FromArgs, PartialEq, Debug)]
+/// Start TUI interface
+#[argh(subcommand, name = "tui")]
+struct CommandTui {}
+
 fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
     match HidApi::new() {
         Ok(api) => {
@@ -353,6 +359,7 @@ fn command_for_devices(id: Option<u16>, command: &CommandEnum) {
                         }
                         CommandEnum::Tester(ops) => commands::tester_run(&api, device, &ops.meta),
                         CommandEnum::Bootload(_) => commands::bootload_run(&api, device),
+                        CommandEnum::Tui(_) => commands::tui_run(&api, device),
                     };
                     match result {
                         Ok(_) => {

@@ -25,6 +25,21 @@ pub fn is_custom(keycode: u16, vial_version: u32) -> Option<u8> {
     }
 }
 
+pub fn is_tapdance(keycode: u16) -> Option<u8> {
+    if (0x5700..=0x57FF).contains(&keycode) {
+        Some((keycode - 0x5700) as u8)
+    } else {
+        None
+    }
+}
+
+pub fn is_macro(keycode: u16, vial_version: u32) -> Option<u8> {
+    match vial_version {
+        6 | 0 => v6::is_macro(keycode),
+        _ => v5::is_macro(keycode),
+    }
+}
+
 pub fn name_to_bitmod(mods: &str) -> Result<u8, KeyParsingError> {
     let mut m = 0x0u8;
     for mp in mods.split("|") {
@@ -447,5 +462,25 @@ mod tests {
             name_to_qid("LT(15, KC_1)", 5).unwrap(),
             name_to_qid("LT15(KC_1)", 5).unwrap()
         );
+    }
+
+    #[test]
+    fn test_is_macro() {
+        assert_eq!(is_macro(name_to_qid("QK_MACRO_0", 5).unwrap(), 5), Some(0));
+        assert_eq!(
+            is_macro(name_to_qid("QK_MACRO_31", 5).unwrap(), 5),
+            Some(31)
+        );
+        assert_eq!(is_macro(name_to_qid("QK_MACRO_0", 6).unwrap(), 6), Some(0));
+        assert_eq!(
+            is_macro(name_to_qid("QK_MACRO_31", 6).unwrap(), 6),
+            Some(31)
+        );
+    }
+
+    #[test]
+    fn test_is_tapdance() {
+        assert_eq!(is_tapdance(name_to_qid("TD(0)", 5).unwrap()), Some(0));
+        assert_eq!(is_tapdance(name_to_qid("TD(31)", 5).unwrap()), Some(31));
     }
 }

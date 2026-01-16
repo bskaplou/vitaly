@@ -79,6 +79,104 @@ pub fn load_meta(
     }
 }
 
+pub struct LayerRenderData {
+    pub buffer: keymap::Buffer,
+    pub fat_labels: Vec<String>,
+}
+
+pub fn prepare_layer_render(
+    keys: &protocol::Keymap,
+    buttons: &Vec<keymap::Button>,
+    layer_number: u8,
+    vial_version: u32,
+    custom_keycodes: &Option<&Value>,
+) -> Result<LayerRenderData> {
+    let mut button_labels = HashMap::new();
+
+    let custom = if let Some(custom) = custom_keycodes {
+        match custom {
+            Value::Array(custom) => {
+                let mut result: Vec<String> = Vec::new();
+                for (idx, code) in custom.iter().enumerate() {
+                    let custom_keycode = code
+                        .as_object()
+                        .ok_or(anyhow!("customKeycode elements should be objects"))?;
+                    let mut name = custom_keycode.get("shortName");
+                    if name.is_none() {
+                        name = custom_keycode.get("name");
+                    }
+                    let name = name
+                        .ok_or(anyhow!("shortName or name should be defined"))?
+                        .as_str()
+                        .ok_or(anyhow!("shortName/name should be a string"))?
+                        .replace('\n', " ");
+                    result.push(format!("QK_KB_{} - {}", idx, name));
+                }
+                result
+            }
+            // badly formatted json is ignored silently
+            _ => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    };
+
+    // keys wire positons might appear more then once in layout we process them strictly once here
+    let mut processed = HashMap::new();
+    let mut fat_labels = Vec::new();
+    for button in buttons {
+        if !button.encoder {
+            let wkey = (button.wire_x, button.wire_y);
+            if let std::collections::hash_map::Entry::Vacant(e) = processed.entry(wkey) {
+                e.insert(true);
+                let mut label =
+                    keys.get_short(layer_number, button.wire_x, button.wire_y, vial_version)?;
+                if let Some(custom_index) = keycodes::is_custom(
+                    keys.get(layer_number, button.wire_x, button.wire_y),
+                    vial_version,
+                ) && custom.len() > custom_index.into()
+                {
+                    label = custom[custom_index as usize].to_string();
+                }
+                let mut slim_label = true;
+                for (idx, part) in label.split(',').enumerate() {
+                    if part.chars().count() > 3 || idx > 1 {
+                        slim_label &= false;
+                    }
+                }
+                if !slim_label {
+                    match fat_labels.iter().position(|e| *e == label) {
+                        None => {
+                            fat_labels.push(label);
+                            button_labels.insert(
+                                (button.wire_x, button.wire_y),
+                                format!("*{}", fat_labels.len()),
+                            );
+                        }
+                        Some(pos) => {
+                            //println!(
+                            //    "{:?} , {:?} at {} {}",
+                            //    fat_labels, label, button.wire_x, button.wire_y
+                            //);
+                            button_labels
+                                .insert((button.wire_x, button.wire_y), format!("*{}", pos + 1));
+                        }
+                    }
+                } else {
+                    button_labels.insert((button.wire_x, button.wire_y), label.to_string());
+                }
+            }
+        }
+    }
+
+    let buff = keymap::render_to_buffer(buttons, Some(button_labels));
+
+    Ok(LayerRenderData {
+        buffer: buff,
+        fat_labels,
+    })
+}
+
 pub fn render_layer(
     keys: &protocol::Keymap,
     encoders: &Vec<protocol::Encoder>,

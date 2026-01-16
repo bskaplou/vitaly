@@ -48,3 +48,6 @@ pub use crate::commands::tester::run as tester_run;
 
 mod bootload;
 pub use crate::commands::bootload::run as bootload_run;
+
+mod tui;
+pub use crate::commands::tui::run as tui_run;
