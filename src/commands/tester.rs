@@ -42,10 +42,12 @@ pub fn run(api: &HidApi, device: &DeviceInfo, meta_file: &Option<String>) -> Res
             && state != last_state
         {
             for button in &mut buttons {
-                if state.is_pushed(button.wire_x, button.wire_y, capabilities.via_version)? {
-                    button.color = Some((255, 255, 255));
-                } else if button.color.is_some() {
-                    button.color = Some((150, 150, 150));
+                if !button.encoder {
+                    if state.is_pushed(button.wire_x, button.wire_y, capabilities.via_version)? {
+                        button.color = Some((255, 255, 255));
+                    } else if button.color.is_some() {
+                        button.color = Some((150, 150, 150));
+                    }
                 }
             }
             println!();

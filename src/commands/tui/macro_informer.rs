@@ -21,13 +21,14 @@ impl<'a> MacroInformer<'a> {
     ) -> Option<Self> {
         if let Some(kc) = current_keycode
             && let Some(idx) = keycodes::is_macro(kc, vial_version)
-                && macros.iter().any(|m| m.index == idx) {
-                    return Some(Self {
-                        current_keycode: kc,
-                        macros,
-                        vial_version,
-                    });
-                }
+            && macros.iter().any(|m| m.index == idx)
+        {
+            return Some(Self {
+                current_keycode: kc,
+                macros,
+                vial_version,
+            });
+        }
         None
     }
 }

@@ -21,8 +21,7 @@ impl<'a> CombosInformer<'a> {
     ) -> Option<Self> {
         if let Some(kc) = current_keycode {
             let has_combos = combos.iter().any(|c| {
-                !c.is_empty()
-                    && (c.key1 == kc || c.key2 == kc || c.key3 == kc || c.key4 == kc)
+                !c.is_empty() && (c.key1 == kc || c.key2 == kc || c.key3 == kc || c.key4 == kc)
             });
             if has_combos {
                 return Some(Self {

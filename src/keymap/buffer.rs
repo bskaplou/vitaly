@@ -29,6 +29,7 @@ impl fmt::Display for Buffer {
                         Color::White
                     };
                 let styled = line.to_owned().with(front_color).on(Color::Rgb { r, g, b });
+                //format!("{}{}", styled, ResetColor)
                 format!("{}", styled)
             } else {
                 line.to_string()

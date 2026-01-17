@@ -30,7 +30,9 @@ impl<'a> Widget for Informers<'a> {
                 let idx = button.wire_x as usize;
                 let is_cw = button.wire_y == 1;
                 if let Some(layer_encoders) = self.encoders.get(self.selected_layer as usize) {
-                    layer_encoders.get(idx).map(|enc| if is_cw { enc.cw } else { enc.ccw })
+                    layer_encoders
+                        .get(idx)
+                        .map(|enc| if is_cw { enc.cw } else { enc.ccw })
                 } else {
                     None
                 }
@@ -59,8 +61,11 @@ impl<'a> Widget for Informers<'a> {
         );
         let combos_informer =
             CombosInformer::new_if_applicable(current_keycode, self.combos, self.vial_version);
-        let tap_dance_informer =
-            TapDanceInformer::new_if_applicable(current_keycode, self.tap_dances, self.vial_version);
+        let tap_dance_informer = TapDanceInformer::new_if_applicable(
+            current_keycode,
+            self.tap_dances,
+            self.vial_version,
+        );
         let key_overrides_informer = KeyOverridesInformer::new_if_applicable(
             current_keycode,
             self.key_overrides,
@@ -95,8 +100,9 @@ impl<'a> Widget for Informers<'a> {
             return;
         }
 
-        let constraints = std::iter::repeat_n(Constraint::Ratio(1, visible_count), visible_count as usize)
-            .collect::<Vec<_>>();
+        let constraints =
+            std::iter::repeat_n(Constraint::Ratio(1, visible_count), visible_count as usize)
+                .collect::<Vec<_>>();
 
         let chunks = Layout::default()
             .direction(Direction::Vertical)

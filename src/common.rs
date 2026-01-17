@@ -17,7 +17,7 @@ fn load_via_meta_ref(vendor_id: u16, product_id: u16) -> Result<Option<String>> 
     let link_head = "https://raw.githubusercontent.com/the-via/keyboards/refs/heads/master/src/";
     let via_meta_json = include_str!("via_meta_refs.json");
     let vial_meta: Value = serde_json::from_str(via_meta_json)?;
-    let key = format!( "{:#06x}_{:#06x}", vendor_id, product_id);
+    let key = format!("{:#06x}_{:#06x}", vendor_id, product_id);
     if let Some(path) = vial_meta
         .as_object()
         .ok_or(anyhow!("bad meta-dict file"))?
@@ -106,9 +106,9 @@ fn process_layer_labels(
                         name = custom_keycode.get("name");
                     }
                     let name = name
-                        .ok_or(anyhow!("shortName or name should be defined"))? 
+                        .ok_or(anyhow!("shortName or name should be defined"))?
                         .as_str()
-                        .ok_or(anyhow!("shortName/name should be a string"))? 
+                        .ok_or(anyhow!("shortName/name should be a string"))?
                         .replace('\n', " ");
                     result.push(format!("QK_KB_{} - {}", idx, name));
                 }
@@ -134,7 +134,8 @@ fn process_layer_labels(
                 if let Some(custom_index) = keycodes::is_custom(
                     keys.get(layer_number, button.wire_x, button.wire_y),
                     vial_version,
-                ) && custom.len() > custom_index.into() {
+                ) && custom.len() > custom_index.into()
+                {
                     label = custom[custom_index as usize].to_string();
                 }
                 let mut slim_label = true;
@@ -153,10 +154,6 @@ fn process_layer_labels(
                             );
                         }
                         Some(pos) => {
-                            //println!(
-                            //    "{{:?}} , {{:?}} at {} {}",
-                            //    fat_labels, label, button.wire_x, button.wire_y
-                            //);
                             button_labels
                                 .insert((button.wire_x, button.wire_y), format!("*{}", pos + 1));
                         }

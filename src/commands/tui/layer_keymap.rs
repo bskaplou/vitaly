@@ -103,8 +103,9 @@ impl<'a> Widget for LayerKeymap<'a> {
 
         // Restore original color
         if let Some(original) = original_color
-            && self.selected_button < self.buttons.len() {
-                self.buttons[self.selected_button].color = original;
-            }
+            && self.selected_button < self.buttons.len()
+        {
+            self.buttons[self.selected_button].color = original;
+        }
     }
 }

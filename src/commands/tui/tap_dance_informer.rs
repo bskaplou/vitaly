@@ -21,13 +21,14 @@ impl<'a> TapDanceInformer<'a> {
     ) -> Option<Self> {
         if let Some(kc) = current_keycode
             && let Some(idx) = keycodes::is_tapdance(kc)
-                && tap_dances.iter().any(|t| t.index == idx) {
-                    return Some(Self {
-                        current_keycode: kc,
-                        tap_dances,
-                        vial_version,
-                    });
-                }
+            && tap_dances.iter().any(|t| t.index == idx)
+        {
+            return Some(Self {
+                current_keycode: kc,
+                tap_dances,
+                vial_version,
+            });
+        }
         None
     }
 }

@@ -22,14 +22,15 @@ impl<'a> KeyInformer<'a> {
         vial_version: u32,
     ) -> Option<Self> {
         if let Some(button) = selected_button
-            && !button.encoder {
-                return Some(Self {
-                    selected_layer,
-                    selected_button: button,
-                    keys,
-                    vial_version,
-                });
-            }
+            && !button.encoder
+        {
+            return Some(Self {
+                selected_layer,
+                selected_button: button,
+                keys,
+                vial_version,
+            });
+        }
         None
     }
 }

@@ -2,7 +2,7 @@ use crate::common;
 use crate::keymap;
 use crate::protocol;
 use anyhow::Result;
-use crossterm::cursor;
+use crossterm::{cursor, style};
 use hidapi::{DeviceInfo, HidApi};
 use std::collections::HashMap;
 use std::io;
@@ -31,15 +31,19 @@ pub fn run(api: &HidApi, device: &DeviceInfo, unlock: bool, lock: bool) -> Resul
             for (row, col) in &status.unlock_buttons {
                 button_labels.insert((*row, *col), "☆☆,☆☆".to_string());
             }
-            for button in &mut buttons {
-                button.color = if status
-                    .unlock_buttons
-                    .contains(&(button.wire_x, button.wire_y))
-                {
-                    Some((255, 255, 255))
-                } else {
-                    None
-                };
+
+            if style::available_color_count() > 256 {
+                for button in &mut buttons {
+                    button.color = if status
+                        .unlock_buttons
+                        .contains(&(button.wire_x, button.wire_y))
+                        && !button.encoder
+                    {
+                        Some((255, 255, 255))
+                    } else {
+                        None
+                    };
+                }
             }
             keymap::render_and_dump(&buttons, Some(button_labels));
             if !status.unlock_in_progress {

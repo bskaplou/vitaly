@@ -14,21 +14,21 @@ use ratatui::{
 };
 use std::io;
 
+mod combos_informer;
+mod encoder_informer;
+mod informers;
+mod key_informer;
+mod key_overrides_informer;
 mod keymap;
 mod layer_keymap;
 mod layer_selector;
-mod informers;
-mod key_informer;
-mod combos_informer;
-mod tap_dance_informer;
-mod key_overrides_informer;
 mod macro_informer;
-mod encoder_informer;
-use keymap::Keymap;
+mod tap_dance_informer;
 use informers::Informers;
+use keymap::Keymap;
 
 const BORDER_COLOR_ACTIVE: Color = Color::Cyan;
-const SELECTED_BGCOLOR_ACTIVE: Color = Color::Cyan;
+const SELECTED_BGCOLOR_ACTIVE: Color = Color::Rgb(0, 255, 255);
 const SELECTED_BGCOLOR_INACTIVE: Color = Color::DarkGray;
 const SELECTED_COLOR_ACTIVE: Color = Color::Black;
 const SELECTED_COLOR_INACTIVE: Color = Color::White;
@@ -37,11 +37,6 @@ const SELECTED_COLOR_INACTIVE: Color = Color::White;
 pub enum ActiveWidget {
     LayerSelector,
     Keymap,
-    Keys,
-    Combos,
-    TapDance,
-    KeyOverrides,
-    Macros,
 }
 
 pub struct App {
@@ -201,7 +196,6 @@ impl App {
                         self.navigate_keymap(-1.0, 0.0);
                         rerender = true;
                     }
-                    _ => {}
                 },
                 KeyCode::Right => match self.active_widget {
                     ActiveWidget::LayerSelector => {
@@ -214,7 +208,6 @@ impl App {
                         self.navigate_keymap(1.0, 0.0);
                         rerender = true;
                     }
-                    _ => {}
                 },
                 KeyCode::Up => match self.active_widget {
                     ActiveWidget::LayerSelector => {
@@ -227,7 +220,6 @@ impl App {
                         self.navigate_keymap(0.0, -1.0);
                         rerender = true;
                     }
-                    _ => {}
                 },
                 KeyCode::Down => match self.active_widget {
                     ActiveWidget::LayerSelector => {
@@ -240,7 +232,6 @@ impl App {
                         self.navigate_keymap(0.0, 1.0);
                         rerender = true;
                     }
-                    _ => {}
                 },
                 _ => {}
             },
