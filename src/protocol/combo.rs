@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn test_from_string_two_buttons() {
-        let combo = Combo::from_string(0, &"KC_V + KC_B = KC_Z".to_string(), 6).unwrap();
+        let combo = Combo::from_string(0, "KC_V + KC_B = KC_Z", 6).unwrap();
         assert_eq!(combo.index, 0);
         assert_eq!(keycodes::qid_to_name(combo.key1, 6), "KC_V");
         assert_eq!(keycodes::qid_to_name(combo.key2, 6), "KC_B");
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn test_from_string_one_button() {
-        let combo = Combo::from_string(0, &"KC_A = KC_B".to_string(), 6).unwrap();
+        let combo = Combo::from_string(0, "KC_A = KC_B", 6).unwrap();
         assert_eq!(keycodes::qid_to_name(combo.key1, 6), "KC_A");
         assert_eq!(combo.key2, 0);
         assert_eq!(keycodes::qid_to_name(combo.output, 6), "KC_B");
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_from_string_three_buttons() {
-        let combo = Combo::from_string(0, &"KC_A + KC_B + KC_C = KC_D".to_string(), 6).unwrap();
+        let combo = Combo::from_string(0, "KC_A + KC_B + KC_C = KC_D", 6).unwrap();
         assert_eq!(keycodes::qid_to_name(combo.key1, 6), "KC_A");
         assert_eq!(keycodes::qid_to_name(combo.key2, 6), "KC_B");
         assert_eq!(keycodes::qid_to_name(combo.key3, 6), "KC_C");
@@ -230,7 +230,7 @@ mod tests {
     #[test]
     fn test_from_string_four_buttons() {
         let combo =
-            Combo::from_string(0, &"KC_A + KC_B + KC_C + KC_D = KC_E".to_string(), 6).unwrap();
+            Combo::from_string(0, "KC_A + KC_B + KC_C + KC_D = KC_E", 6).unwrap();
         assert_eq!(keycodes::qid_to_name(combo.key1, 6), "KC_A");
         assert_eq!(keycodes::qid_to_name(combo.key2, 6), "KC_B");
         assert_eq!(keycodes::qid_to_name(combo.key3, 6), "KC_C");
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_from_string_invalid_format() {
-        let result = Combo::from_string(0, &"KC_A + KC_B KC_Z".to_string(), 6);
+        let result = Combo::from_string(0, "KC_A + KC_B KC_Z", 6);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_from_string_invalid_keycode() {
-        let result = Combo::from_string(0, &"KC_A + INVALID_KEY = KC_Z".to_string(), 6);
+        let result = Combo::from_string(0, "KC_A + INVALID_KEY = KC_Z", 6);
         assert!(result.is_err());
     }
 
@@ -271,7 +271,7 @@ mod tests {
         let empty_combo = Combo::empty(0);
         assert!(empty_combo.is_empty());
 
-        let non_empty_combo = Combo::from_string(0, &"KC_A = KC_B".to_string(), 6).unwrap();
+        let non_empty_combo = Combo::from_string(0, "KC_A = KC_B", 6).unwrap();
         assert!(!non_empty_combo.is_empty());
     }
 
@@ -322,7 +322,7 @@ mod tests {
 
     #[test]
     fn test_combos_to_json_single_combo() {
-        let combo = Combo::from_string(0, &"KC_V = KC_Z".to_string(), 6).unwrap();
+        let combo = Combo::from_string(0, "KC_V = KC_Z", 6).unwrap();
         let combos = vec![combo];
         let json_values = combos_to_json(&combos, 6).unwrap();
         assert_eq!(json_values.len(), 1);
@@ -334,8 +334,8 @@ mod tests {
 
     #[test]
     fn test_combos_to_json_multiple_combos() {
-        let combo1 = Combo::from_string(0, &"KC_A = KC_B".to_string(), 6).unwrap();
-        let combo2 = Combo::from_string(1, &"KC_C + KC_D = KC_E".to_string(), 6).unwrap();
+        let combo1 = Combo::from_string(0, "KC_A = KC_B", 6).unwrap();
+        let combo2 = Combo::from_string(1, "KC_C + KC_D = KC_E", 6).unwrap();
         let combos = vec![combo1, combo2];
         let json_values = combos_to_json(&combos, 6).unwrap();
         assert_eq!(json_values.len(), 2);

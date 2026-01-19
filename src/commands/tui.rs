@@ -39,6 +39,18 @@ pub enum ActiveWidget {
     Keymap,
 }
 
+pub struct KeyboardData {
+    pub layer_count: u8,
+    pub buttons: Vec<project_keymap::Button>,
+    pub keys: protocol::Keymap,
+    pub encoders: Vec<Vec<protocol::Encoder>>,
+    pub combos: Vec<protocol::Combo>,
+    pub tap_dances: Vec<protocol::TapDance>,
+    pub macros: Vec<protocol::Macro>,
+    pub key_overrides: Vec<protocol::KeyOverride>,
+    pub vial_version: u32,
+}
+
 pub struct App {
     pub should_quit: bool,
     pub layer_count: u8,
@@ -56,29 +68,19 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(
-        layer_count: u8,
-        buttons: Vec<project_keymap::Button>,
-        keys: protocol::Keymap,
-        encoders: Vec<Vec<protocol::Encoder>>,
-        combos: Vec<protocol::Combo>,
-        tap_dances: Vec<protocol::TapDance>,
-        macros: Vec<protocol::Macro>,
-        key_overrides: Vec<protocol::KeyOverride>,
-        vial_version: u32,
-    ) -> Self {
+    pub fn new(data: KeyboardData) -> Self {
         Self {
             should_quit: false,
-            layer_count,
+            layer_count: data.layer_count,
             selected_layer: 0,
-            buttons,
-            keys,
-            encoders,
-            combos,
-            tap_dances,
-            macros,
-            key_overrides,
-            vial_version,
+            buttons: data.buttons,
+            keys: data.keys,
+            encoders: data.encoders,
+            combos: data.combos,
+            tap_dances: data.tap_dances,
+            macros: data.macros,
+            key_overrides: data.key_overrides,
+            vial_version: data.vial_version,
             active_widget: ActiveWidget::Keymap,
             selected_button: 0,
         }
@@ -299,8 +301,8 @@ pub fn run(api: &HidApi, device: &DeviceInfo) -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     // Create app
-    let mut app = App::new(
-        caps.layer_count,
+    let mut app = App::new(KeyboardData {
+        layer_count: caps.layer_count,
         buttons,
         keys,
         encoders,
@@ -308,8 +310,8 @@ pub fn run(api: &HidApi, device: &DeviceInfo) -> Result<()> {
         tap_dances,
         macros,
         key_overrides,
-        caps.vial_version,
-    );
+        vial_version: caps.vial_version,
+    });
 
     // Run app
     let res = run_app(&mut terminal, &mut app);

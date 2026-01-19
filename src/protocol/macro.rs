@@ -541,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_from_string() -> Result<()> {
-        let m = Macro::from_string(12, &"Text(example); Tap(KC_1)".to_string(), 6)?;
+        let m = Macro::from_string(12, "Text(example); Tap(KC_1)", 6)?;
         assert_eq!(12, m.index);
         assert_eq!(2, m.steps.len());
         Ok(())
@@ -560,16 +560,16 @@ mod tests {
 
     #[test]
     fn test_step_serde_round_trip() {
-        step_round_trip(MacroStep::Tap(name_to_qid(&"KC_A".to_string(), 6).unwrap()));
+        step_round_trip(MacroStep::Tap(name_to_qid("KC_A", 6).unwrap()));
         step_round_trip(MacroStep::Down(
-            name_to_qid(&"KC_B".to_string(), 6).unwrap(),
+            name_to_qid("KC_B", 6).unwrap(),
         ));
-        step_round_trip(MacroStep::Up(name_to_qid(&"KC_C".to_string(), 6).unwrap()));
+        step_round_trip(MacroStep::Up(name_to_qid("KC_C", 6).unwrap()));
         step_round_trip(MacroStep::Tap(
-            name_to_qid(&"KC_LCTL".to_string(), 6).unwrap(),
+            name_to_qid("KC_LCTL", 6).unwrap(),
         ));
         step_round_trip(MacroStep::Tap(
-            name_to_qid(&"LCTL(KC_C)".to_string(), 6).unwrap(),
+            name_to_qid("LCTL(KC_C)", 6).unwrap(),
         ));
         step_round_trip(MacroStep::Delay(100));
         step_round_trip(MacroStep::Text("Hello".to_string()));
@@ -643,7 +643,7 @@ mod tests {
     #[test]
     fn test_json_round_trip() -> Result<()> {
         let original_macro =
-            Macro::from_string(0, &"Tap(KC_A); Delay(100); Text(test)".to_string(), 6)?;
+            Macro::from_string(0, "Tap(KC_A); Delay(100); Text(test)", 6)?;
         let macros_vec = vec![original_macro];
         let json_val = macros_to_json(&macros_vec, 6)?;
         let loaded_macros = load_macros_from_json(&serde_json::Value::Array(json_val), 6)?;

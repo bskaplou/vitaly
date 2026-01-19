@@ -84,13 +84,15 @@ pub struct LayerRenderData {
     pub fat_labels: Vec<String>,
 }
 
+type LayerLabels = (HashMap<(u8, u8), String>, Vec<String>);
+
 fn process_layer_labels(
     keys: &protocol::Keymap,
     buttons: &Vec<keymap::Button>,
     layer_number: u8,
     vial_version: u32,
     custom_keycodes: &Option<&Value>,
-) -> Result<(HashMap<(u8, u8), String>, Vec<String>)> {
+) -> Result<LayerLabels> {
     let mut button_labels = HashMap::new();
 
     let custom = if let Some(custom) = custom_keycodes {

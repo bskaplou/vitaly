@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn test_tap_hold() {
-        let tapdance = TapDance::from_string(7, &"KC_V + KC_B ~ 50".to_string(), 6).unwrap();
+        let tapdance = TapDance::from_string(7, "KC_V + KC_B ~ 50", 6).unwrap();
         assert_eq!(tapdance.index, 7);
         assert_eq!(keycodes::qid_to_name(tapdance.tap, 6), "KC_V");
         assert_eq!(keycodes::qid_to_name(tapdance.hold, 6), "KC_B");
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_from_string_one_key() {
-        let td = TapDance::from_string(0, &"KC_A ~ 100".to_string(), 6).unwrap();
+        let td = TapDance::from_string(0, "KC_A ~ 100", 6).unwrap();
         assert_eq!(keycodes::qid_to_name(td.tap, 6), "KC_A");
         assert_eq!(td.hold, 0);
         assert_eq!(td.tapping_term, 100);
@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_from_string_four_keys() {
-        let td = TapDance::from_string(1, &"KC_A+KC_B+KC_C+KC_D ~ 200".to_string(), 6).unwrap();
+        let td = TapDance::from_string(1, "KC_A+KC_B+KC_C+KC_D ~ 200", 6).unwrap();
         assert_eq!(keycodes::qid_to_name(td.tap, 6), "KC_A");
         assert_eq!(keycodes::qid_to_name(td.hold, 6), "KC_B");
         assert_eq!(keycodes::qid_to_name(td.double_tap, 6), "KC_C");
@@ -255,15 +255,15 @@ mod tests {
     #[test]
     fn test_from_string_errors() {
         assert!(
-            TapDance::from_string(0, &"KC_A".to_string(), 6).is_err(),
+            TapDance::from_string(0, "KC_A", 6).is_err(),
             "Missing ~"
         );
         assert!(
-            TapDance::from_string(0, &"KC_A ~ abc".to_string(), 6).is_err(),
+            TapDance::from_string(0, "KC_A ~ abc", 6).is_err(),
             "Invalid tapping term"
         );
         assert!(
-            TapDance::from_string(0, &"INVALID ~ 100".to_string(), 6).is_err(),
+            TapDance::from_string(0, "INVALID ~ 100", 6).is_err(),
             "Invalid keycode"
         );
     }
@@ -316,7 +316,7 @@ mod tests {
         assert!(empty_td.is_empty());
         assert_eq!(empty_td.tapping_term, 0);
 
-        let non_empty_td = TapDance::from_string(1, &"KC_A ~ 100".to_string(), 6).unwrap();
+        let non_empty_td = TapDance::from_string(1, "KC_A ~ 100", 6).unwrap();
         assert!(!non_empty_td.is_empty());
     }
 }

@@ -318,7 +318,7 @@ mod tests {
     fn test_from_string_two_buttons() {
         let altrepeat = AltRepeat::from_string(
             3,
-            &"keycode = KC_3; alt_keycode= KC_5; options= arep_enabled;".to_string(),
+            "keycode = KC_3; alt_keycode= KC_5; options= arep_enabled;",
             6,
         )
         .unwrap();
@@ -326,14 +326,14 @@ mod tests {
         assert_eq!(keycodes::qid_to_name(altrepeat.keycode, 6), "KC_3");
         assert_eq!(keycodes::qid_to_name(altrepeat.alt_keycode, 6), "KC_5");
         assert_eq!(altrepeat.allowed_mods, 0);
-        assert_eq!(altrepeat.arep_enabled, true);
+        assert!(altrepeat.arep_enabled);
     }
 
     #[test]
     fn test_from_string_full() {
         let ar = AltRepeat::from_string(
             0,
-            &"k=KC_A; a=KC_B; m=LCTL; o=enabled|bidirectional".to_string(),
+            "k=KC_A; a=KC_B; m=LCTL; o=enabled|bidirectional",
             6,
         )
         .unwrap();
@@ -348,19 +348,19 @@ mod tests {
     #[test]
     fn test_from_string_errors() {
         assert!(
-            AltRepeat::from_string(0, &"k=KC_A; a".to_string(), 6).is_err(),
+            AltRepeat::from_string(0, "k=KC_A; a", 6).is_err(),
             "Missing ="
         );
         assert!(
-            AltRepeat::from_string(0, &"foo=bar".to_string(), 6).is_err(),
+            AltRepeat::from_string(0, "foo=bar", 6).is_err(),
             "Unknown key"
         );
         assert!(
-            AltRepeat::from_string(0, &"o=invalid_option".to_string(), 6).is_err(),
+            AltRepeat::from_string(0, "o=invalid_option", 6).is_err(),
             "Unknown option"
         );
         assert!(
-            AltRepeat::from_string(0, &"k=INVALID".to_string(), 6).is_err(),
+            AltRepeat::from_string(0, "k=INVALID", 6).is_err(),
             "Invalid keycode"
         );
     }
@@ -412,7 +412,7 @@ mod tests {
         assert!(empty_ar.is_empty());
 
         let mut non_empty = AltRepeat::empty(1);
-        non_empty.keycode = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
+        non_empty.keycode = keycodes::name_to_qid("KC_A", 6).unwrap();
         assert!(!non_empty.is_empty());
 
         let mut non_empty2 = AltRepeat::empty(2);
@@ -423,13 +423,13 @@ mod tests {
     #[test]
     fn test_json_round_trip() {
         let mut ar1 = AltRepeat::empty(0);
-        ar1.keycode = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
+        ar1.keycode = keycodes::name_to_qid("KC_A", 6).unwrap();
         ar1.arep_enabled = true;
         ar1.arep_option_bidirectional = true;
 
         let mut ar2 = AltRepeat::empty(1);
-        ar2.keycode = keycodes::name_to_qid(&"KC_X".to_string(), 6).unwrap();
-        ar2.alt_keycode = keycodes::name_to_qid(&"KC_Y".to_string(), 6).unwrap();
+        ar2.keycode = keycodes::name_to_qid("KC_X", 6).unwrap();
+        ar2.alt_keycode = keycodes::name_to_qid("KC_Y", 6).unwrap();
         ar2.allowed_mods = 1; // LCTL
 
         let alt_repeats = vec![ar1, ar2];

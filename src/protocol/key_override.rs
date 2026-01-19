@@ -459,7 +459,7 @@ mod tests {
     fn test_positive() {
         let keyoverride = KeyOverride::from_string(
             9,
-            &"trigger=KC_1; replacement=KC_2; layers=1; options=ko_enabled|ko_option_no_reregister_trigger;".to_string(),
+            "trigger=KC_1; replacement=KC_2; layers=1; options=ko_enabled|ko_option_no_reregister_trigger;",
             6,
         )
         .unwrap();
@@ -467,14 +467,14 @@ mod tests {
         assert_eq!(keycodes::qid_to_name(keyoverride.trigger, 6), "KC_1");
         assert_eq!(keycodes::qid_to_name(keyoverride.replacement, 6), "KC_2");
         assert_eq!(keyoverride.layers, 2);
-        assert_eq!(keyoverride.ko_enabled, true);
-        assert_eq!(keyoverride.ko_option_no_reregister_trigger, true);
+        assert!(keyoverride.ko_enabled);
+        assert!(keyoverride.ko_option_no_reregister_trigger);
     }
 
     #[test]
     fn test_from_string_full() {
-        let s = "t=KC_A; r=KC_B; l=1|3; tm=LCTL; nmm=RCTL; sm=LALT; o=enabled|one_mod".to_string();
-        let ko = KeyOverride::from_string(0, &s, 6).unwrap();
+        let s = "t=KC_A; r=KC_B; l=1|3; tm=LCTL; nmm=RCTL; sm=LALT; o=enabled|one_mod";
+        let ko = KeyOverride::from_string(0, s, 6).unwrap();
         assert_eq!(keycodes::qid_to_name(ko.trigger, 6), "KC_A");
         assert_eq!(keycodes::qid_to_name(ko.replacement, 6), "KC_B");
         assert_eq!(ko.layers, (1 << 1) | (1 << 3));
@@ -488,23 +488,23 @@ mod tests {
     #[test]
     fn test_from_string_errors() {
         assert!(
-            KeyOverride::from_string(0, &"t=KC_A; r".to_string(), 6).is_err(),
+            KeyOverride::from_string(0, "t=KC_A; r", 6).is_err(),
             "Missing ="
         );
         assert!(
-            KeyOverride::from_string(0, &"foo=bar".to_string(), 6).is_err(),
+            KeyOverride::from_string(0, "foo=bar", 6).is_err(),
             "Unknown key"
         );
         assert!(
-            KeyOverride::from_string(0, &"t=INVALID".to_string(), 6).is_err(),
+            KeyOverride::from_string(0, "t=INVALID", 6).is_err(),
             "Invalid keycode"
         );
         assert!(
-            KeyOverride::from_string(0, &"l=abc".to_string(), 6).is_err(),
+            KeyOverride::from_string(0, "l=abc", 6).is_err(),
             "Invalid layer"
         );
         assert!(
-            KeyOverride::from_string(0, &"o=invalid_option".to_string(), 6).is_err(),
+            KeyOverride::from_string(0, "o=invalid_option", 6).is_err(),
             "Unknown option"
         );
     }
@@ -557,7 +557,7 @@ mod tests {
         assert!(empty_ko.is_empty());
 
         let mut non_empty = KeyOverride::empty(1);
-        non_empty.trigger = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
+        non_empty.trigger = keycodes::name_to_qid("KC_A", 6).unwrap();
         assert!(!non_empty.is_empty());
 
         let mut non_empty2 = KeyOverride::empty(2);
@@ -568,8 +568,8 @@ mod tests {
     #[test]
     fn test_json_round_trip() {
         let mut ko1 = KeyOverride::empty(0);
-        ko1.trigger = keycodes::name_to_qid(&"KC_A".to_string(), 6).unwrap();
-        ko1.replacement = keycodes::name_to_qid(&"KC_B".to_string(), 6).unwrap();
+        ko1.trigger = keycodes::name_to_qid("KC_A", 6).unwrap();
+        ko1.replacement = keycodes::name_to_qid("KC_B", 6).unwrap();
         ko1.layers = 1;
         ko1.ko_enabled = true;
 
