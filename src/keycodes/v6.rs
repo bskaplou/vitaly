@@ -344,6 +344,11 @@ pub fn name_to_qid(name: &str) -> Result<u16> {
         }
         Ok(keycode)
     } else {
+        if let Some(rest) = n.strip_prefix('M') {
+            const M0: u16 = 0x7700;
+            let x: u16 = rest.parse()?;
+            return Ok(M0 + x);
+        }
         match name_to_code::FULLNAMES.get(n.as_str()) {
             Some(value) => Ok(*value),
             None => Err(KeyParsingError(format!("can't find key {}", n).to_string()).into()),
