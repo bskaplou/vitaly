@@ -4,7 +4,8 @@ use crate::protocol;
 use anyhow::{Result, anyhow};
 use hidapi::{DeviceInfo, HidApi};
 use serde_json::Value;
-use std::fs;
+use std::io::Read;
+use std::{fs, io};
 
 pub fn run(
     api: &HidApi,
@@ -24,7 +25,14 @@ pub fn run(
         .as_u64()
         .ok_or(anyhow!("matrix/rows not found in meta"))? as u8;
 
-    let layout_str = fs::read_to_string(file)?;
+    let layout_str = if file == "-" {
+        let mut input = String::new();
+        io::stdin().read_to_string(&mut input)?;
+        input
+    } else {
+        fs::read_to_string(file)?
+    };
+
     let root_json: Value = serde_json::from_str(&layout_str)?;
     let root = root_json
         .as_object()
